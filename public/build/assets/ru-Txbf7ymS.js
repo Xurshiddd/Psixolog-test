@@ -1,0 +1,1 @@
+const s="Войти через Hemis",o="Первый этап",i="Второй этап",c="Вход для администратора",n={hemis_login:s,bosqich1:o,bosqich2:i,admin_kirish:c};export{c as admin_kirish,o as bosqich1,i as bosqich2,n as default,s as hemis_login};

@@ -1,0 +1,1 @@
+import{d as a,c as s,b as t,a as n,w as r,g as o,u as l,n as u,F as d,o as f}from"./app-CNrk8Pwl.js";const i=a({__name:"Tests",setup(m){return(p,e)=>(f(),s(d,null,[e[1]||(e[1]=t("h1",null,"Tests",-1)),t("button",null,[n(l(u),{href:"/test/create",class:"btn btn-primary"},{default:r(()=>[...e[0]||(e[0]=[o("Create Test",-1)])]),_:1})])],64))}});export{i as default};

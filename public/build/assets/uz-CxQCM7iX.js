@@ -1,0 +1,1 @@
+const i="Boshlash — Hemis orqali kirish",s="Birinchi bosqich",h="Ikkinchi bosqich",o="Admin uchun kirish",c={hemis_login:i,bosqich1:s,bosqich2:h,admin_kirish:o};export{o as admin_kirish,s as bosqich1,h as bosqich2,c as default,i as hemis_login};
