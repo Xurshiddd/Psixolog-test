@@ -14,9 +14,7 @@ Route::get('/', function () {
 
 Route::get('dashboard', function () {
     return Inertia::render('Dashboard', [
-        'tests' => \App\Models\Test::paginate(10),
         'testsCount' => \App\Models\Test::count(),
-        'modules' => \App\Models\Module::all(),
         'modulesCount' => \App\Models\Module::count()
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
@@ -34,5 +32,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/test/index', [TestController::class, 'index'])->name('test_index');
     Route::get('/test/create', [TestController::class, 'create'])->name('test_create');
     Route::post('/test/store', [TestController::class, 'store'])->name('test_store');
+    Route::get('/test/edit/{id}', [TestController::class, 'edit'])->name('test_edit');
+    Route::put('/test/update/{id}', [TestController::class, 'update'])->name('test_update');
+    Route::patch('/module/change-status', [TestController::class, 'changeModuleStatus'])->name('module_change_status');
+    Route::delete('/module/delete/{id}', [TestController::class, 'deleteModule'])->name('module_delete');
 });
 require __DIR__ . '/settings.php';

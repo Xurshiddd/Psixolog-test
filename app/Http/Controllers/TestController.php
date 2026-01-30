@@ -20,7 +20,9 @@ class TestController extends Controller
     public function index()
     {
         return Inertia::render("Tests", [
-            'modules' => Module::count(),
+            'testsCount' => Test::count(),
+            'modulesCount' => Module::count(),
+            'modules' => Module::paginate(10),
         ]);
     }
 
@@ -39,7 +41,7 @@ class TestController extends Controller
     {
         $data = $request->validated();
         $this->testBuildServices->save($data);
-        redirect()->route('test_index')->with('success','Test muvaffaqiyatli saqlandi!');
+        redirect()->route('test_index')->with('success', 'Test muvaffaqiyatli saqlandi!');
     }
 
     /**
@@ -55,15 +57,22 @@ class TestController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $module = Module::with(['tests.options'])->findOrFail($id);
+        return Inertia::render('EditTest', [
+            'module' => $module
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(TestStoreRequest $request, string $id)
     {
-        //
+        $module = Module::findOrFail($id);
+        $data = $request->validated();
+        dd($data);
+        $this->testBuildServices->update($module, $data);
+        return redirect()->route('test_index')->with('success', 'Test muvaffaqiyatli yangilandi!');
     }
 
     /**
@@ -72,5 +81,28 @@ class TestController extends Controller
     public function destroy(string $id)
     {
         //
+    }
+    public function changeModuleStatus(Request $request)
+    {
+        $request->validate([
+            'module_id' => 'required|exists:modules,id',
+            'field' => 'required|in:is_active,shuffle',
+        ]);
+
+        $module = Module::find($request->module_id);
+        $field = $request->field;
+
+        // Toggle the field
+        $module->update([
+            $field => !$module->{$field}
+        ]);
+
+        return redirect()->back()->with('success', 'Module status updated successfully.');
+    }
+    public function deleteModule($id)
+    {
+        $module = Module::find($id);
+        $module->delete();
+        return redirect()->back()->with('success', 'Module deleted successfully.');
     }
 }

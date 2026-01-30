@@ -22,6 +22,7 @@ return new class extends Migration
             $table->foreignId('group_id')->nullable()->constrained();
             $table->foreignId('speciality_id')->nullable()->constrained();
             $table->string('level')->nullable();
+            $table->enum('role', ['admin', 'psiholog', 'student'])->default('student');
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
             $table->rememberToken();

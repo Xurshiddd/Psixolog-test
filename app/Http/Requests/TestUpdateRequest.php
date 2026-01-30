@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class TestStoreRequest extends FormRequest
+class TestUpdateRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,17 +22,19 @@ class TestStoreRequest extends FormRequest
     public function rules(): array
     {
         return [
+            'id' => 'required|exists:modules,id',
             'shuffle' => 'required|boolean',
             'module' => 'required|string|max:255',
             'module_description' => 'nullable|string',
             'questions' => 'required|array|min:1',
+            'questions.*.id' => 'nullable|exists:tests,id',
             'questions.*.question' => 'required|string',
-            'questions.*.question_image' => 'nullable|image|max:5048',
+            'questions.*.question_image' => 'nullable|string|image|max:5048',
             'questions.*.type' => 'required|string|in:single,multi,text',
             'questions.*.options' => 'nullable|array',
+            'questions.*.options.*.id' => 'nullable|exists:options,id',
             'questions.*.options.*.option_text' => 'required|string',
             'questions.*.options.*.option_value' => 'required|numeric',
-            'questions.*.image' => 'nullable|image|max:5048',
         ];
     }
 }

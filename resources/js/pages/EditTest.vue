@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { router } from '@inertiajs/vue3'
+
+const props = defineProps<{ module: any }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -10,95 +12,119 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: '/test/index',
     },
     {
-        title: 'Test Yaratish',
-        href: '/test/create',
+        title: 'Testni Tahrirlash',
+        href: '#',
     },
 ];
 
 type QuestionType = 'single' | 'multi' | 'text';
 
 interface Question {
-    id: number;
+    id?: number;
     type: QuestionType;
     text: string;
     required: boolean;
     reverseScoring: boolean;
-  options: Array<{ id: number; label: string; value: number }>;
+  options: Array<{ id?: number; label: string; value: number }>;
   imageFile?: File | null;
   imagePreview?: string | null;
+  existingImage?: string | null;
 }
-const shuffle = ref<boolean>(false)
-const moduleName = ref<string>('');
-const moduleDescription = ref<string>('');
+const shuffle = ref<boolean>(!!props.module.shuffle)
+const moduleName = ref<string>(props.module.name);
+const moduleDescription = ref<string>(props.module.description || '');
 const questions = ref<Question[]>([]);
-let questionIdCounter = 1;
+let questionIdCounter = 1; // Used for new questions only (temp id logic)
 let optionIdCounter = 1;
+
+// Initialize state from props
+onMounted(() => {
+    if (props.module.tests) {
+        questions.value = props.module.tests.map((t: any) => ({
+            id: t.id,
+            type: t.type,
+            text: t.question,
+            required: true, // Assuming default as true since not in DB
+            reverseScoring: false,
+            options: t.options ? t.options.map((o: any) => ({
+                id: o.id,
+                label: o.option_text,
+                value: o.option_value
+            })) : [],
+            imageFile: null,
+            imagePreview: t.image ? '/storage/' + t.image : null,
+            existingImage: t.image
+        }));
+    }
+});
 
 const addQuestion = (type: QuestionType) => {
     const newQuestion: Question = {
-        id: questionIdCounter++,
+        // No ID for new question
         type,
         text: '',
         required: true,
         reverseScoring: false,
         options: type !== 'text' ? [
-            { id: optionIdCounter++, label: '', value: 1 },
-            { id: optionIdCounter++, label: '', value: 1 },
+            { label: '', value: 1 },
+            { label: '', value: 1 },
         ] : [],
-    imageFile: null,
-    imagePreview: null,
+        imageFile: null,
+        imagePreview: null,
     };
     questions.value.push(newQuestion);
 };
 
-const deleteQuestion = (id: number) => {
-  const q = questions.value.find(q => q.id === id);
-  if (q && q.imagePreview) {
+const deleteQuestion = (index: number) => {
+  const q = questions.value[index];
+  if (q && q.imagePreview && !q.existingImage) {
     try { URL.revokeObjectURL(q.imagePreview); } catch (e) { /* noop */ }
   }
-  questions.value = questions.value.filter(q => q.id !== id);
+  questions.value.splice(index, 1); 
 };
 
-const onImageSelected = (questionId: number, e: Event) => {
+const onImageSelected = (index: number, e: Event) => {
   const input = e.target as HTMLInputElement;
   const file = input.files && input.files[0] ? input.files[0] : null;
-  const question = questions.value.find(q => q.id === questionId);
+  const question = questions.value[index];
   if (!question) return;
-  if (question.imagePreview) {
+  
+  if (question.imagePreview && !question.existingImage) {
     try { URL.revokeObjectURL(question.imagePreview); } catch (err) { /* noop */ }
   }
+  
   if (file) {
     question.imageFile = file;
     question.imagePreview = URL.createObjectURL(file);
   } else {
-    question.imageFile = null;
-    question.imagePreview = null;
-  }
-  // reset input so same file can be re-selected if needed
+    // keeping existing if cancel? No, file input clear means clear.
+    // If user clears input, does it mean remove image?
+      }
   if (input) input.value = '';
 };
 
-const removeImage = (questionId: number) => {
-  const question = questions.value.find(q => q.id === questionId);
+const removeImage = (index: number) => {
+  const question = questions.value[index];
   if (!question) return;
-  if (question.imagePreview) {
+  if (question.imagePreview && !question.existingImage) {
     try { URL.revokeObjectURL(question.imagePreview); } catch (err) { /* noop */ }
   }
   question.imageFile = null;
   question.imagePreview = null;
+  question.existingImage = null; 
 };
 
-const addOption = (questionId: number) => {
-    const question = questions.value.find(q => q.id === questionId);
+const addOption = (index: number) => {
+    const question = questions.value[index];
     if (question) {
-        question.options.push({ id: optionIdCounter++, label: '', value: 1 });
+        question.options.push({ label: '', value: 1 });
     }
 };
 
-const deleteOption = (questionId: number, optionId: number) => {
-    const question = questions.value.find(q => q.id === questionId);
+const deleteOption = (qIndex: number, oIndex: number) => {
+    const question = questions.value[qIndex];
     if (question) {
-        question.options = question.options.filter(o => o.id !== optionId);
+        question.options.splice(oIndex, 1);
     }
 };
 
@@ -111,29 +137,30 @@ const getQuestionTypeLabel = (type: QuestionType) => {
     return labels[type];
 };
 
-const saveTest = async () => {
+const updateTest = async () => {
+    const questionsData = questions.value.map(q => ({
+        id: q.id, 
+        question: q.text,
+        question_image: q.imageFile, 
+        type: q.type,
+        options: q.options.map(o => ({
+            id: o.id, 
+            option_text: o.label,
+            option_value: o.value,
+        })),
+    }));
+
     const answerJson = {
-        shuffle: shuffle.value,
+        id: props.module.id,
         module: moduleName.value,
         module_description: moduleDescription.value,
-        questions: questions.value.map(q => ({
-            question: q.text,
-            question_image: q.imageFile,
-            type: q.type,
-            options: q.options.map(o => ({
-                option_text: o.label,
-                option_value: o.value,
-            })),
-        })),
+        shuffle: shuffle.value ? 1 : 0,
+        questions: questionsData
     };
-
-    router.post('/test/store', answerJson, {
+    
+    router.put(`/test/update/${props.module.id}`, answerJson, {
       onSuccess: () => {
-        alert('Test muvaffaqiyatli saqlandi!')
-        questions.value = [];
-        moduleName.value = '';
-        moduleDescription.value = '';
-        shuffle.value = false;
+        alert('Test muvaffaqiyatli yangilandi!')
       },
       onError: (errors) => {
         console.log(errors)
@@ -149,10 +176,10 @@ const saveTest = async () => {
       <!-- Header -->
       <div class="mb-8">
         <h1 class="text-3xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">
-          Test Yaratish
+          Testni Tahrirlash
         </h1>
         <p class="mt-1 text-sm text-slate-600 dark:text-slate-400">
-          Yangi xulq-atvor bahosini yarating
+            {{ moduleName }} testini o'zgartirish
         </p>
       </div>
 
@@ -252,16 +279,16 @@ const saveTest = async () => {
             <p class="text-slate-500 dark:text-slate-400">Hali savollar qo'shilmagan. Yuqoridagi tugmalar orqali savollarni qo'shing</p>
           </div>
 
-          <div v-for="(question, idx) in questions" :key="question.id" class="px-6 py-6">
+          <div v-for="(question, index) in questions" :key="index" class="px-6 py-6">
             <div class="flex items-start justify-between gap-4 mb-4">
               <div class="flex-1">
                 <div class="flex items-center gap-2 mb-2">
-                  <span class="text-sm font-medium text-slate-600 dark:text-slate-300">Savol {{ idx + 1 }} ({{ getQuestionTypeLabel(question.type) }})</span>
+                  <span class="text-sm font-medium text-slate-600 dark:text-slate-300">Savol {{ index + 1 }} ({{ getQuestionTypeLabel(question.type) }})</span>
                 </div>
               </div>
               <div class="flex items-center gap-2">
                 <button
-                  @click="deleteQuestion(question.id)"
+                  @click="deleteQuestion(index)"
                   type="button"
                   class="rounded p-1 text-red-600 hover:bg-red-50 transition"
                 >
@@ -288,14 +315,14 @@ const saveTest = async () => {
               <label class="block text-sm font-medium text-slate-700 mb-2 dark:text-slate-300">Rasm (ixtiyoriy)</label>
               <div class="flex items-center gap-3">
                 <input
-                  @change="onImageSelected(question.id, $event)"
+                  @change="onImageSelected(index, $event)"
                   type="file"
                   accept="image/*"
                   class="text-sm text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 shadow-sm outline-none transition focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
                 />
                 <button
                   v-if="question.imagePreview"
-                  @click.prevent="removeImage(question.id)"
+                  @click.prevent="removeImage(index)"
                   type="button"
                   class="text-sm text-red-600 hover:underline transition border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 bg-transparent"
                 >
@@ -312,7 +339,7 @@ const saveTest = async () => {
               <div class="mb-4 flex items-center justify-between">
                 <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Variantlar</label>
                 <button
-                  @click="addOption(question.id)"
+                  @click="addOption(index)"
                   type="button"
                   class="text-sm font-medium text-blue-600 hover:text-blue-700 transition"
                 >
@@ -321,7 +348,7 @@ const saveTest = async () => {
               </div>
 
               <div class="space-y-3">
-                <div v-for="option in question.options" :key="option.id" class="flex items-end gap-3">
+                <div v-for="(option, oIndex) in question.options" :key="oIndex" class="flex items-end gap-3">
                   <div class="flex-1">
                     <input
                       v-model="option.label"
@@ -340,7 +367,7 @@ const saveTest = async () => {
                     />
                   </div>
                   <button
-                    @click="deleteOption(question.id, option.id)"
+                    @click="deleteOption(index, oIndex)"
                     type="button"
                     class="rounded p-2 text-red-600 hover:bg-red-50 transition"
                   >
@@ -358,7 +385,7 @@ const saveTest = async () => {
       <!-- Bottom actions -->
       <div class="mt-8 flex justify-end">
         <button
-          @click="saveTest"
+          @click="updateTest"
           type="button"
           class="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-6 py-4 text-base font-semibold text-white shadow-sm transition hover:bg-emerald-700 focus:outline-none focus:ring-4 focus:ring-emerald-600/20"
         >

@@ -12,5 +12,14 @@ class Module extends Model
         'is_active',
         'shuffle',
     ];
-    
+
+    protected $casts = [
+        'is_active' => 'boolean',
+        'shuffle' => 'boolean',
+    ];
+    public function tests()
+    {
+        return $this->hasMany(Test::class);
+    }
+
 }
