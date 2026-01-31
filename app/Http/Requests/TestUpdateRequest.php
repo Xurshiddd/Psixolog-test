@@ -29,10 +29,10 @@ class TestUpdateRequest extends FormRequest
             'questions' => 'required|array|min:1',
             'questions.*.id' => 'nullable|exists:tests,id',
             'questions.*.question' => 'required|string',
-            'questions.*.question_image' => 'nullable|string|image|max:5048',
+            'questions.*.question_image' => 'nullable|image|max:5048',
             'questions.*.type' => 'required|string|in:single,multi,text',
             'questions.*.options' => 'nullable|array',
-            'questions.*.options.*.id' => 'nullable|exists:options,id',
+            'questions.*.options.*.id' => 'nullable|exists:test_options,id',
             'questions.*.options.*.option_text' => 'required|string',
             'questions.*.options.*.option_value' => 'required|numeric',
         ];

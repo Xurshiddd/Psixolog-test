@@ -54,10 +54,7 @@ class TestBuildServices
                 'description' => $data['module_description'] ?? null,
                 'shuffle' => $data['shuffle']
             ]);
-
-            // Get existing question IDs to track which ones to keep
             $updatedQuestionIds = [];
-
             foreach ($data['questions'] as $questionData) {
                 if (isset($questionData['id'])) {
                     $question = Test::find($questionData['id']);
@@ -79,7 +76,6 @@ class TestBuildServices
                         $this->syncOptions($question, $questionData['options']);
                     }
                 } else {
-                    // Create new
                     if (isset($questionData['question_image']) && $questionData['question_image'] instanceof \Illuminate\Http\UploadedFile) {
                         $imagePath = $questionData['question_image']->store('test_images', 'public');
                         $questionData['image'] = $imagePath;
@@ -91,6 +87,7 @@ class TestBuildServices
                         'image' => $questionData['image'] ?? null,
                     ]);
                     $this->syncOptions($question, $questionData['options']);
+                    $updatedQuestionIds[] = $question->id;
                 }
             }
 
@@ -124,9 +121,9 @@ class TestBuildServices
                     'option_text' => $optionData['option_text'],
                     'option_value' => $optionData['option_value'] ?? 0,
                 ]);
+                $updatedOptionIds[] = $option->id;
             }
         }
-
         $test->options()->whereNotIn('id', $updatedOptionIds)->delete();
     }
 }

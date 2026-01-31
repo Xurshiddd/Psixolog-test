@@ -6,6 +6,7 @@ use App\Models\Module;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 use App\Http\Requests\TestStoreRequest;
+use App\Http\Requests\TestUpdateRequest;
 use App\Services\TestBuildServices;
 use App\Models\Test;
 
@@ -66,11 +67,10 @@ class TestController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(TestStoreRequest $request, string $id)
+    public function update(TestUpdateRequest $request, string $id)
     {
         $module = Module::findOrFail($id);
         $data = $request->validated();
-        dd($data);
         $this->testBuildServices->update($module, $data);
         return redirect()->route('test_index')->with('success', 'Test muvaffaqiyatli yangilandi!');
     }
