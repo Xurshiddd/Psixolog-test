@@ -5,6 +5,8 @@ use App\Models\Module;
 use App\Models\Test;
 use App\Models\TestOption;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 class TestBuildServices
 {
     public function save(array $data): void
@@ -27,7 +29,7 @@ class TestBuildServices
                     'type' => $questionData['type'],
                     'image' => $questionData['image'] ?? null,
                 ]);
-                if (count($questionData['options']) === 0) {
+                if (!isset($questionData['options']) || count($questionData['options']) === 0) {
                     continue;
                 }
                 foreach ($questionData['options'] as $optionData) {
@@ -59,20 +61,29 @@ class TestBuildServices
                 if (isset($questionData['id'])) {
                     $question = Test::find($questionData['id']);
                     if ($question) {
-                        // Update existing
-                        if (isset($questionData['question_image']) && $questionData['question_image'] instanceof \Illuminate\Http\UploadedFile) {
+                        if (
+                            isset($questionData['question_image']) &&
+                            $questionData['question_image'] instanceof \Illuminate\Http\UploadedFile
+                        ) {
+                            if ($question->image) {
+                                Storage::disk('public')->delete($question->image);
+                            }
                             $imagePath = $questionData['question_image']->store('test_images', 'public');
                             $questionData['image'] = $imagePath;
+                        } else {
+                            $questionData['image'] = $question->image;
                         }
 
                         $question->update([
                             'question' => $questionData['question'],
                             'type' => $questionData['type'],
-                            'image' => $questionData['image'] ?? $question->image,
+                            'image' => $questionData['image'],
                         ]);
                         $updatedQuestionIds[] = $question->id;
 
-                        // Handle Options
+                        if (!isset($questionData['options']) || count($questionData['options']) === 0) {
+                            continue;
+                        }
                         $this->syncOptions($question, $questionData['options']);
                     }
                 } else {
@@ -86,17 +97,27 @@ class TestBuildServices
                         'type' => $questionData['type'],
                         'image' => $questionData['image'] ?? null,
                     ]);
-                    $this->syncOptions($question, $questionData['options']);
+                    if (!isset($questionData['options']) || count($questionData['options']) === 0) {
+                        continue;
+                    }
                     $updatedQuestionIds[] = $question->id;
+                    $this->syncOptions($question, $questionData['options']);
                 }
             }
 
-            // Delete questions that were removed
+            $questionImage = $module->tests()->whereNotIn('id', $updatedQuestionIds)->get();
+            foreach ($questionImage as $question) {
+                if ($question->image) {
+                    Storage::disk('public')->delete($question->image);
+                }
+            }
+
             $module->tests()->whereNotIn('id', $updatedQuestionIds)->delete();
 
             DB::commit();
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error($e->getMessage());
             throw new \Exception("Module update failed: " . $e->getMessage());
         }
     }

@@ -9,6 +9,7 @@ use App\Http\Requests\TestStoreRequest;
 use App\Http\Requests\TestUpdateRequest;
 use App\Services\TestBuildServices;
 use App\Models\Test;
+use Illuminate\Support\Facades\Storage;
 
 class TestController extends Controller
 {
@@ -102,6 +103,12 @@ class TestController extends Controller
     public function deleteModule($id)
     {
         $module = Module::find($id);
+        $questioonImage = $module->tests()->whereNotNull('image')->get();
+        foreach ($questioonImage as $question) {
+            if ($question->image) {
+                Storage::disk('public')->delete($question->image);
+            }
+        }
         $module->delete();
         return redirect()->back()->with('success', 'Module deleted successfully.');
     }
