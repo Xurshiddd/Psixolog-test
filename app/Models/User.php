@@ -21,6 +21,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'login',
+        'role',
         'email',
         'phone',
         'picture',
@@ -64,5 +65,9 @@ class User extends Authenticatable
     public function speciality()
     {
         return $this->belongsTo(Speciality::class);
+    }
+    public function solveTests()
+    {
+        return $this->hasMany(SolveTest::class);
     }
 }

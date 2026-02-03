@@ -1,10 +1,13 @@
 <?php
 
+use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TestController;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\HemisAuthController;
+use App\Models\Module;
+use App\Models\Test;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -13,9 +16,16 @@ Route::get('/', function () {
 })->name('home');
 
 Route::get('dashboard', function () {
+    if (auth()->user()->role === 'student') {
+        return Inertia::render("Student/Index", [
+            'testsCount' => Test::count(),
+            'modulesCount' => Module::count(),
+            'modules' => Module::paginate(10),
+        ]);
+    }
     return Inertia::render('Dashboard', [
-        'testsCount' => \App\Models\Test::count(),
-        'modulesCount' => \App\Models\Module::count()
+        'testsCount' => Test::count(),
+        'modulesCount' => Module::count()
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -28,7 +38,7 @@ Route::get('/locale/{locale}', function (string $locale) {
 
     return back()->withCookie(cookie('locale', $locale, 60 * 24 * 365));
 })->name('locale.switch');
-Route::middleware('auth')->group(function () {
+Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/test/index', [TestController::class, 'index'])->name('test_index');
     Route::get('/test/create', [TestController::class, 'create'])->name('test_create');
     Route::post('/test/store', [TestController::class, 'store'])->name('test_store');
@@ -37,4 +47,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/module/change-status', [TestController::class, 'changeModuleStatus'])->name('module_change_status');
     Route::delete('/module/delete/{id}', [TestController::class, 'deleteModule'])->name('module_delete');
 });
+Route::middleware('auth')->group(function () {
+    Route::get('/test/index', [StudentController::class, 'index'])->name('student_test_index');
+    Route::get('/test/take/{moduleId}', [StudentController::class, 'takeTest'])->name('student_test_take');
+});
+
 require __DIR__ . '/settings.php';
