@@ -2,7 +2,7 @@
 import { Head, Link } from '@inertiajs/vue3';
 import { router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-import { module_change_status, module_delete, test_index, test_create, test_edit } from '@/routes';
+import { module_change_status, module_delete, dashboard, test_create, test_edit } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 import { ref } from 'vue';
 
@@ -15,7 +15,7 @@ const formatDate = (date: string) => {
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Tests Module',
-        href: test_index().url,
+        href: dashboard().url,
     },
 ];
 
@@ -54,7 +54,7 @@ const deleteModule = (moduleId: number) => {
 };
 
 const goToPage = (page: number) => {
-    router.get(test_index().url, { page }, {
+    router.get(window.location.pathname, { page }, {
         preserveScroll: true,
     });
 };
