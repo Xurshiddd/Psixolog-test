@@ -69,6 +69,7 @@ class HemisAuthController extends Controller
                 'password' => Hash::make($userData['passport_number']),
                 'level' =>  $userData['data']['level']['name'],
                 'speciality_id' => $specialty->id,
+                'role' => 'student',
             ]
         );
         DB::commit();

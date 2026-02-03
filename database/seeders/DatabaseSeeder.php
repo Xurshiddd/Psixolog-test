@@ -17,7 +17,15 @@ class DatabaseSeeder extends Seeder
             'name' => 'Admin',
             'email' => 'marifovxurshid8@gmail.com',
             'login' => 454546464,
-            'password' => bcrypt('Rootpassword'),
+            'password' => bcrypt('RootPassword'),
+            'role' => 'admin',
+        ]);
+        User::create([
+            'name' => 'Dildora Ikromovna',
+            'email' => 'dildora@ttysi.com',
+            'login' => 123456789,
+            'password' => bcrypt('RootPassword'),
+            'role' => 'admin',
         ]);
     }
 }

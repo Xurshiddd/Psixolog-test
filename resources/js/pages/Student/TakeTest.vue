@@ -162,7 +162,7 @@ const submitTest = () => {
   }
 
   router.post(
-    route('student.tests.submit', props.module.id),
+    `/student/tests/${props.module.id}/submit`,
     { answers: payload },
     {
       preserveScroll: true,
