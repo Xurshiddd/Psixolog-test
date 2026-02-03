@@ -48,7 +48,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
     Route::delete('/module/delete/{id}', [TestController::class, 'deleteModule'])->name('module_delete');
 });
 Route::middleware('auth')->group(function () {
-    Route::get('/test/index', [StudentController::class, 'index'])->name('student_test_index');
+    Route::get('/student/index', [StudentController::class, 'index'])->name('student_test_index');
     Route::get('/test/take/{moduleId}', [StudentController::class, 'takeTest'])->name('student_test_take');
 });
 

@@ -25,7 +25,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Tests',
-        href: '/test/index',
+        href: '/student/index',
         icon: BookOpen,
     },
 ];
