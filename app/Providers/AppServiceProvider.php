@@ -5,6 +5,7 @@ namespace App\Providers;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
 
@@ -28,6 +29,7 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureDefaults(): void
     {
+        Schema::defaultStringLength(255);
         Date::use(CarbonImmutable::class);
 
         DB::prohibitDestructiveCommands(
