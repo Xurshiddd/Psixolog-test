@@ -29,7 +29,7 @@ class AppServiceProvider extends ServiceProvider
 
     protected function configureDefaults(): void
     {
-        Schema::defaultStringLength(255);
+        Schema::defaultStringLength(195);
         Date::use(CarbonImmutable::class);
 
         DB::prohibitDestructiveCommands(

@@ -27,5 +27,12 @@ class DatabaseSeeder extends Seeder
             'password' => bcrypt('RootPassword'),
             'role' => 'admin',
         ]);
+        User::create([
+            'name' => 'Student',
+            'email' => 'student@ttysi.com',
+            'login' => 123456789,
+            'password' => bcrypt('RootPassword'),
+            'role' => 'student',
+        ]);
     }
 }

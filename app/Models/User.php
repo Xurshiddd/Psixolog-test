@@ -70,4 +70,8 @@ class User extends Authenticatable
     {
         return $this->hasMany(SolveTest::class);
     }
+    public function usersTestsResults()
+    {
+        return $this->belongsToMany(Module::class, 'users_tests_results', 'user_id', 'module_id')->withPivot('result_fake', 'result_real');
+    }
 }
