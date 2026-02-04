@@ -12,6 +12,8 @@ class SolveTest extends Model
         'test_id',
         'test_option_id',
         'answer',
+        'consequence_fake',
+        'consequence_real',
     ];
 
     public function user()

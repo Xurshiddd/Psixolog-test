@@ -18,7 +18,7 @@ return new class extends Migration
             $table->foreignId('test_id')->constrained()->cascadeOnDelete();
             $table->foreignId('test_option_id')->nullable()->constrained()->cascadeOnDelete();
             $table->text('answer')->nullable();
-            $table->text('consequence_fake');
+            $table->text('consequence_fake')->nullable();
             $table->text('consequence_real')->nullable();
             $table->timestamps();
         });
