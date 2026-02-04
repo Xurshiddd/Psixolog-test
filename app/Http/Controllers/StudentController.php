@@ -1,11 +1,13 @@
 <?php
 
 namespace App\Http\Controllers;
-use Illuminate\Http\Request;
+use App\Http\Requests\SolveTestRequest;
 use App\Models\Module;
+use App\Services\StudentTestServices;
 
 class StudentController extends Controller
 {
+    public function __construct(private StudentTestServices $studentTestServices) {}
     public function index()
     {
         return inertia(
@@ -24,6 +26,20 @@ class StudentController extends Controller
 
         return inertia('Student/TakeTest', [
             'module' => $module,
+        ]);
+    }
+
+    public function submitTest(SolveTestRequest $request)
+    {
+        dd($request->validated());
+        $results = $this->studentTestServices->processBatchSubmission(
+            auth()->id(),
+            $request->module_id,
+            $request->answers
+        );
+        return redirect()->back()->with([
+            'success' => 'Test muvaffaqiyatli topshirildi!',
+            'results' => $results,
         ]);
     }
 }

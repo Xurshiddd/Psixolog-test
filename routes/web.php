@@ -50,6 +50,7 @@ Route::middleware(['auth', 'admin'])->group(function () {
 Route::middleware('auth')->group(function () {
     Route::get('/student/index', [StudentController::class, 'index'])->name('student_test_index');
     Route::get('/test/take/{moduleId}', [StudentController::class, 'takeTest'])->name('student_test_take');
+    Route::post('/student/test/solve', [StudentController::class, 'submitTest'])->name('student_test_solve');
 });
 
 require __DIR__ . '/settings.php';
