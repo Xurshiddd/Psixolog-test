@@ -42,8 +42,12 @@ class StudentController extends Controller
 
     public function submitTest(SolveTestRequest $request)
     {
+        $user = auth()->user();
+        if ($user->usersTestsResults()->where('module_id', $request->module_id)->exists()) {
+            return redirect()->back()->with('error', 'You have already submitted this test.');
+        }
         $results = $this->studentTestServices->processBatchSubmission(
-            auth()->id(),
+            $user->id,
             $request->module_id,
             $request->answers
         );
