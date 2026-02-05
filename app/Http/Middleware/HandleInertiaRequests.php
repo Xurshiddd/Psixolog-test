@@ -26,13 +26,7 @@ class HandleInertiaRequests extends Middleware
         return parent::version($request);
     }
 
-    /**
-     * Define the props that are shared by default.
-     *
-     * @see https://inertiajs.com/shared-data
-     *
-     * @return array<string, mixed>
-     */
+
     public function share(Request $request): array
     {
         return array_merge(parent::share($request), [
@@ -40,8 +34,13 @@ class HandleInertiaRequests extends Middleware
             'auth' => [
                 'user' => $request->user(),
             ],
-            'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
-            'locale' => fn () => app()->getLocale(),
+            'sidebarOpen' => !$request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+            'locale' => fn() => app()->getLocale(),
+            'flash' => [
+                'status' => fn() => $request->session()->get('status'),
+                'message' => fn() => $request->session()->get('message'),
+                'results' => fn() => $request->session()->get('results'),
+            ],
         ]);
     }
 }

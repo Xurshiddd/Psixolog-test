@@ -83,14 +83,17 @@ const progress = computed(() => {
 })
 
 // Inertia flash results (Laravel back()->with('results', ...))
+const flash = computed(() => (page.props.flash || {}) as any)
+
 const results = computed<Record<number, ResultItem> | null>(() => {
-  // @ts-ignore
-  return (page.props.flash?.results ?? page.props.results ?? null) as any
+  return flash.value.results ?? null
 })
 
-watch(results, (val) => {
-  if (val) showResults.value = true
-})
+watch(() => flash.value, (val) => {
+  if (val?.status === 'success' || val?.results) {
+    showResults.value = true
+  }
+}, { deep: true, immediate: true })
 
 // -------------------- Helpers --------------------
 const isAnswered = (test: Test) => {
@@ -247,7 +250,7 @@ if (tests.value[0]) initIfMissing(tests.value[0])
 
       <!-- Results -->
       <div
-        v-if="showResults && results"
+        v-if="showResults && (results || flash.status === 'success')"
         class="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 shadow-sm p-6"
       >
         <div class="flex items-start justify-between gap-4">
@@ -258,6 +261,9 @@ if (tests.value[0]) initIfMissing(tests.value[0])
             <p class="text-sm text-emerald-800/70 dark:text-emerald-200/70 mt-1">
               consequence_real ni keyin psixolog beradi.
             </p>
+            <div v-if="flash.message" class="text-sm font-medium text-emerald-700 dark:text-emerald-300 mt-2">
+              {{ flash.message }}
+            </div>
           </div>
 
           <button
@@ -268,7 +274,7 @@ if (tests.value[0]) initIfMissing(tests.value[0])
           </button>
         </div>
 
-        <div class="mt-4 space-y-3">
+        <div v-if="results" class="mt-4 space-y-3">
           <div
             v-for="(t, idx) in tests"
             :key="t.id"

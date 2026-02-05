@@ -31,15 +31,11 @@ class StudentController extends Controller
 
     public function submitTest(SolveTestRequest $request)
     {
-        dd($request->validated());
         $results = $this->studentTestServices->processBatchSubmission(
             auth()->id(),
             $request->module_id,
             $request->answers
         );
-        return redirect()->back()->with([
-            'success' => 'Test muvaffaqiyatli topshirildi!',
-            'results' => $results,
-        ]);
+        return redirect()->back()->with($results);
     }
 }
