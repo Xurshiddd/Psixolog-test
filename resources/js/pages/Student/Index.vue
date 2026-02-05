@@ -3,7 +3,7 @@ import { Head } from '@inertiajs/vue3';
 import AppStudentLayout from '@/layouts/AppStudentLayout.vue';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-const props = defineProps<{ tests: any; testsCount: number; modules: any; modulesCount: number }>();
+const props = defineProps<{ solvedTestsCount: number; modulesCount: number }>();
 
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -27,8 +27,8 @@ const breadcrumbs: BreadcrumbItem[] = [
                             </svg>
                         </div>
                         <div>
-                            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Jami Testlar</p>
-                            <h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ props.testsCount }}</h3>
+                            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Jami yechilgan modullar soni</p>
+                            <h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ props.solvedTestsCount }}</h3>
                         </div>
                     </div>
                 </div>

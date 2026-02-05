@@ -7,14 +7,16 @@ use App\Services\StudentTestServices;
 
 class StudentController extends Controller
 {
-    public function __construct(private StudentTestServices $studentTestServices) {}
+    public function __construct(private StudentTestServices $studentTestServices)
+    {
+    }
     public function index()
     {
         return inertia(
             'Student/Tests',
-            [
-                'modules' => Module::with('tests.options')->where('is_active', true)->get(),
-            ]
+        [
+            'modules' => Module::with('tests.options')->where('is_active', true)->get(),
+        ]
         );
     }
 
@@ -24,8 +26,17 @@ class StudentController extends Controller
             'tests.options'
         ])->findOrFail($moduleId);
 
+        // Check if user has already solved this module
+        $existingResult = $module->usersTestsResults()
+            ->where('user_id', auth()->id())
+            ->first();
+
         return inertia('Student/TakeTest', [
             'module' => $module,
+            'existingResult' => $existingResult ? [
+                'result_fake' => $existingResult->pivot->result_fake,
+                'result_real' => $existingResult->pivot->result_real,
+            ] : null,
         ]);
     }
 

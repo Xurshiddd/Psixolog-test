@@ -27,7 +27,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                             </svg>
                         </div>
                         <div>
-                            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Jami Testlar</p>
+                            <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Jami test savollari</p>
                             <h3 class="text-2xl font-bold text-slate-900 dark:text-slate-100">{{ props.testsCount }}</h3>
                         </div>
                     </div>

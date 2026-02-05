@@ -32,29 +32,33 @@ type ResultItem = {
   consequence_fake: string
 }
 
-const props = defineProps<{ module: Module }>()
+const { module, existingResult } = defineProps<{
+  module: Module,
+  existingResult?: {
+    result_fake: string
+    result_real?: string | null
+  } | null
+}>()
+
 const page = usePage()
 
 const breadcrumbs: BreadcrumbItem[] = [
   { title: 'Student Dashboard', href: dashboard().url },
   { title: 'Tests', href: student_test_index().url },
-  { title: props.module.name, href: '#' },
+  { title: module.name, href: '#' },
 ]
 
 // -------------------- State --------------------
 const currentQuestionIndex = ref(0)
 
-// answers format:
-// single: { [testId]: number }  -> option_id
-// multi : { [testId]: number[] }-> option_id[]
-// text  : { [testId]: string }  -> answer text
+
 const answers = ref<Record<number, number | number[] | string | null>>({})
 
 const submitting = ref(false)
 const showResults = ref(false)
 
 // -------------------- Computed --------------------
-const tests = computed(() => props.module.tests || [])
+const tests = computed(() => module.tests || [])
 const totalQuestions = computed(() => tests.value.length)
 
 const currentTest = computed<Test | null>(() => {
@@ -120,11 +124,12 @@ const goToQuestion = (index: number) => {
   const t = tests.value[index]
   if (t) initIfMissing(t)
 }
-const echoType = (type: string) => {
+const echoType = (type: TestType) => {
   if (type === 'single') return 'Faqat 1 ta tanlov'
   if (type === 'multi') return 'Bir nechta tanlov qilish mumkin'
-  if (type === 'text') return 'Faqat matn yozish mumkin'
+  return 'Faqat matn yozish mumkin'
 }
+
 const nextQuestion = () => {
   if (currentQuestionIndex.value < totalQuestions.value - 1) {
     goToQuestion(currentQuestionIndex.value + 1)
@@ -164,12 +169,7 @@ const submitTest = () => {
     payload[t.id] = answers.value[t.id] ?? (t.type === 'multi' ? [] : null)
   }
 
-  router.post(
-    '/student/test/solve',
-    { 
-      module_id: props.module.id,
-      answers: payload 
-    },
+  router.post('/student/test/solve', { module_id: module.id, answers: payload },
     {
       preserveScroll: true,
       onFinish: () => {
@@ -250,7 +250,7 @@ if (tests.value[0]) initIfMissing(tests.value[0])
 
       <!-- Results -->
       <div
-        v-if="showResults && (results || flash.status === 'success')"
+        v-if="showResults && (results || flash.status === 'success' || existingResult)"
         class="rounded-2xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-900/20 shadow-sm p-6"
       >
         <div class="flex items-start justify-between gap-4">
@@ -263,6 +263,13 @@ if (tests.value[0]) initIfMissing(tests.value[0])
             </p>
             <div v-if="flash.message" class="text-sm font-medium text-emerald-700 dark:text-emerald-300 mt-2">
               {{ flash.message }}
+            </div>
+            
+            <div v-if="existingResult" class="mt-4 p-4 rounded-xl bg-emerald-100/50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700">
+               <h4 class="text-lg font-bold text-emerald-900 dark:text-emerald-100 mb-2">Sizning Natijangiz:</h4>
+               <p class="text-emerald-800 dark:text-emerald-200 text-lg">
+                 {{ existingResult.result_fake }}
+               </p>
             </div>
           </div>
 
@@ -301,47 +308,68 @@ if (tests.value[0]) initIfMissing(tests.value[0])
 
       <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
         <!-- Sidebar -->
-        <div class="lg:col-span-1">
-          <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-4">
-            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Savollar</h3>
+<div class="lg:col-span-1">
+  <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-4">
+    <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Savollar</h3>
 
-            <div class="grid grid-cols-5 lg:grid-cols-4 gap-2">
-              <button
-                v-for="(t, index) in tests"
-                :key="t.id"
-                @click="goToQuestion(index)"
-                class="aspect-square rounded-lg text-sm font-medium transition-all"
-                :class="{
-                  'bg-blue-600 text-white': currentQuestionIndex === index,
-                  'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400':
-                    currentQuestionIndex !== index && isAnswered(t),
-                  'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300':
-                    currentQuestionIndex !== index && !isAnswered(t),
-                }"
-              >
-                {{ index + 1 }}
-              </button>
-            </div>
+    <div v-if="!existingResult" class="grid grid-cols-5 lg:grid-cols-4 gap-2">
+      <button
+        v-for="(t, index) in tests"
+        :key="t.id"
+        @click="goToQuestion(index)"
+        class="aspect-square rounded-lg text-sm font-medium transition-all"
+        :class="{
+          'bg-blue-600 text-white': currentQuestionIndex === index,
+          'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400':
+            currentQuestionIndex !== index && isAnswered(t),
+          'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300':
+            currentQuestionIndex !== index && !isAnswered(t),
+        }"
+      >
+        {{ index + 1 }}
+      </button>
+    </div>
 
-            <div class="mt-4 text-xs text-slate-500 dark:text-slate-400 space-y-1">
-              <div class="flex items-center gap-2">
-                <span class="inline-block w-3 h-3 rounded bg-blue-600" /> <span>Hozirgi savol</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="inline-block w-3 h-3 rounded bg-emerald-200 dark:bg-emerald-900/30" /> <span>Javob berilgan</span>
-              </div>
-              <div class="flex items-center gap-2">
-                <span class="inline-block w-3 h-3 rounded bg-slate-200 dark:bg-slate-700" /> <span>Javobsiz</span>
-              </div>
-            </div>
-          </div>
-        </div>
+    <div v-else class="text-sm text-slate-500 dark:text-slate-400">
+      Test yakunlangan.
+    </div>
+  </div>
+</div>
+
 
         <!-- Main -->
         <div class="lg:col-span-3">
+          
+          <!-- Existing Result View -->
+          <div
+             v-if="existingResult"
+             class="rounded-2xl border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 shadow-sm p-8 text-center"
+          >
+             <div class="w-16 h-16 mx-auto bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-8 h-8 text-blue-600 dark:text-blue-300">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+             </div>
+             
+             <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">Test Yakunlangan</h2>
+             <p class="text-slate-600 dark:text-slate-400 mb-6">
+               Siz ushbu testni muvaffaqiyatli yakunlagansiz.
+             </p>
+             
+             <button
+                @click="showResults = true"
+                class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
+             >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+                </svg>
+                Natijani ko‘rish
+             </button>
+          </div>
+
           <!-- Has test -->
           <div
-            v-if="currentTest"
+            v-else-if="currentTest"
             class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-6"
           >
             <!-- Question -->

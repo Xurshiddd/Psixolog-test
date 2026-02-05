@@ -18,9 +18,8 @@ Route::get('/', function () {
 Route::get('dashboard', function () {
     if (auth()->user()->role === 'student') {
         return Inertia::render("Student/Index", [
-            'testsCount' => Test::count(),
-            'modulesCount' => Module::count(),
-            'modules' => Module::paginate(10),
+            'solvedTestsCount' => auth()->user()->usersTestsResults()->count(),
+            'modulesCount' => Module::where('is_active', true)->count()
         ]);
     }
     return Inertia::render('Dashboard', [
