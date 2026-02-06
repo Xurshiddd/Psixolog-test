@@ -11,9 +11,9 @@ class AdminStudentController extends Controller
     public function index()
     {
         $students = User::where('role', 'student')
-            ->with(['group', 'speciality'])
+            ->with(['group', 'speciality', 'usersTestsResults'])
             ->latest()
-            ->get();
+            ->paginate(10);
 
         return Inertia::render('Admin/Student/Index', [
             'students' => $students

@@ -19,7 +19,7 @@ createInertiaApp({
     setup({ el, App, props, plugin }) {
         // Determine initial locale from server-injected Inertia props (fallback to 'uz')
         const initialLocale = (props as any)?.initialPage?.props?.locale ?? 'uz'
-
+        
         createApp({ render: () => h(App, props) })
             .use(plugin)
             .use(i18nVue, {

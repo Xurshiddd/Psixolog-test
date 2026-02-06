@@ -9,6 +9,9 @@ use App\Http\Controllers\HemisAuthController;
 use App\Models\Module;
 use App\Models\Test;
 use App\Http\Controllers\AdminStudentController;
+use App\Http\Controllers\Chat\StartConversationController;
+use App\Http\Controllers\Chat\ConversationController;
+use App\Http\Controllers\Chat\MessageController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -57,5 +60,13 @@ Route::middleware(['auth', 'student'])->group(function () {
     Route::get('/test/take/{moduleId}', [StudentController::class , 'takeTest'])->name('student_test_take');
     Route::post('/student/test/solve', [StudentController::class , 'submitTest'])->name('student_test_solve');
 });
+Route::middleware(['auth'])->group(function () {
+    Route::get('/chat', [ConversationController::class, 'index'])->name('chat.index');
+    Route::get('/chat/{conversation}', [ConversationController::class, 'show'])->name('chat.show');
 
+    Route::post('/chat/{conversation}/messages', [MessageController::class, 'store'])->name('chat.messages.store');
+    Route::post('/chat/{conversation}/read', [ConversationController::class, 'markRead'])->name('chat.read');
+    Route::post('/chat/start', StartConversationController::class)->name('chat.start');
+
+});
 require __DIR__ . '/settings.php';

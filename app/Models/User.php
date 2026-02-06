@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -73,5 +72,12 @@ class User extends Authenticatable
     public function usersTestsResults()
     {
         return $this->belongsToMany(Module::class, 'users_tests_results', 'user_id', 'module_id')->withPivot('result_fake', 'result_real');
+    }
+    // app/Models/User.php
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class)
+            ->withPivot(['last_read_at'])
+            ->withTimestamps();
     }
 }

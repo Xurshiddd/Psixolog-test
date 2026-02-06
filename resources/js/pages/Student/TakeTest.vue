@@ -256,10 +256,10 @@ if (tests.value[0]) initIfMissing(tests.value[0])
         <div class="flex items-start justify-between gap-4">
           <div>
             <h3 class="text-xl font-semibold text-emerald-900 dark:text-emerald-200">
-              Natijalar (consequence_fake)
+              Natijalar:
             </h3>
             <p class="text-sm text-emerald-800/70 dark:text-emerald-200/70 mt-1">
-              consequence_real ni keyin psixolog beradi.
+              Asosiy dianostika psiholog tomonidan amalga oshirildi.
             </p>
             <div v-if="flash.message" class="text-sm font-medium text-emerald-700 dark:text-emerald-300 mt-2">
               {{ flash.message }}
