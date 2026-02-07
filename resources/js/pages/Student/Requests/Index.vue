@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onMounted, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import { Head, router, usePage } from '@inertiajs/vue3'
 import AppStudentLayout from '@/layouts/AppStudentLayout.vue'
 
@@ -33,7 +33,9 @@ const props = defineProps<{
   activeConversation: ActiveConversation
   messages: Message[]
 }>()
+
 const localMessages = ref<Message[]>([...props.messages])
+
 const messagesEl = ref<HTMLElement | null>(null)
 const autoScrollEnabled = ref(true)
 
@@ -65,7 +67,14 @@ const sending = ref(false)
 const activeId = computed(() => props.activeConversation?.id ?? null)
 
 function openConversation(id: number) {
-  router.get('/student/requests', { conversation: id }, { preserveScroll: true })
+  router.get(
+    '/student/requests',
+    { conversation: id },
+    {
+      preserveScroll: true,
+      preserveState: false, // ✅ MUHIM: props/messages yangilansin
+    }
+  )
 }
 
 function createConversation(channel: 'admin' | 'psiholog') {
@@ -77,7 +86,7 @@ async function sendMessage() {
   const body = messageBody.value.trim()
   if (!body) return
 
-  // ✅ optimistic message (temp id)
+  // optimistic (xohlasangiz qoldiring)
   const tempId = Date.now() * -1
   localMessages.value.push({
     id: tempId,
@@ -96,21 +105,22 @@ async function sendMessage() {
     onFinish: () => {
       sending.value = false
     },
-    onSuccess: () => {
-      localMessages.value = [...props.messages]
-    },
     onError: () => {
       localMessages.value = localMessages.value.filter(m => m.id !== tempId)
-    }
+    },
   })
 }
 
-let channelRef: any = null 
+let channelRef: any = null
+
 function subscribe(conversationId: number) {
   if (!window.Echo) return
 
   channelRef = window.Echo.private(`conversations.${conversationId}`)
     .listen('.message.created', (e: any) => {
+      // ✅ optimistic bo‘lsa: server kelganda tempId qolib ketmasin (ixtiyoriy)
+      // localMessages.value = localMessages.value.filter(m => m.id > 0)
+
       if (!localMessages.value.some(m => m.id === e.id)) {
         localMessages.value.push(e)
       }
@@ -127,63 +137,81 @@ function unsubscribe(conversationId: number) {
   channelRef = null
 }
 
-
 const typingName = ref('')
 const typingUntil = ref(0)
 
-watch(
-  () => props.messages,
-  (v) => {
-    localMessages.value = [...v]
-    autoScrollEnabled.value = true
-    scrollToBottom(true)
-  },
-  { immediate: true }
-)
-watch(
-  () => localMessages.value.length,
-  () => {
-    scrollToBottom(false)
-  }
-)
-
-onBeforeUnmount(() => {
-  if (activeId.value) unsubscribe(activeId.value)
-})
 const canSend = computed(() => !!activeId.value && messageBody.value.trim().length > 0 && !sending.value)
-let typingTimer: number | null = null
 
+let typingTimer: number | null = null
 function whisperTyping() {
   if (!activeId.value || !channelRef) return
   channelRef.whisper('typing', { name: 'Siz yozayapsiz...' })
 
   if (typingTimer) window.clearTimeout(typingTimer)
-  typingTimer = window.setTimeout(() => {
-    // typing tugadi
-  }, 800)
+  typingTimer = window.setTimeout(() => {}, 800)
 }
 
-// UX: conversation o‘zgarsa inputni tozalab qo‘yamiz
-watch(activeId, (id, oldId) => {
-  if (oldId) unsubscribe(oldId)
-  if (id) subscribe(id)
-  localMessages.value = [...props.messages]
-  messageBody.value = ''
-  autoScrollEnabled.value = true
-  scrollToBottom(true)
-})
+/**
+ * ✅ Props’dan kelgan messages — serverdan qaytgan “haqiqiy” list.
+ * localMessages’ni props bilan sync qilamiz, keyin scroll.
+ */
+watch(
+  () => props.messages,
+  async (v) => {
+    localMessages.value = [...v]
+    autoScrollEnabled.value = true
+    await nextTick()
+    scrollToBottom(true)
+  },
+  { immediate: true }
+)
 
+/**
+ * ✅ localMessages o‘zgarsa (realtime push) -> pastga tushsin (agar user pastga yaqin bo‘lsa)
+ */
+watch(
+  () => localMessages.value.length,
+  async () => {
+    await nextTick()
+    scrollToBottom(false)
+  }
+)
+
+/**
+ * ✅ Bitta watch: conversation change:
+ * - old kanal leave
+ * - new kanal subscribe
+ * - showChat true (mobile)
+ * - input reset
+ * - scroll (DOM render bo‘lgach)
+ */
 const showChat = ref(!!activeId.value)
 
-watch(activeId, (id) => {
-  if (id) showChat.value = true
-})
+watch(
+  activeId,
+  async (id, oldId) => {
+    if (oldId) unsubscribe(oldId)
+    if (id) subscribe(id)
+
+    showChat.value = !!id
+    messageBody.value = ''
+    autoScrollEnabled.value = true
+
+    await nextTick()
+    scrollToBottom(true)
+  },
+  { immediate: true }
+)
 
 function goBackToList() {
   showChat.value = false
 }
 
+onBeforeUnmount(() => {
+  if (activeId.value) unsubscribe(activeId.value)
+})
 </script>
+
 
 <template>
   <Head title="Murojaatlar" />

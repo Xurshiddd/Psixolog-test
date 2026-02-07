@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch, onBeforeUnmount } from 'vue'
+import { computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
 import { Head, router, usePage } from '@inertiajs/vue3'
 import AppLayout from '@/layouts/AppLayout.vue'
 import { BreadcrumbItem } from '@/types'
@@ -55,13 +55,6 @@ function onScrollMessages() {
   autoScrollEnabled.value = isNearBottom(el)
 }
 
-watch(
-  () => localMessages.value.length,
-  () => {
-    scrollToBottom(false)
-  }
-)
-
 // ✅ route() bo'lmasa ham ishlashi uchun URL base
 const baseUrl = computed(() => (props.channel === 'admin' ? '/admin/requests' : '/psiholog/requests'))
 
@@ -69,7 +62,10 @@ function openStudent(studentId: number) {
   router.get(
     baseUrl.value,
     { student: studentId, q: search.value || undefined },
-    { preserveScroll: true } // ✅ preserveState olib tashlandi
+    {
+      preserveScroll: true,
+      preserveState: false, // ✅ MUHIM: props/messages yangilansin
+    }
   )
 }
 
@@ -77,7 +73,7 @@ function doSearch() {
   router.get(
     baseUrl.value,
     { q: search.value || undefined, student: props.activeStudent?.id },
-    { preserveScroll: true }
+    { preserveScroll: true, preserveState: false }
   )
 }
 
@@ -101,7 +97,6 @@ function sendMessage() {
 }
 
 const canSend = computed(() => !!props.activeConversation && messageBody.value.trim().length > 0 && !sending.value)
-
 const typingName = computed(() => props.activeStudent?.name ?? 'Talaba')
 
 // ======================
@@ -114,9 +109,11 @@ function subscribe(conversationId: number) {
   if (!window.Echo) return
 
   channelRef = window.Echo.private(`conversations.${conversationId}`)
-    .listen('.message.created', (e: any) => {
-      if (!localMessages.value.some((m) => m.id === e.id)) {
+    .listen('.message.created', async (e: any) => {
+      if (!localMessages.value.some(m => m.id === e.id)) {
         localMessages.value.push(e)
+        await nextTick()
+        scrollToBottom(false)
       }
     })
     .listenForWhisper('typing', () => {
@@ -126,22 +123,46 @@ function subscribe(conversationId: number) {
 
 function unsubscribe(conversationId: number) {
   if (!window.Echo) return
-  window.Echo.leave(`conversations.${conversationId}`) // ✅ to'g'ri leave
+  window.Echo.leave(`conversations.${conversationId}`)
   channelRef = null
 }
 
 const activeConversationId = computed(() => props.activeConversation?.id ?? null)
-watch(() => localMessages.value.length, () => scrollToBottom(false))
 
+// ✅ props.messages kelganda localMessages sync + scroll
 watch(
   () => props.messages,
-  (v) => {
+  async (v) => {
+    // merge/sort (sizda bor edi)
     const map = new Map<number, Message>()
     for (const m of localMessages.value) map.set(m.id, m)
     for (const m of v) map.set(m.id, m)
     localMessages.value = Array.from(map.values()).sort((a, b) => a.id - b.id)
-    scrollToBottom(false)
-  }
+
+    autoScrollEnabled.value = true
+    await nextTick()
+    scrollToBottom(true)
+  },
+  { immediate: true }
+)
+
+// ✅ conversation change: unsubscribe/subscribe + mobile showChat + scroll
+const showChat = ref(!!activeConversationId.value)
+
+watch(
+  activeConversationId,
+  async (id, oldId) => {
+    if (oldId) unsubscribe(oldId)
+    if (id) subscribe(id)
+
+    showChat.value = !!id
+    messageBody.value = ''
+    autoScrollEnabled.value = true
+
+    await nextTick()
+    scrollToBottom(true)
+  },
+  { immediate: true }
 )
 
 onBeforeUnmount(() => {
@@ -160,17 +181,12 @@ function whisperTyping() {
   if (typingTimer) window.clearTimeout(typingTimer)
   typingTimer = window.setTimeout(() => {}, 800)
 }
-const showChat = ref(!!activeConversationId.value)
-
-watch(activeConversationId, (id) => {
-  if (id) showChat.value = true
-})
 
 function goBackToList() {
   showChat.value = false
 }
-
 </script>
+
 
 
 <template>
