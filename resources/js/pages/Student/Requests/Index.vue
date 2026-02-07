@@ -110,17 +110,12 @@ function subscribe(conversationId: number) {
   if (!window.Echo) return
 
   channelRef = window.Echo.private(`conversations.${conversationId}`)
-    .listen('.App\\Events\\MessageCreated', (e:any) => console.log('got', e))
     .listen('.message.created', (e: any) => {
-      console.log(e);
-      
       if (!localMessages.value.some(m => m.id === e.id)) {
         localMessages.value.push(e)
       }
     })
     .listenForWhisper('typing', (e: any) => {
-      console.log(e);
-      
       typingName.value = e?.name ?? ''
       typingUntil.value = Date.now() + 1500
     })

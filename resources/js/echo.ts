@@ -1,6 +1,8 @@
 import Echo from 'laravel-echo'
 import Pusher from 'pusher-js'
 
+const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
+
 declare global {
   interface Window {
     Echo: Echo<any>
@@ -18,4 +20,11 @@ window.Echo = new Echo({
   wssPort: Number(import.meta.env.VITE_REVERB_PORT ?? 8080),
   forceTLS: (import.meta.env.VITE_REVERB_SCHEME ?? 'http') === 'https',
   enabledTransports: ['ws', 'wss'],
+  authEndpoint: '/broadcasting/auth',
+  auth: {
+    headers: {
+      ...(csrf ? { 'X-CSRF-TOKEN': csrf } : {}),
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+  },
 })
