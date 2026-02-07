@@ -30,7 +30,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Murojaatlar',
-        href: '/chat',
+        href: '/student/requests',
         icon: MessageSquare,
     },
 ];

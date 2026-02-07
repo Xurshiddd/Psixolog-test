@@ -12,8 +12,22 @@ return new class extends Migration
     public function up(): void {
     Schema::create('conversations', function (Blueprint $table) {
       $table->id();
-      $table->string('title')->nullable();
-      $table->timestamps();
+     $table->foreignId('student_id')->constrained('users')->cascadeOnDelete();
+
+            // "admin" yoki "psychologist"
+            $table->string('channel', 20);
+
+            // keyinchalik biriktiriladigan staff user (admin/psixolog)
+            $table->foreignId('staff_id')->nullable()->constrained('users')->nullOnDelete();
+
+            $table->string('subject')->nullable(); // optional
+            $table->string('status', 20)->default('open'); // open/closed
+
+            $table->timestamp('last_message_at')->nullable();
+            $table->timestamps();
+
+            $table->index(['student_id', 'channel']);
+            $table->index(['status', 'last_message_at']);
     });
 
     Schema::create('conversation_user', function (Blueprint $table) {

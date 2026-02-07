@@ -9,9 +9,10 @@ use App\Http\Controllers\HemisAuthController;
 use App\Models\Module;
 use App\Models\Test;
 use App\Http\Controllers\AdminStudentController;
-use App\Http\Controllers\Chat\StartConversationController;
-use App\Http\Controllers\Chat\ConversationController;
-use App\Http\Controllers\Chat\MessageController;
+use App\Http\Controllers\Student\ConversationController;
+use App\Http\Controllers\Student\MessageController;
+use App\Http\Controllers\Staff\RequestsController;
+use App\Http\Controllers\Staff\MessagesController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -60,13 +61,24 @@ Route::middleware(['auth', 'student'])->group(function () {
     Route::get('/test/take/{moduleId}', [StudentController::class , 'takeTest'])->name('student_test_take');
     Route::post('/student/test/solve', [StudentController::class , 'submitTest'])->name('student_test_solve');
 });
-Route::middleware(['auth'])->group(function () {
-    Route::get('/chat', [ConversationController::class, 'index'])->name('chat.index');
-    Route::get('/chat/{conversation}', [ConversationController::class, 'show'])->name('chat.show');
+Route::middleware(['auth'])->prefix('student')->name('student.')->group(function () {
+    Route::get('/requests', [ConversationController::class, 'index'])->name('requests.index');
+    Route::post('/requests', [ConversationController::class, 'store'])->name('requests.store');
 
-    Route::post('/chat/{conversation}/messages', [MessageController::class, 'store'])->name('chat.messages.store');
-    Route::post('/chat/{conversation}/read', [ConversationController::class, 'markRead'])->name('chat.read');
-    Route::post('/chat/start', StartConversationController::class)->name('chat.start');
+    Route::post('/requests/{conversation}/messages', [MessageController::class, 'store'])
+        ->name('requests.messages.store');
+});
+Route::middleware(['auth'])->group(function () {
+
+    Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
+        Route::get('/requests', [RequestsController::class, 'adminIndex'])->name('requests.index');
+        Route::post('/requests/{conversation}/messages', [MessagesController::class, 'adminStore'])->name('requests.messages.store');
+    });
+
+    Route::prefix('psiholog')->name('psiholog.')->middleware('psiholog')->group(function () {
+        Route::get('/requests', [RequestsController::class, 'psihologIndex'])->name('requests.index');
+        Route::post('/requests/{conversation}/messages', [MessagesController::class, 'psihologStore'])->name('requests.messages.store');
+    });
 
 });
 require __DIR__ . '/settings.php';

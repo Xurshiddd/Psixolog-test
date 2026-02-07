@@ -5,6 +5,7 @@ import { createApp, h } from 'vue';
 import '../css/app.css';
 import { initializeTheme } from './composables/useAppearance';
 import { i18nVue } from 'laravel-vue-i18n'
+import './echo'
 
 const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
 

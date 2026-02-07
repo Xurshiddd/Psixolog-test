@@ -48,4 +48,5 @@ const breadcrumbs: BreadcrumbItem[] = [
             </div>
         </div>
     </AppStudentLayout>
+    <StudentChatLauncher />
 </template>

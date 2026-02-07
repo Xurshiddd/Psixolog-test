@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
+import { Link, usePage } from '@inertiajs/vue3';
 import { BookOpen, MessageSquare, LayoutGrid, Users } from 'lucide-vue-next';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
+import { computed } from 'vue';
 import {
     Sidebar,
     SidebarContent,
@@ -17,6 +18,8 @@ import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import AppLogo from './AppLogo.vue';
 
+const page = usePage();
+const role = computed(() => (page.props.auth as any)?.user?.role as string)
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
@@ -39,7 +42,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Murojaatlar',
-        href: '/chat',
+        href: role.value === 'admin' ? '/admin/requests' : 'psiholog/requests',
         icon: MessageSquare,
     },
 ];

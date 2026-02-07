@@ -1,17 +1,35 @@
-export type ChatUser = { id: number; name: string }
-
-export type ChatMessage = {
-  id: number | string
-  conversation_id: number
-  body: string
-  created_at: string
-  sender: ChatUser
+export interface ChatUser {
+  id: number
+  name: string
+  picture?: string | null
 }
 
-export type ConversationListItem = {
+export interface ChatMessage {
   id: number
-  title: string | null
+  conversation_id: number
+  sender_id: number
+  body: string
+  created_at: string
+  updated_at: string
+  sender?: ChatUser
+  is_sending?: boolean // For optimistic UI
+}
+
+export interface ConversationListItem {
+  id: number
+  title: string
+  avatar?: string | null
+  subtitle?: string
+  last_message_at?: string
+  unread: number
+  user_id?: number // The other participant's ID
+}
+
+export interface Conversation {
+  id: number
+  title?: string
   users: ChatUser[]
-  last_message: null | { body: string; created_at: string; sender_id: number }
-  last_read_at: string | null
+  pivot?: {
+    last_read_at: string | null
+  }
 }
