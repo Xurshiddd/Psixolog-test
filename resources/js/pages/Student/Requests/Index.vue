@@ -33,19 +33,31 @@ const props = defineProps<{
   activeConversation: ActiveConversation
   messages: Message[]
 }>()
-
+// scroll
 const localMessages = ref<Message[]>([...props.messages])
-
-const messagesEl = ref<HTMLElement | null>(null)
 const autoScrollEnabled = ref(true)
+const messagesElDesktop = ref<HTMLElement | null>(null)
+const messagesElMobile = ref<HTMLElement | null>(null)
+const messagesElActive = computed(() => {
+  const d = messagesElDesktop.value
+  const m = messagesElMobile.value
+
+  if (m && m.offsetParent !== null) return m
+  if (d && d.offsetParent !== null) return d
+
+  // fallback
+  return m ?? d ?? null
+})
 
 function isNearBottom(el: HTMLElement, threshold = 120) {
   return el.scrollHeight - el.scrollTop - el.clientHeight < threshold
 }
 
-function scrollToBottom(force = false) {
+async function scrollToBottom(force = false) {
+  await nextTick()
+  await nextTick()
   requestAnimationFrame(() => {
-    const el = messagesEl.value
+    const el = messagesElActive.value
     if (!el) return
     if (!force && !autoScrollEnabled.value) return
     el.scrollTop = el.scrollHeight
@@ -53,7 +65,7 @@ function scrollToBottom(force = false) {
 }
 
 function onScrollMessages() {
-  const el = messagesEl.value
+  const el = messagesElActive.value
   if (!el) return
   autoScrollEnabled.value = isNearBottom(el)
 }
@@ -65,7 +77,11 @@ const messageBody = ref('')
 const sending = ref(false)
 
 const activeId = computed(() => props.activeConversation?.id ?? null)
+// scrol
 
+watch(() => localMessages.value.length, () => {
+  scrollToBottom(false)
+})
 function openConversation(id: number) {
   router.get(
     '/student/requests',
@@ -78,6 +94,9 @@ function openConversation(id: number) {
 }
 
 function createConversation(channel: 'admin' | 'psiholog') {
+  if (props.conversations.find((c) => c.channel === channel)) {
+    return
+  }
   router.post('/student/requests', { channel }, { preserveScroll: true })
 }
 
@@ -160,8 +179,7 @@ watch(
   async (v) => {
     localMessages.value = [...v]
     autoScrollEnabled.value = true
-    await nextTick()
-    scrollToBottom(true)
+    await scrollToBottom(true)
   },
   { immediate: true }
 )
@@ -172,8 +190,7 @@ watch(
 watch(
   () => localMessages.value.length,
   async () => {
-    await nextTick()
-    scrollToBottom(false)
+    await scrollToBottom(false)
   }
 )
 
@@ -196,9 +213,7 @@ watch(
     showChat.value = !!id
     messageBody.value = ''
     autoScrollEnabled.value = true
-
-    await nextTick()
-    scrollToBottom(true)
+    await scrollToBottom(true)
   },
   { immediate: true }
 )
@@ -209,6 +224,9 @@ function goBackToList() {
 
 onBeforeUnmount(() => {
   if (activeId.value) unsubscribe(activeId.value)
+})
+watch(showChat, async (v) => {
+  if (v) await scrollToBottom(true)
 })
 </script>
 
@@ -314,7 +332,7 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Messages -->
-          <div ref="messagesEl" @scroll="onScrollMessages" class="h-[calc(100%-120px)] overflow-y-auto p-4">
+          <div ref="messagesElDesktop" @scroll="onScrollMessages" class="h-[calc(100%-120px)] overflow-y-auto p-4 flex flex-col">
             <template v-if="activeConversation">
               <div v-if="localMessages.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
                 Hali xabar yo‘q. Birinchi bo‘lib yozing.
@@ -476,7 +494,7 @@ onBeforeUnmount(() => {
           </div>
 
           <!-- Messages -->
-          <div ref="messagesEl" @scroll="onScrollMessages" class="h-[calc(100%-120px)] overflow-y-auto p-4">
+          <div ref="messagesElMobile" @scroll="onScrollMessages" class="h-[calc(100%-120px)] overflow-y-auto p-4">
             <template v-if="activeConversation">
               <div v-if="localMessages.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
                 Hali xabar yo‘q. Birinchi bo‘lib yozing.

@@ -6,7 +6,7 @@ use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
-class AdminMidleware
+class PsihologMiddleware
 {
     /**
      * Handle an incoming request.
@@ -15,7 +15,7 @@ class AdminMidleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->user()->role !== 'admin') {
+        if (auth()->user()->role !== 'psiholog') {
             return redirect()->route('home')->withErrors('Siz bu yerga kira olmaysiz');
         }
         return $next($request);

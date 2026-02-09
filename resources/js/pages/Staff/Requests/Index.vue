@@ -31,18 +31,31 @@ const meId = computed(() => (page.props.auth as any)?.user?.id as number)
 const search = ref(props.q ?? '')
 const messageBody = ref('')
 const sending = ref(false)
-
+// scroll
 const localMessages = ref<Message[]>([...props.messages])
-const messagesEl = ref<HTMLElement | null>(null)
 const autoScrollEnabled = ref(true)
+const messagesElDesktop = ref<HTMLElement | null>(null)
+const messagesElMobile = ref<HTMLElement | null>(null)
+const messagesElActive = computed(() => {
+  const d = messagesElDesktop.value
+  const m = messagesElMobile.value
+
+  if (m && m.offsetParent !== null) return m
+  if (d && d.offsetParent !== null) return d
+
+  // fallback
+  return m ?? d ?? null
+})
 
 function isNearBottom(el: HTMLElement, threshold = 120) {
   return el.scrollHeight - el.scrollTop - el.clientHeight < threshold
 }
 
-function scrollToBottom(force = false) {
+async function scrollToBottom(force = false) {
+  await nextTick()
+  await nextTick()
   requestAnimationFrame(() => {
-    const el = messagesEl.value
+    const el = messagesElActive.value
     if (!el) return
     if (!force && !autoScrollEnabled.value) return
     el.scrollTop = el.scrollHeight
@@ -50,7 +63,7 @@ function scrollToBottom(force = false) {
 }
 
 function onScrollMessages() {
-  const el = messagesEl.value
+  const el = messagesElActive.value
   if (!el) return
   autoScrollEnabled.value = isNearBottom(el)
 }
@@ -112,8 +125,7 @@ function subscribe(conversationId: number) {
     .listen('.message.created', async (e: any) => {
       if (!localMessages.value.some(m => m.id === e.id)) {
         localMessages.value.push(e)
-        await nextTick()
-        scrollToBottom(false)
+        await scrollToBottom(false)
       }
     })
     .listenForWhisper('typing', () => {
@@ -140,14 +152,21 @@ watch(
     localMessages.value = Array.from(map.values()).sort((a, b) => a.id - b.id)
 
     autoScrollEnabled.value = true
-    await nextTick()
-    scrollToBottom(true)
+    await scrollToBottom(true)
   },
   { immediate: true }
 )
+watch(() => localMessages.value.length, () => {
+  scrollToBottom(false)
+})
+
+
 
 // ✅ conversation change: unsubscribe/subscribe + mobile showChat + scroll
 const showChat = ref(!!activeConversationId.value)
+watch(showChat, async (v) => {
+  if (v) await scrollToBottom(true)
+})
 
 watch(
   activeConversationId,
@@ -159,8 +178,7 @@ watch(
     messageBody.value = ''
     autoScrollEnabled.value = true
 
-    await nextTick()
-    scrollToBottom(true)
+    await scrollToBottom(true)
   },
   { immediate: true }
 )
@@ -245,7 +263,7 @@ function goBackToList() {
         <!-- ===================== -->
         <!-- DESKTOP: CHAT          -->
         <!-- ===================== -->
-        <section class="lg:col-span-9 h-full rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 overflow-hidden hidden lg:block">
+        <section class="lg:col-span-9 h-full rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 overflow-hidden hidden lg:flex lg:flex-col">
           <!-- Header -->
           <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800">
             <div class="min-w-0">
@@ -270,7 +288,7 @@ function goBackToList() {
           </div>
 
           <!-- Messages -->
-          <div ref="messagesEl" @scroll="onScrollMessages" class="h-[calc(100%-120px)] overflow-y-auto p-4">
+          <div ref="messagesElDesktop" @scroll="onScrollMessages" class="flex-1 min-h-0 overflow-y-auto p-4">
             <template v-if="activeStudent">
               <div v-if="localMessages.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
                 Hali xabar yo‘q.
@@ -385,9 +403,10 @@ function goBackToList() {
         <!-- ===================== -->
         <!-- MOBILE: CHAT (showChat=true) -->
         <!-- ===================== -->
-        <section v-else class="h-full rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 overflow-hidden lg:hidden">
+        <section v-else class="h-full rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 overflow-hidden lg:hidden flex flex-col">
+
           <!-- Header with Back -->
-          <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800">
+          <div class="shrink-0 flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800">
             <div class="flex items-center gap-2 min-w-0">
               <button
                 class="inline-flex items-center justify-center rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold
@@ -415,7 +434,8 @@ function goBackToList() {
           </div>
 
           <!-- Messages -->
-          <div ref="messagesEl" @scroll="onScrollMessages" class="h-[calc(100%-120px)] overflow-y-auto p-4">
+          <div ref="messagesElMobile" @scroll="onScrollMessages" class="flex-1 min-h-0 overflow-y-auto p-4">
+
             <template v-if="activeStudent">
               <div v-if="localMessages.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
                 Hali xabar yo‘q.
@@ -454,14 +474,14 @@ function goBackToList() {
           </div>
 
           <!-- Input -->
-          <div class="border-t border-gray-200 p-3 dark:border-gray-800">
+          <div class="shrink-0 border-t border-gray-200 p-3 dark:border-gray-800">
             <div class="flex items-center gap-3">
               <input
                 v-model="messageBody"
                 @input="whisperTyping"
                 :disabled="!activeConversationId || sending"
                 @keydown.enter.prevent="sendMessage"
-                class="h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 text-sm
+                class="shrink-0 h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 text-sm
                        focus:outline-none focus:ring-2 focus:ring-gray-300
                        disabled:opacity-60
                        dark:border-gray-800 dark:bg-gray-950 dark:focus:ring-gray-700"

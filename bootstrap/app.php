@@ -9,6 +9,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use App\Http\Middleware\AdminMidleware;
 use App\Http\Middleware\StudentMiddleware;
+use App\Http\Middleware\PsihologMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -22,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => AdminMidleware::class,
             'student' => StudentMiddleware::class,
+            'psiholog' => PsihologMiddleware::class,
         ]);
         $middleware->web(append: [
             SetLocale::class,

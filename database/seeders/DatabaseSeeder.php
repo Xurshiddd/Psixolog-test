@@ -26,7 +26,7 @@ class DatabaseSeeder extends Seeder
             'email' => 'dildora@ttysi.com',
             'login' => 123456789,
             'password' => bcrypt('RootPassword'),
-            'role' => 'admin',
+            'role' => 'psiholog',
         ]);
         User::create([
             'name' => 'Student',
