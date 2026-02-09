@@ -9,6 +9,7 @@ use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
 use App\Http\Middleware\AdminMidleware;
 use App\Http\Middleware\StudentMiddleware;
+use App\Http\Middleware\DoubleMiddleware;
 use App\Http\Middleware\PsihologMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => AdminMidleware::class,
             'student' => StudentMiddleware::class,
             'psiholog' => PsihologMiddleware::class,
+            'double' => DoubleMiddleware::class,
         ]);
         $middleware->web(append: [
             SetLocale::class,

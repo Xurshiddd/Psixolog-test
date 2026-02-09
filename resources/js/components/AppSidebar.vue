@@ -17,9 +17,10 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import AppLogo from './AppLogo.vue';
-
+ 
 const page = usePage();
 const role = computed(() => (page.props.auth as any)?.user?.role as string)
+const route = role.value === 'admin' ? '/admin/requests' : '/psiholog/requests'
 const mainNavItems: NavItem[] = [
     {
         title: 'Dashboard',
@@ -42,7 +43,7 @@ const mainNavItems: NavItem[] = [
     },
     {
         title: 'Murojaatlar',
-        href: role.value === 'admin' ? '/admin/requests' : 'psiholog/requests',
+        href: route,
         icon: MessageSquare,
     },
 ];
