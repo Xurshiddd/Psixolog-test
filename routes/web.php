@@ -42,7 +42,7 @@ Route::get('/locale/{locale}', function (string $locale) {
 
     return back()->withCookie(cookie('locale', $locale, 60 * 24 * 365));
 })->name('locale.switch');
-Route::middleware(['auth', 'admin'])->group(function () {
+Route::middleware(['auth', 'admin', 'psiholog'])->group(function () {
     Route::get('/test/index', [TestController::class , 'index'])->name('test_index');
     Route::get('/test/create', [TestController::class , 'create'])->name('test_create');
     Route::post('/test/store', [TestController::class , 'store'])->name('test_store');
