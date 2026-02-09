@@ -15,7 +15,7 @@ class PsihologMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->user()->role !== 'psiholog') {
+        if (auth()->user()->role !== 'psiholog' || auth()->user()->role !== 'admin') {
             return redirect()->route('home')->withErrors('Siz bu yerga kira olmaysiz');
         }
         return $next($request);
