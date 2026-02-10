@@ -258,7 +258,7 @@ watch(showChat, async (v) => {
                      border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
               @click="createConversation('psiholog')"
             >
-              Psiholog bilan suhbat
+              Psixolog bilan suhbat
             </button>
           </div>
 
@@ -273,7 +273,7 @@ watch(showChat, async (v) => {
             >
               <div class="flex items-center justify-between gap-2">
                 <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {{ c.channel === 'admin' ? 'Admin' : 'Psiholog' }}
+                  {{ c.channel === 'admin' ? 'Admin' : 'Psixolog' }}
                 </div>
                 <span
                   class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
@@ -309,7 +309,7 @@ watch(showChat, async (v) => {
             <div class="min-w-0">
               <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
                 <template v-if="activeConversation">
-                  {{ activeConversation.channel === 'admin' ? 'Admin bilan chat' : 'Psiholog bilan chat' }}
+                  {{ activeConversation.channel === 'admin' ? 'Admin bilan chat' : 'Psixolog bilan chat' }}
                 </template>
                 <template v-else>
                   Chat tanlang
@@ -419,7 +419,7 @@ watch(showChat, async (v) => {
                      border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
               @click="createConversation('psiholog')"
             >
-              Psiholog bilan suhbat
+              Psixolog bilan suhbat
             </button>
           </div>
 
@@ -434,7 +434,7 @@ watch(showChat, async (v) => {
             >
               <div class="flex items-center justify-between gap-2">
                 <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {{ c.channel === 'admin' ? 'Admin' : 'Psiholog' }}
+                  {{ c.channel === 'admin' ? 'Admin' : 'Psixolog' }}
                 </div>
                 <span
                   class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
@@ -479,7 +479,7 @@ watch(showChat, async (v) => {
               <div class="min-w-0">
                 <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
                   <template v-if="activeConversation">
-                    {{ activeConversation.channel === 'admin' ? 'Admin bilan chat' : 'Psiholog bilan chat' }}
+                    {{ activeConversation.channel === 'admin' ? 'Admin bilan chat' : 'Psixolog bilan chat' }}
                   </template>
                   <template v-else>Chat tanlang</template>
                 </div>

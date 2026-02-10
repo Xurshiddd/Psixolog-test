@@ -19,7 +19,9 @@ Route::get('/', function () {
     'canRegister' => Features::enabled(Features::registration()),
     ]);
 })->name('home');
-
+Route::fallback(function () {
+    return Inertia::render('Error404')->toResponse(request())->setStatusCode(404);
+});
 Route::get('dashboard', function () {
     if (auth()->user()->role === 'student') {
         return Inertia::render("Student/Index", [
