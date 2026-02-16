@@ -25,6 +25,7 @@ type Module = {
   id: number
   name: string
   tests: Test[]
+  shuffle: boolean
 }
 
 type ResultItem = {
