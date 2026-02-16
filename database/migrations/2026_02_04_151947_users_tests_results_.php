@@ -17,6 +17,7 @@ return new class extends Migration
             $table->foreignId('module_id')->constrained()->cascadeOnDelete();
             $table->text('result_fake')->nullable();
             $table->text('result_real')->nullable();
+            // $table->foreignId();
             $table->timestamps();
         });
     }

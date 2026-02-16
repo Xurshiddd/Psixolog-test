@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { ref } from 'vue';
@@ -30,6 +30,13 @@ interface PaginatedData<T> {
 
 const props = defineProps<{
     students: PaginatedData<any>;
+    groups: any[];
+    specialities: any[];
+    filters: {
+        group_id?: string | null;
+        speciality_id?: string | null;
+        test_status?: string | null;
+    };
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -40,6 +47,9 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const selectedStudent = ref<any>(null);
+const groupFilter = ref<string | null>(props.filters.group_id || null);
+const specialityFilter = ref<string | null>(props.filters.speciality_id || null);
+const testStatusFilter = ref<string | null>(props.filters.test_status || null);
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -47,6 +57,75 @@ const formatDate = (dateString: string) => {
 
 const openDiagnosisModal = (student: any) => {
     selectedStudent.value = student;
+};
+
+const getFilterParams = () => {
+    return {
+        group_id: groupFilter.value,
+        speciality_id: specialityFilter.value,
+        test_status: testStatusFilter.value,
+    };
+};
+
+const applyFilters = () => {
+    const params = getFilterParams();
+    router.get('/admin/students', params);
+};
+
+const resetFilters = () => {
+    groupFilter.value = null;
+    specialityFilter.value = null;
+    testStatusFilter.value = null;
+    router.get('/admin/students');
+};
+
+const getPaginationLink = (url: string | null) => {
+    if (!url) return null;
+    const urlObj = new URL(url);
+    const filterParams = getFilterParams();
+    Object.entries(filterParams).forEach(([key, value]) => {
+        if (value) {
+            urlObj.searchParams.set(key, String(value));
+        }
+    });
+    return urlObj.toString();
+};
+
+const downloadExcel = () => {
+    const params = new URLSearchParams();
+    Object.entries(getFilterParams()).forEach(([key, value]) => {
+        if (value) {
+            params.append(key, String(value));
+        }
+    });
+    const queryString = params.toString();
+    window.location.href = `/admin/students/export/excel${queryString ? '?' + queryString : ''}`;
+};
+
+const downloadPdf = () => {
+    const params = new URLSearchParams();
+    Object.entries(getFilterParams()).forEach(([key, value]) => {
+        if (value) {
+            params.append(key, String(value));
+        }
+    });
+    const queryString = params.toString();
+    window.location.href = `/admin/students/export/pdf${queryString ? '?' + queryString : ''}`;
+};
+
+const getStudentLink = (studentId: number) => {
+    const filterParams = getFilterParams();
+    const params = new URLSearchParams();
+    Object.entries(filterParams).forEach(([key, value]) => {
+        if (value) {
+            params.append(key, String(value));
+        }
+    });
+    if (props.students.current_page > 1) {
+        params.append('page', String(props.students.current_page));
+    }
+    const queryString = params.toString();
+    return `/admin/students/${studentId}${queryString ? '?' + queryString : ''}`;
 };
 </script>
 
@@ -56,6 +135,77 @@ const openDiagnosisModal = (student: any) => {
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-2 sm:p-4">
             <div class="flex items-center justify-between">
                 <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Talabalar</h1>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="rounded-md border bg-card text-card-foreground shadow-sm p-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label for="group-filter" class="block text-sm font-medium mb-2">
+                            Guruh
+                        </label>
+                        <select 
+                            id="group-filter"
+                            v-model="groupFilter"
+                            class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                        >
+                            <option value="" selected>Barchasi</option>
+                            <option v-for="group in groups" :key="group.id" :value="group.id">
+                                {{ group.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="speciality-filter" class="block text-sm font-medium mb-2">
+                            Mutaxassislik
+                        </label>
+                        <select 
+                            id="speciality-filter"
+                            v-model="specialityFilter"
+                            class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                        >
+                            <option value="" selected>Barchasi</option>
+                            <option v-for="speciality in specialities" :key="speciality.id" :value="speciality.id">
+                                {{ speciality.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label for="test-status-filter" class="block text-sm font-medium mb-2">
+                            Test Statusi
+                        </label>
+                        <select 
+                            id="test-status-filter"
+                            v-model="testStatusFilter"
+                            class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                        >
+                            <option value="" selected>Barchasi</option>
+                            <option value="submitted">Topshirgan</option>
+                            <option value="not_submitted">Topshirmagan</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-end gap-2">
+                        <Button @click="applyFilters" class="flex-1">
+                            Filterlash
+                        </Button>
+                        <Button @click="resetFilters" variant="outline" class="flex-1">
+                            Tozalash
+                        </Button>
+                    </div>
+                </div>
+
+                <!-- Download buttons -->
+                <div class="flex flex-col md:flex-row gap-2 mt-4 pt-4 border-t">
+                    <Button @click="downloadExcel" variant="outline" class="flex-1">
+                        📊 Excel'ga yuklash
+                    </Button>
+                    <Button @click="downloadPdf" variant="outline" class="flex-1">
+                        📄 PDF'ga yuklash
+                    </Button>
+                </div>
             </div>
 
             <!-- Desktop Table View -->
@@ -137,7 +287,7 @@ const openDiagnosisModal = (student: any) => {
                                     <span v-else class="text-muted-foreground text-sm">-</span>
                                 </td>
                                 <td class="p-4 align-middle [&:has([role=checkbox])]:pr-0">
-                                    <Link :href="`/admin/students/${student.id}`" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                                    <Link :href="getStudentLink(student.id)" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
                                         Ko'rish
                                     </Link>
                                 </td>
@@ -161,7 +311,7 @@ const openDiagnosisModal = (student: any) => {
                                 <h3 class="font-semibold text-base">{{ student.name }}</h3>
                                 <p class="text-sm text-muted-foreground">{{ student.login }}</p>
                             </div>
-                            <Link :href="`/admin/students/${student.id}`" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3 py-2">
+                            <Link :href="getStudentLink(student.id)" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3 py-2">
                                 Ko'rish
                             </Link>
                         </div>
@@ -231,7 +381,7 @@ const openDiagnosisModal = (student: any) => {
                     <Link
                         v-for="(link, index) in students.links"
                         :key="index"
-                        :href="link.url || '#'"
+                        :href="getPaginationLink(link.url) || '#'"
                         :class="[
                             'inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50',
                             'h-9 px-3 py-2',

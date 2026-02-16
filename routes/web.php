@@ -54,6 +54,8 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::delete('/module/delete/{id}', [TestController::class , 'deleteModule'])->name('module_delete');
 
     Route::get('/admin/students', [AdminStudentController::class , 'index'])->name('admin.students.index');
+    Route::get('/admin/students/export/excel', [AdminStudentController::class , 'exportExcel'])->name('admin.students.export.excel');
+    Route::get('/admin/students/export/pdf', [AdminStudentController::class , 'exportPdf'])->name('admin.students.export.pdf');
     Route::get('/admin/students/{user}', [AdminStudentController::class , 'show'])->name('admin.students.show');
     Route::get('/admin/students/{user}/results/{module}', [AdminStudentController::class , 'showResult'])->name('admin.students.results.show');
     Route::post('/admin/students/{user}/results/{module}/diagnosis', [AdminStudentController::class , 'updateDiagnosis'])->name('admin.students.results.diagnosis');

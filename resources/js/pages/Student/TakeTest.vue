@@ -58,8 +58,21 @@ const answers = ref<Record<number, number | number[] | string | null>>({})
 const submitting = ref(false)
 const showResults = ref(false)
 
+// -------------------- Helpers --------------------
+const shuffleArray = <T,>(array: T[]): T[] => {
+  const result = [...array]
+  for (let i = result.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [result[i], result[j]] = [result[j], result[i]];
+  }
+  return result;
+}
+
 // -------------------- Computed --------------------
-const tests = computed(() => module.tests || [])
+const tests = computed(() => {
+  const originalTests = module.tests || []
+  return module.shuffle ? shuffleArray(originalTests) : originalTests
+})
 const totalQuestions = computed(() => tests.value.length)
 
 const currentTest = computed<Test | null>(() => {
@@ -100,7 +113,6 @@ watch(() => flash.value, (val) => {
   }
 }, { deep: true, immediate: true })
 
-// -------------------- Helpers --------------------
 const isAnswered = (test: Test) => {
   const a = answers.value[test.id]
   if (test.type === 'single') return typeof a === 'number'

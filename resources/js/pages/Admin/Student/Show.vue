@@ -2,16 +2,41 @@
 import { Head, Link } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
+import { Button } from '@/components/ui/button';
 
 const props = defineProps<{
     student: any;
     results: Array<any>;
+    filters?: {
+        group_id?: string | null;
+        speciality_id?: string | null;
+        test_status?: string | null;
+    };
+    page?: number;
 }>();
+
+const getBackLink = () => {
+    const params = new URLSearchParams();
+    if (props.filters?.group_id && props.filters.group_id !== 'null') {
+        params.append('group_id', props.filters.group_id);
+    }
+    if (props.filters?.speciality_id && props.filters.speciality_id !== 'null') {
+        params.append('speciality_id', props.filters.speciality_id);
+    }
+    if (props.filters?.test_status && props.filters.test_status !== 'null') {
+        params.append('test_status', props.filters.test_status);
+    }
+    if (props.page && props.page > 1) {
+        params.append('page', String(props.page));
+    }
+    const queryString = params.toString();
+    return `/admin/students${queryString ? '?' + queryString : ''}`;
+};
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Talabalar',
-        href: '/admin/students',
+        href: getBackLink(),
     },
     {
         title: props.student.name,
@@ -28,7 +53,12 @@ const formatDate = (dateString: string) => {
     <Head :title="student.name" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <h1 class="text-2xl font-bold tracking-tight">{{ student.name }}</h1>
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold tracking-tight">{{ student.name }}</h1>
+                <Link :href="getBackLink()" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 border border-input bg-background hover:bg-accent hover:text-accent-foreground h-9 px-4 py-2">
+                    ← Orqaga
+                </Link>
+            </div>
             
             <div class="grid gap-6 md:grid-cols-2">
                 <div class="rounded-lg border bg-card p-6 shadow-sm">
