@@ -4,8 +4,6 @@ import AppLayout from '@/layouts/AppLayout.vue';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 const props = defineProps<{ tests: any; testsCount: number; modules: any; modulesCount: number }>();
-
-
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -13,7 +11,6 @@ const breadcrumbs: BreadcrumbItem[] = [
     },
 ];
 </script>
-
 <template>
     <Head title="Dashboard" />
     <AppLayout :breadcrumbs="breadcrumbs">

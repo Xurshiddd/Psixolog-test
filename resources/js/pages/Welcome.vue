@@ -8,69 +8,74 @@ import ErrorNotification from '@/components/ErrorNotification.vue'
 
 <template>
     <Head title="S-XA Diagnosyikasi" />
-    
     <ErrorNotification />
-
-    <div class="min-h-screen flex items-center justify-center bg-linear-to-br from-indigo-400 via-purple-400 to-pink-400 p-6">
-        <div class="w-full max-w-4xl rounded-2xl bg-white/90 p-8 shadow-2xl backdrop-blur-md">
-            <header class="relative mb-6">
-                <!-- Mobile top row: language + login -->
-                <div class="flex items-center justify-between md:hidden">
-                    <div>
-                        <SelectLanguageDropdown />
-                    </div>
-                    <div>
-                        <Link :href="login()" class="text-sm rounded-full bg-indigo-600 text-white px-3 py-1">
-                            {{ trans('admin_kirish') }}
-                        </Link>
-                    </div>
-                </div>
-
-                <!-- Desktop / tablet absolute navs -->
-                <nav class="hidden md:block absolute left-8 top-8">
+    <div class="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 px-4 py-8 sm:px-6 lg:px-8">
+        <div class="w-full max-w-5xl">
+            <nav class="flex items-center justify-between mb-8 sm:mb-12">
+                <div class="flex-1">
                     <SelectLanguageDropdown />
-                </nav>
-                <nav class="hidden md:block absolute right-8 top-8">
-                    <Link :href="login()" class="text-sm rounded-full bg-indigo-600 text-white hover:underline p-2">
-                        {{ trans('admin_kirish') }}
-                    </Link>
-                </nav>
-
-                <!-- Centered heading -->
-                <div class="mt-6 md:mt-0 text-center px-4">
-                    <div class="inline-block px-4 py-1 rounded-full bg-indigo-600 text-white text-xs font-semibold tracking-wide">
-                        <h3 class="m-0">S-XA DIAGNOSTIKASI</h3>
-                    </div>
-                    <h1 class="mt-5 p-5 text-2xl md:text-3xl font-bold text-gray-900">O'zingizni kashf eting va rivojlang</h1>
-                    <p class="mt-2 text-sm text-gray-600">Qisqa va intuitiv onlayn diagnostika. Umumiy 41 ta savol — taxminan 30 daqiqa.</p>
                 </div>
-            </header>
-
-            <main class="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-white rounded-xl p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold mb-2 dark:text-gray-700">{{ trans('bosqich1') }}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-70">Sizning kelajagingiz haqida 20 ta fikrlar beriladi. Marhamat qilib, diqqat bilan o'qing va hozirgi vaqtdagi his-tuyg'ularingizni aks ettiring.</p>
-                </div>
-
-                <div class="bg-white rounded-xl p-6 shadow-sm">
-                    <h3 class="text-lg font-semibold mb-2 dark:text-gray-700">{{ trans('bosqich2') }}</h3>
-                    <p class="text-sm text-gray-600 dark:text-gray-70">Sizga 21 ta guruhdan iborat fikrlar to'plami taqdim etiladi. Har bir guruh uchun tanlov qiling va yakuniy bahoni oling.</p>
-                </div>
-
-                <div class="md:col-span-2 flex items-center justify-center mt-2">
-                    <a
-                        href="/hemis/redirect"
-                        class="inline-flex items-center gap-3 rounded-full bg-linear-to-r from-purple-600 to-indigo-600 px-8 py-3 text-white text-sm font-semibold shadow-lg hover:opacity-95"
+                <div class="flex-1 flex justify-end">
+                    <Link 
+                        :href="login()" 
+                        class="inline-flex items-center gap-2 px-4 sm:px-6 py-2 rounded-full bg-white text-indigo-600 font-semibold text-sm hover:bg-gray-100 transition-all duration-200 shadow-md hover:shadow-lg transform hover:scale-105"
                     >
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 8a6 6 0 11-8 0" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14v7" />
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h12.5" />
                         </svg>
-                        {{ trans('hemis_login') }}
-                    </a>
+                        <span class="hidden sm:inline">{{ trans('admin_kirish') }}</span>
+                    </Link>
                 </div>
-                <p class="md:col-span-2 text-center text-xs text-gray-700/70 mt-4">Ro'yxatdan o'tish shart emas — tizim Hemis orqali yangi foydalanuvchilarni aniqlaydi. Test taxminan 30 daqiqa davom etadi.</p>
-            </main>
+            </nav>
+            <div class="rounded-3xl bg-white/95 backdrop-blur-md shadow-2xl overflow-hidden">
+                <div class="px-6 sm:px-10 md:px-14 py-10 sm:py-10 md:py-12">
+                    <div class="flex justify-center mb-6 sm:mb-8">
+                        <div class="w-20 h-20 sm:w-40 sm:h-40 rounded-full bg-gradient-to-br from-indigo-100 to-purple-100 p-1 shadow-lg">
+                            <img 
+                                src="/logo.jpg" 
+                                alt="Institution Logo" 
+                                class="w-full h-full rounded-full object-cover border-4 border-white shadow-md"
+                            />
+                        </div>
+                    </div>
+                    <div class="text-center mb-8 sm:mb-10">
+                        <h1 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 mb-2 leading-tight">
+                            Toshkent To'qimachilik va yengil sanoat instituti
+                        </h1>
+                        <p class="text-lg sm:text-xl md:text-2xl text-indigo-600 font-semibold">
+                            Talabalar uchun onlayn diagnostika platformasi
+                        </p>
+                    </div>
+                    <div class="text-center mb-10 sm:mb-12">
+                        <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-3">
+                            O'zingizni kashf eting va rivojlaning 🌟
+                        </h2>
+                        
+                    </div>
+                    <div class="flex justify-center mb-8 sm:mb-10">
+                        <a
+                            href="/hemis/redirect"
+                            class="inline-flex items-center gap-3 px-6 sm:px-8 md:px-10 py-3 sm:py-4 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 text-white font-bold text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:scale-110 active:scale-95"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 sm:h-6 sm:w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                            </svg>
+                            {{ trans('hemis_login') }}
+                        </a>
+                    </div>
+                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl p-5 sm:p-6 border border-indigo-100">
+                        <p class="text-center text-xs sm:text-sm text-gray-700 leading-relaxed">
+                            <span class="font-semibold text-indigo-600">Muhim:</span> Ro'yxatdan o'tish shart emas — tizim Hemis orqali yangi foydalanuvchilarni avtomatik ravishda aniqlaydi.
+                        </p>
+                    </div>
+                </div>
+                <div class="h-1 bg-gradient-to-r from-purple-600 via-indigo-600 to-blue-600"></div>
+            </div>
+            <div class="mt-8 sm:mt-10 text-center">
+                <p class="text-white/80 text-xs sm:text-sm">
+                    Xushnasaab kelibsiz! 👋
+                </p>
+            </div>
         </div>
     </div>
 </template>

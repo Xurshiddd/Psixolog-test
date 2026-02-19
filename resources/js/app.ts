@@ -12,7 +12,7 @@ configureEcho({
 import { i18nVue } from 'laravel-vue-i18n'
 import './echo'
 
-const appName = import.meta.env.VITE_APP_NAME || 'Laravel';
+const appName = import.meta.env.VITE_APP_NAME || 'psihology-test';
 
 createInertiaApp({
 
