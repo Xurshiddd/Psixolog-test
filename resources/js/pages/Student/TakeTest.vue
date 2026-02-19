@@ -272,7 +272,7 @@ if (tests.value[0]) initIfMissing(tests.value[0])
               Natijalar:
             </h3>
             <p class="text-sm text-emerald-800/70 dark:text-emerald-200/70 mt-1">
-              Asosiy dianostika psiholog tomonidan amalga oshirildi.
+              Asosiy dianostika psiholog tomonidan amalga oshiriladi.
             </p>
             <div v-if="flash.message" class="text-sm font-medium text-emerald-700 dark:text-emerald-300 mt-2">
               {{ flash.message }}

@@ -279,7 +279,12 @@ const getStudentLink = (studentId: number) => {
                                             <div class="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
                                                 <div v-for="result in student.users_tests_results" :key="result.id" class="border-b pb-4 last:border-0 last:pb-0">
                                                     <h4 class="font-semibold mb-2">Modul ID: {{ result.pivot.module_id }}</h4>
-                                                    <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.result_real }}</p>
+                                                    <div>
+                                                        <h5>Psiholog hulosasi</h5>
+                                                        <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.diagnosis }}</p>
+                                                        <h5>Avtomatik hulosa</h5>
+                                                        <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.result_real }}</p>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </DialogContent>
@@ -358,7 +363,7 @@ const getStudentLink = (studentId: number) => {
                                     <div class="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
                                         <div v-for="result in student.users_tests_results" :key="result.id" class="border-b pb-4 last:border-0 last:pb-0">
                                             <h4 class="font-semibold mb-2">Modul ID: {{ result.pivot.module_id }}</h4>
-                                            <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.result_real }}</p>
+                                            <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.diagnosis ?? result.pivot.result_real }}</p>
                                         </div>
                                     </div>
                                 </DialogContent>

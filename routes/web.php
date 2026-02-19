@@ -13,6 +13,7 @@ use App\Http\Controllers\Student\ConversationController;
 use App\Http\Controllers\Student\MessageController;
 use App\Http\Controllers\Staff\RequestsController;
 use App\Http\Controllers\Staff\MessagesController;
+use App\Http\Controllers\ResultCategoryController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -59,6 +60,8 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::get('/admin/students/{user}', [AdminStudentController::class , 'show'])->name('admin.students.show');
     Route::get('/admin/students/{user}/results/{module}', [AdminStudentController::class , 'showResult'])->name('admin.students.results.show');
     Route::post('/admin/students/{user}/results/{module}/diagnosis', [AdminStudentController::class , 'updateDiagnosis'])->name('admin.students.results.diagnosis');
+    Route::resource('result-categories', ResultCategoryController::class);
+    Route::get('/api/modules/{module}/test-options', [ResultCategoryController::class, 'getModuleTestOptions'])->name('module.test-options');
 });
 Route::middleware(['auth', 'student'])->group(function () {
     Route::get('/student/index', [StudentController::class , 'index'])->name('student_test_index');

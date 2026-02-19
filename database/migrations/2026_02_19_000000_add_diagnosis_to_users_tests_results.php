@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration 
+return new class extends Migration
 {
     /**
      * Run the migrations.
@@ -12,7 +12,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users_tests_results', function (Blueprint $table) {
-            $table->text('diagnosis')->nullable()->after('result_real');
+            if (!Schema::hasColumn('users_tests_results', 'diagnosis')) {
+                $table->text('diagnosis')->nullable()->after('result_real');
+            }
         });
     }
 
@@ -22,7 +24,9 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('users_tests_results', function (Blueprint $table) {
-        //
+            if (Schema::hasColumn('users_tests_results', 'diagnosis')) {
+                $table->dropColumn('diagnosis');
+            }
         });
     }
 };

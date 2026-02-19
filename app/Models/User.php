@@ -75,7 +75,7 @@ public function scopeStudents(Builder $q): Builder
     }
     public function usersTestsResults()
     {
-        return $this->belongsToMany(Module::class, 'users_tests_results', 'user_id', 'module_id')->withPivot('result_fake', 'result_real');
+        return $this->belongsToMany(Module::class, 'users_tests_results', 'user_id', 'module_id')->withPivot('result_fake', 'result_real', 'diagnosis');
     }
     // app/Models/User.php
     public function conversations()

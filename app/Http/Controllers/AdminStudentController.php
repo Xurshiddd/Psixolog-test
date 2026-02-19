@@ -20,12 +20,10 @@ class AdminStudentController extends Controller
         $query = User::where('role', 'student')
             ->with(['group', 'speciality', 'usersTestsResults']);
 
-        // Filter by group
         if ($request->has('group_id') && $request->group_id) {
             $query->where('group_id', $request->group_id);
         }
 
-        // Filter by speciality
         if ($request->has('speciality_id') && $request->speciality_id) {
             $query->where('speciality_id', $request->speciality_id);
         }
@@ -41,7 +39,6 @@ class AdminStudentController extends Controller
 
         $students = $query->latest()->paginate(10);
 
-        // Get all groups and specialities for filter dropdowns
         $groups = Group::orderBy('name')->get();
         $specialities = Speciality::orderBy('name')->get();
 
@@ -86,11 +83,17 @@ class AdminStudentController extends Controller
             ->where('module_id', $moduleId)
             ->first();
 
+        // If psychologist has provided a diagnosis use it, otherwise fall back to generated result_real
+        $diagnosisValue = null;
+        if ($result) {
+            $diagnosisValue = $result->pivot->diagnosis ?? $result->pivot->result_real;
+        }
+
         return Inertia::render('Admin/Student/Result', [
             'student' => $user,
             'module' => $module,
             'answers' => $answers,
-            'diagnosis' => $result ? $result->pivot->result_real : null
+            'diagnosis' => $diagnosisValue
         ]);
     }
 
@@ -102,7 +105,6 @@ class AdminStudentController extends Controller
 
         $user->usersTestsResults()->updateExistingPivot($moduleId, [
             'diagnosis' => $request->diagnosis,
-            'result_real' => $request->diagnosis
         ]);
 
         return to_route('admin.students.index')->with('success', 'Diagnostika muvaffaqiyatli saqlandi');

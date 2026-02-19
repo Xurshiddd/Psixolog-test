@@ -31,10 +31,11 @@ const mainNavItems: NavItem[] = [
         title: 'Tests',
         href: '/test/index',
         icon: BookOpen,
-        // badge: {
-        //     label: '5',
-        //     variant: 'slate',
-        // },
+    },
+    {
+        title: 'Natijalar Kategoriyalari',
+        href: '/result-categories',
+        icon: BookOpen,
     },
     {
         title: 'Talabalar',
