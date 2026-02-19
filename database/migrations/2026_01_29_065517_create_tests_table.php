@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('tests', function (Blueprint $table) {
             $table->id();
-            $table->string('question');
+            $table->text('question');
             $table->string('image')->nullable();
             $table->foreignId('module_id')->constrained()->onDelete('cascade');
             $table->enum('type', ['single', 'multi', 'text'])->default('single');

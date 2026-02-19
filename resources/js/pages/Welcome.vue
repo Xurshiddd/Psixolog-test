@@ -73,7 +73,7 @@ import ErrorNotification from '@/components/ErrorNotification.vue'
             </div>
             <div class="mt-8 sm:mt-10 text-center">
                 <p class="text-white/80 text-xs sm:text-sm">
-                    Xushnasaab kelibsiz! 👋
+                    Xush kelibsiz! 👋
                 </p>
             </div>
         </div>
