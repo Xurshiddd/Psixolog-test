@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\Module;
 use App\Models\Test;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Inertia\Inertia;
 use App\Models\SolveTest;
 use App\Models\ResultCategory;

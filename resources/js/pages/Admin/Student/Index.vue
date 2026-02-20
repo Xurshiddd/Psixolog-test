@@ -264,7 +264,7 @@ const getStudentLink = (studentId: number) => {
                             <tr v-for="student in students.data" :key="student.id" class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                 <td class="p-4 align-middle [&:has([role=checkbox])]:pr-0">
                                     <div v-if="student.picture" class="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
-                                        <img :src="`/storage/${student.picture}`" :alt="student.name" class="w-full h-full object-cover" />
+                                        <img :src="`${student.picture}`" :alt="student.name" class="w-full h-full object-cover" />
                                     </div>
                                     <div v-else class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-600">
                                         {{ student.name.charAt(0).toUpperCase() }}
