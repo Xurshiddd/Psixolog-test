@@ -342,7 +342,7 @@ const getStudentLink = (studentId: number) => {
                         <div class="flex items-start justify-between gap-3">
                             <div class="flex items-start gap-3 flex-1">
                                 <div v-if="student.picture" class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
-                                    <img :src="`/storage/${student.picture}`" :alt="student.name" class="w-full h-full object-cover" />
+                                    <img :src="`${student.picture}`" :alt="student.name" class="w-full h-full object-cover" />
                                 </div>
                                 <div v-else class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-base font-semibold text-indigo-600 flex-shrink-0">
                                     {{ student.name.charAt(0).toUpperCase() }}
@@ -399,7 +399,12 @@ const getStudentLink = (studentId: number) => {
                                     <div class="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
                                         <div v-for="result in student.users_tests_results" :key="result.id" class="border-b pb-4 last:border-0 last:pb-0">
                                             <h4 class="font-semibold mb-2">Modul ID: {{ result.pivot.module_id }}</h4>
-                                            <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.diagnosis ?? result.pivot.result_real }}</p>
+                                            <div>
+                                                <h5 class="text-sm font-medium">Psixolog xulosasi:</h5>
+                                                <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.diagnosis }}</p>
+                                                <h5 class="text-sm font-medium">Avtomatik xulosa:</h5>
+                                                <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.result_real }}</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </DialogContent>
