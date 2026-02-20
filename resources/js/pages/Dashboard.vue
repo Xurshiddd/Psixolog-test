@@ -1,9 +1,30 @@
 <script setup lang="ts">
 import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
+import ModuleStatsChart from '@/components/ModuleStatsChart.vue';
+import ResultCategoryChart from '@/components/ResultCategoryChart.vue';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-const props = defineProps<{ tests: any; testsCount: number; modules: any; modulesCount: number }>();
+
+interface ModuleStatItem {
+    name: string;
+    solvedCount: number;
+}
+
+interface ResultCategoryStatItem {
+    name: string;
+    solvedCount: number;
+}
+
+const props = defineProps<{ 
+    tests: any; 
+    testsCount: number; 
+    modules: any; 
+    modulesCount: number;
+    moduleStats?: ModuleStatItem[];
+    resultCategoryStats?: ResultCategoryStatItem[];
+}>();
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Dashboard',
@@ -14,8 +35,8 @@ const breadcrumbs: BreadcrumbItem[] = [
 <template>
     <Head title="Dashboard" />
     <AppLayout :breadcrumbs="breadcrumbs">
-        <div class="flex h-full flex-1 flex-col gap-4 overflow-x-auto rounded-xl p-4">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="flex h-full flex-1 flex-col gap-6 rounded-xl p-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div class="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 shadow-sm p-6">
                     <div class="flex items-center gap-4">
                         <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
@@ -43,6 +64,8 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </div>
                 </div>
             </div>
+            <ModuleStatsChart v-if="props.moduleStats && props.moduleStats.length > 0" :module-stats="props.moduleStats" />
+            <ResultCategoryChart v-if="props.resultCategoryStats && props.resultCategoryStats.length > 0" :result-category-stats="props.resultCategoryStats" />
         </div>
     </AppLayout>
 </template>

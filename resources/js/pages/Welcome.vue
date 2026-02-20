@@ -4,6 +4,40 @@ import { login, hemis_redirect } from '@/routes'
 import { trans } from 'laravel-vue-i18n';
 import SelectLanguageDropdown from '@/components/SelectLanguageDropdown.vue'
 import ErrorNotification from '@/components/ErrorNotification.vue'
+import { ref, nextTick, onMounted, onBeforeUnmount } from 'vue';
+
+const showVideoModal = ref(false);
+const videoRef = ref<HTMLVideoElement | null>(null);
+
+function openVideoModal() {
+    showVideoModal.value = true;
+    // play after DOM updates
+    nextTick(() => {
+        videoRef.value?.play().catch(() => {});
+    });
+}
+
+function closeVideoModal() {
+    if (videoRef.value) {
+        try {
+            videoRef.value.pause();
+            videoRef.value.currentTime = 0;
+        } catch (e) {
+            // ignore
+        }
+    }
+    showVideoModal.value = false;
+}
+
+onMounted(() => {
+    const escHandler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' && showVideoModal.value) {
+            closeVideoModal();
+        }
+    };
+    window.addEventListener('keydown', escHandler);
+    onBeforeUnmount(() => window.removeEventListener('keydown', escHandler));
+});
 </script>
 
 <template>
@@ -50,8 +84,34 @@ import ErrorNotification from '@/components/ErrorNotification.vue'
                         <h2 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-800 mb-3">
                             O'zingizni kashf eting va rivojlaning 🌟
                         </h2>
-                        
+                        <button @click.prevent="openVideoModal" type="button" class="mt-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors duration-200">
+                            Video qo'llanma
+                        </button>
                     </div>
+                    
+                    <!-- Video modal -->
+                    <teleport to="body">
+                        <div v-if="showVideoModal" class="fixed inset-0 z-50 flex items-center justify-center">
+                            <div class="fixed inset-0 bg-black/60" @click.self="closeVideoModal"></div>
+
+                            <div class="relative w-full max-w-4xl mx-4">
+                                <div class="bg-white dark:bg-slate-800 rounded-lg overflow-hidden shadow-xl">
+                                    <button @click="closeVideoModal" aria-label="close" class="absolute top-3 right-3 z-20 bg-black/40 hover:bg-black/60 text-white rounded-full p-2">
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                            <path fill-rule="evenodd" d="M10 8.586l4.95-4.95a1 1 0 111.414 1.414L11.414 10l4.95 4.95a1 1 0 01-1.414 1.414L10 11.414l-4.95 4.95A1 1 0 013.636 14.95L8.586 10 3.636 5.05A1 1 0 015.05 3.636L10 8.586z" clip-rule="evenodd" />
+                                        </svg>
+                                    </button>
+
+                                    <div class="w-full bg-black">
+                                        <video ref="videoRef" class="w-full h-[60vh] bg-black" controls playsinline>
+                                            <source src="/videos/qollanma.mp4" type="video/mp4" />
+                                            Sizning brauzeringiz video tegni qo'llab-quvvatlamaydi.
+                                        </video>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </teleport>
                     <div class="flex justify-center mb-8 sm:mb-10">
                         <a
                             href="/hemis/redirect"

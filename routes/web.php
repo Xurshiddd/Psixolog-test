@@ -14,6 +14,8 @@ use App\Http\Controllers\Student\MessageController;
 use App\Http\Controllers\Staff\RequestsController;
 use App\Http\Controllers\Staff\MessagesController;
 use App\Http\Controllers\ResultCategoryController;
+use App\Http\Controllers\DashboardController;
+use Illuminate\Support\Facades\DB;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -23,18 +25,7 @@ Route::get('/', function () {
 Route::fallback(function () {
     return Inertia::render('Error404')->toResponse(request())->setStatusCode(404);
 });
-Route::get('dashboard', function () {
-    if (auth()->user()->role === 'student') {
-        return Inertia::render("Student/Index", [
-        'solvedTestsCount' => auth()->user()->usersTestsResults()->count(),
-        'modulesCount' => Module::where('is_active', true)->count()
-        ]);
-    }
-    return Inertia::render('Dashboard', [
-    'testsCount' => Test::count(),
-    'modulesCount' => Module::count()
-    ]);
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
 
 Route::get('/hemis/redirect', [HemisAuthController::class , 'redirectToHemis'])->name('hemis_redirect');
 Route::get('/hemis/callback', [HemisAuthController::class , 'login'])->name('hemis.callback');
