@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Models\User;
+use App\Models\Module;
 use Illuminate\Database\Eloquent\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -12,10 +13,12 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 class StudentsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
 {
     protected $students;
+    protected $modules;
 
-    public function __construct(Collection $students)
+    public function __construct(Collection $students, ?Collection $modules = null)
     {
         $this->students = $students;
+        $this->modules = $modules ?? Module::orderBy('name')->get();
     }
 
     public function collection(): Collection
@@ -25,29 +28,33 @@ class StudentsExport implements FromCollection, WithHeadings, WithMapping, Shoul
 
     public function headings(): array
     {
-        return [
+        $headings = [
             'Ism Familiya',
-            'Login',
-            'Telefon',
+            'Hemis ID',
             'Guruh',
-            'Mutaxassislik',
-            'E-mail',
-            'Ro\'yxatdan o\'tgan sana',
-            'Test Statusi'
         ];
+        
+        foreach ($this->modules as $module) {
+            $headings[] = $module->name;
+        }
+        
+        return $headings;
     }
 
     public function map($student): array
     {
-        return [
+        $row = [
             $student->name ?? '-',
             $student->login ?? '-',
-            $student->phone ?? '-',
             $student->group->name ?? '-',
-            $student->speciality->name ?? '-',
-            $student->email ?? '-',
-            $student->created_at ? $student->created_at->format('Y-m-d') : '-',
-            $student->usersTestsResults && $student->usersTestsResults->count() > 0 ? 'Topshirgan' : 'Topshirmagan'
         ];
+        
+        foreach ($this->modules as $module) {
+            $hasResult = $student->usersTestsResults 
+                && $student->usersTestsResults->where('id', $module->id)->count() > 0;
+            $row[] = $hasResult ? 'HA' : 'YO\'Q';
+        }
+        
+        return $row;
     }
 }

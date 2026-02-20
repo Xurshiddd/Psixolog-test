@@ -140,8 +140,9 @@ class AdminStudentController extends Controller
     public function exportExcel(Request $request)
     {
         $students = $this->getFilteredStudents($request);
+        $modules = Module::orderBy('name')->get();
         $timestamp = now()->format('Y-m-d_H-i-s');
-        return Excel::download(new StudentsExport($students), "talabalar_$timestamp.xlsx");
+        return Excel::download(new StudentsExport($students, $modules), "talabalar_$timestamp.xlsx");
     }
 
     public function exportPdf(Request $request, StudentPdfExportService $pdfExportService)
