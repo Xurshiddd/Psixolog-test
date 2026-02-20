@@ -2,7 +2,6 @@
 import { Head, useForm, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { computed } from 'vue';
 
 const props = defineProps<{
     student: any;
@@ -59,10 +58,9 @@ const isOptionSelected = (testId: number, optionId: number) => {
                 <!-- Questions and Answers -->
                 <div v-for="(test, index) in module.tests" :key="test.id" class="rounded-lg border bg-card p-6 shadow-sm">
                     <div class="mb-4">
-                        <span class="font-bold text-lg mr-2">{{ index + 1 }}.</span>
+                        <span class="font-bold text-lg mr-2">{{ Number(index) + 1 }}.</span>
                         <span class="text-lg font-medium">{{ test.question }}</span>
                     </div>
-                    
                     <div v-if="test.image" class="mb-4">
                         <img :src="'/storage/' + test.image" alt="Question Image" class="max-w-full h-auto rounded-md max-h-96 object-contain" />
                     </div>

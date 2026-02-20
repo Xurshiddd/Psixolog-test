@@ -33,6 +33,7 @@ const props = defineProps<{
     groups: any[];
     specialities: any[];
     filters: {
+        search?: string | null;
         group_id?: string | null;
         speciality_id?: string | null;
         test_status?: string | null;
@@ -47,6 +48,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const selectedStudent = ref<any>(null);
+const searchQuery = ref<string>(props.filters.search || '');
 const groupFilter = ref<string | null>(props.filters.group_id || null);
 const specialityFilter = ref<string | null>(props.filters.speciality_id || null);
 const testStatusFilter = ref<string | null>(props.filters.test_status || null);
@@ -61,6 +63,7 @@ const openDiagnosisModal = (student: any) => {
 
 const getFilterParams = () => {
     return {
+        search: searchQuery.value,
         group_id: groupFilter.value,
         speciality_id: specialityFilter.value,
         test_status: testStatusFilter.value,
@@ -73,6 +76,7 @@ const applyFilters = () => {
 };
 
 const resetFilters = () => {
+    searchQuery.value = '';
     groupFilter.value = null;
     specialityFilter.value = null;
     testStatusFilter.value = null;
@@ -139,7 +143,20 @@ const getStudentLink = (studentId: number) => {
 
             <!-- Filter Section -->
             <div class="rounded-md border bg-card text-card-foreground shadow-sm p-4">
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                    <div>
+                        <label for="search-filter" class="block text-sm font-medium mb-2">
+                            Qidirish (Login yoki Ism)
+                        </label>
+                        <input 
+                            id="search-filter"
+                            v-model="searchQuery"
+                            type="text"
+                            placeholder="Login yoki ism kiriting..."
+                            class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                        />
+                    </div>
+
                     <div>
                         <label for="group-filter" class="block text-sm font-medium mb-2">
                             Guruh
@@ -215,6 +232,9 @@ const getStudentLink = (studentId: number) => {
                         <thead class="[&_tr]:border-b">
                             <tr class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                                    Rasm
+                                </th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
                                     Ism Familiya
                                 </th>
                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
@@ -242,6 +262,14 @@ const getStudentLink = (studentId: number) => {
                         </thead>
                         <tbody class="[&_tr:last-child]:border-0">
                             <tr v-for="student in students.data" :key="student.id" class="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
+                                <td class="p-4 align-middle [&:has([role=checkbox])]:pr-0">
+                                    <div v-if="student.picture" class="w-10 h-10 rounded-full overflow-hidden bg-gray-100">
+                                        <img :src="`/storage/${student.picture}`" :alt="student.name" class="w-full h-full object-cover" />
+                                    </div>
+                                    <div v-else class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-600">
+                                        {{ student.name.charAt(0).toUpperCase() }}
+                                    </div>
+                                </td>
                                 <td class="p-4 align-middle [&:has([role=checkbox])]:pr-0 font-medium">
                                     {{ student.name }}
                                 </td>
@@ -298,7 +326,7 @@ const getStudentLink = (studentId: number) => {
                                 </td>
                             </tr>
                             <tr v-if="students.data.length === 0">
-                                <td colspan="8" class="p-4 align-middle text-center">
+                                <td colspan="9" class="p-4 align-middle text-center">
                                     Talabalar topilmadi.
                                 </td>
                             </tr>
@@ -311,10 +339,18 @@ const getStudentLink = (studentId: number) => {
             <div class="md:hidden space-y-4">
                 <div v-for="student in students.data" :key="student.id" class="rounded-lg border bg-card text-card-foreground shadow-sm p-4">
                     <div class="space-y-3">
-                        <div class="flex items-start justify-between">
-                            <div>
-                                <h3 class="font-semibold text-base">{{ student.name }}</h3>
-                                <p class="text-sm text-muted-foreground">{{ student.login }}</p>
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="flex items-start gap-3 flex-1">
+                                <div v-if="student.picture" class="w-12 h-12 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                                    <img :src="`/storage/${student.picture}`" :alt="student.name" class="w-full h-full object-cover" />
+                                </div>
+                                <div v-else class="w-12 h-12 rounded-full bg-indigo-100 flex items-center justify-center text-base font-semibold text-indigo-600 flex-shrink-0">
+                                    {{ student.name.charAt(0).toUpperCase() }}
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-base">{{ student.name }}</h3>
+                                    <p class="text-sm text-muted-foreground">{{ student.login }}</p>
+                                </div>
                             </div>
                             <Link :href="getStudentLink(student.id)" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3 py-2">
                                 Ko'rish

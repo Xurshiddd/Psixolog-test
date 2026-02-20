@@ -143,6 +143,7 @@ const saveTest = async () => {
 };
 </script>
 <template>
+  <Head title="Test Yaratish" />
     <AppLayout :breadcrumbs="breadcrumbs">
   <div class="min-h-screen bg-slate-50 dark:bg-slate-900">
     <div class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">

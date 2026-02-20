@@ -41,7 +41,7 @@ onMounted(() => {
 </script>
 
 <template>
-    <Head title="S-XA Diagnosyikasi" />
+    <Head title="Toshkent To'qimachilik va yengil sanoat instituti" />
     <ErrorNotification />
     <div class="min-h-screen w-full flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 px-4 py-8 sm:px-6 lg:px-8">
         <div class="w-full max-w-5xl">

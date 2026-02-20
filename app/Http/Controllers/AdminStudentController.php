@@ -20,6 +20,14 @@ class AdminStudentController extends Controller
         $query = User::where('role', 'student')
             ->with(['group', 'speciality', 'usersTestsResults']);
 
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('login', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%");
+            });
+        }
+
         if ($request->has('group_id') && $request->group_id) {
             $query->where('group_id', $request->group_id);
         }
@@ -47,6 +55,7 @@ class AdminStudentController extends Controller
             'groups' => $groups,
             'specialities' => $specialities,
             'filters' => [
+                'search' => $request->get('search'),
                 'group_id' => $request->get('group_id'),
                 'speciality_id' => $request->get('speciality_id'),
                 'test_status' => $request->get('test_status'),
