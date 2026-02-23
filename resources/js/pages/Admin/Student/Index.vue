@@ -305,13 +305,23 @@ const getStudentLink = (studentId: number) => {
                                                 </DialogDescription>
                                             </DialogHeader>
                                             <div class="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-                                                <div v-for="result in student.users_tests_results" :key="result.id" class="border-b pb-4 last:border-0 last:pb-0">
-                                                    <h4 class="font-semibold mb-2">Modul ID: {{ result.pivot.module_id }}</h4>
-                                                    <div>
-                                                        <h5>Psiholog hulosasi</h5>
-                                                        <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.diagnosis }}</p>
-                                                        <h5>Avtomatik hulosa</h5>
-                                                        <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.result_real }}</p>
+                                                <div v-for="result in student.users_tests_results" :key="result.id" class="bg-background/50 border border-input rounded-lg p-4 shadow-sm last:border-0">
+                                                    <div class="flex items-start justify-between gap-4">
+                                                        <div class="flex items-center gap-3">
+                                                            <span class="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-medium">Modul {{ result.pivot.module_id }}</span>
+                                                            <div class="text-sm text-muted-foreground">ID: <span class="font-medium text-foreground ml-1">{{ result.pivot.module_id }}</span></div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                                        <div>
+                                                            <h5 class="text-sm font-medium mb-1">Psixolog xulosasi</h5>
+                                                            <p class="text-sm text-muted-foreground whitespace-pre-wrap break-words">{{ result.pivot.diagnosis || '-' }}</p>
+                                                        </div>
+                                                        <div>
+                                                            <h5 class="text-sm font-medium mb-1">Avtomatik xulosa</h5>
+                                                            <p class="text-sm text-muted-foreground whitespace-pre-wrap break-words">{{ result.pivot.result_real || '-' }}</p>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -397,13 +407,23 @@ const getStudentLink = (studentId: number) => {
                                         </DialogDescription>
                                     </DialogHeader>
                                     <div class="grid gap-4 py-4 max-h-[60vh] overflow-y-auto">
-                                        <div v-for="result in student.users_tests_results" :key="result.id" class="border-b pb-4 last:border-0 last:pb-0">
-                                            <h4 class="font-semibold mb-2">Modul ID: {{ result.pivot.module_id }}</h4>
-                                            <div>
-                                                <h5 class="text-sm font-medium">Psixolog xulosasi:</h5>
-                                                <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.diagnosis }}</p>
-                                                <h5 class="text-sm font-medium">Avtomatik xulosa:</h5>
-                                                <p class="text-sm text-muted-foreground whitespace-pre-wrap">{{ result.pivot.result_real }}</p>
+                                        <div v-for="result in student.users_tests_results" :key="result.id" class="bg-background/50 border border-input rounded-lg p-4 shadow-sm last:border-0">
+                                            <div class="flex items-start justify-between gap-4">
+                                                <div class="flex items-center gap-3">
+                                                    <span class="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-medium">Modul {{ result.pivot.module_id }}</span>
+                                                    <div class="text-sm text-muted-foreground">ID: <span class="font-medium text-foreground ml-1">{{ result.pivot.module_id }}</span></div>
+                                                </div>
+                                            </div>
+
+                                            <div class="mt-3 grid gap-3 sm:grid-cols-2">
+                                                <div>
+                                                    <h5 class="text-sm font-medium mb-1">Psixolog xulosasi</h5>
+                                                    <p class="text-sm text-muted-foreground whitespace-pre-wrap break-words">{{ result.pivot.diagnosis || '-' }}</p>
+                                                </div>
+                                                <div>
+                                                    <h5 class="text-sm font-medium mb-1">Avtomatik xulosa</h5>
+                                                    <p class="text-sm text-muted-foreground whitespace-pre-wrap break-words">{{ result.pivot.result_real || '-' }}</p>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Head, useForm, router } from '@inertiajs/vue3';
+import { computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 
@@ -46,6 +47,48 @@ const isOptionSelected = (testId: number, optionId: number) => {
     
     return false;
 };
+
+const optionStats = computed(() => {
+    const buckets: Record<number, { count: number; category?: any }> = {};
+    const tests = props.module?.tests || [];
+    const totalTests = tests.length || 0;
+
+    // Initialize buckets from module options (use option_value field)
+    for (const test of tests) {
+        for (const option of test.options || []) {
+            const val = typeof option.option_value !== 'undefined' ? option.option_value : (option.value ?? 0);
+            if (!Object.prototype.hasOwnProperty.call(buckets, val)) {
+                buckets[val] = { count: 0, category: option.result_category ?? option.result_category_id ?? undefined };
+            }
+        }
+    }
+
+    // For each test, count selected options' option_value
+    for (const test of tests) {
+        const testAnswers = props.answers?.[test.id] || [];
+        if (!Array.isArray(testAnswers) || testAnswers.length === 0) continue;
+
+        // Count each selected option (handle multiple selections defensively)
+        for (const ans of testAnswers) {
+            const opt = (test.options || []).find((o: any) => o.id === ans.test_option_id);
+            if (!opt) continue;
+            const val = typeof opt.option_value !== 'undefined' ? opt.option_value : (opt.value ?? 0);
+            if (!Object.prototype.hasOwnProperty.call(buckets, val)) {
+                buckets[val] = { count: 0, category: opt.result_category ?? opt.result_category_id ?? undefined };
+            }
+            buckets[val].count += 1;
+        }
+    }
+
+    const arr = Object.entries(buckets).map(([key, v]) => {
+        const valueNum = Number(key);
+        const percent = totalTests > 0 ? Math.round((v.count / totalTests) * 100) : 0;
+        return { value: valueNum, count: v.count, percent, category: v.category };
+    });
+
+    arr.sort((a, b) => b.count - a.count);
+    return { stats: arr, totalTests };
+});
 </script>
 
 <template>
@@ -55,6 +98,29 @@ const isOptionSelected = (testId: number, optionId: number) => {
             <h1 class="text-2xl font-bold tracking-tight mb-4">{{ module.name }} - Natijalar</h1>
 
             <div class="space-y-6">
+                <!-- Module Option Statistics -->
+                <div class="rounded-lg border bg-card p-6 shadow-sm">
+                    <h2 class="text-xl font-bold mb-3">Statistika</h2>
+                    <p class="text-sm text-muted-foreground mb-4">Har bir option uchun tanlanganlar soni va foizi (modul testlari bo'yicha).</p>
+
+                    <div v-if="optionStats.stats.length > 0" class="space-y-3">
+                        <div v-for="stat in optionStats.stats" :key="stat.value" class="flex flex-col gap-2">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-sm font-medium">Variant {{ stat.value }}</span>
+                                    <span v-if="stat.category" class="text-xs text-muted-foreground px-2 py-0.5 rounded bg-muted/20">{{ stat.category.name ?? stat.category }}</span>
+                                </div>
+                                <div class="text-sm font-semibold">{{ stat.count }} / {{ optionStats.totalTests }} ({{ stat.percent }}%)</div>
+                            </div>
+
+                            <div class="w-full bg-muted h-2 rounded overflow-hidden">
+                                <div class="h-2 bg-primary" :style="{ width: stat.percent + '%' }"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-else class="text-sm text-muted-foreground">Statistika uchun yetarli ma'lumot yo'q.</div>
+                </div>
                 <!-- Questions and Answers -->
                 <div v-for="(test, index) in module.tests" :key="test.id" class="rounded-lg border bg-card p-6 shadow-sm">
                     <div class="mb-4">

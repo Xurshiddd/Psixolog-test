@@ -28,7 +28,7 @@ class DatabaseSeeder extends Seeder
                 'code' => 2000 + $i,
             ]);
         }
-        User::factory(100)->create();
+        User::factory(1000)->create();
         User::create([
             'name' => 'Admin',
             'email' => 'marifovxurshid8@gmail.com',
