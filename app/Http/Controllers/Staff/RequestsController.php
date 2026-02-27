@@ -90,7 +90,7 @@ class RequestsController extends Controller
                         'sender_id' => $m->sender_id,
                         'sender_name' => $m->sender?->name,
                         'body' => $m->body,
-                        'created_at' => $m->created_at->toISOString(),
+                        'created_at' => $m->created_at->format('d.m.Y H:i'),
                     ]);
             }
         }

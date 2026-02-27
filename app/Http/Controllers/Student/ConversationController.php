@@ -52,7 +52,7 @@ class ConversationController extends Controller
                         'sender_id' => $m->sender_id,
                         'sender_name' => $m->sender?->name,
                         'body' => $m->body,
-                        'created_at' => $m->created_at->toISOString(),
+                        'created_at' => $m->created_at->format('d.m.Y H:i'),
                     ]);
             }
         }
@@ -64,8 +64,8 @@ class ConversationController extends Controller
                 'subject' => $c->subject,
                 'status' => $c->status,
                 'unread_count' => $c->unread_count,
-                'last_message_at' => optional($c->last_message_at)->toISOString(),
-                'created_at' => $c->created_at->toISOString(),
+                'last_message_at' => optional($c->last_message_at)->format('d.m.Y H:i'),
+                'created_at' => $c->created_at->format('d.m.Y H:i'),
             ]),
             'activeConversation' => $activeConversation ? [
                 'id' => $activeConversation->id,

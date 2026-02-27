@@ -111,13 +111,23 @@ async function sendMessage() {
 
     // optimistic (xohlasangiz qoldiring)
     const tempId = Date.now() * -1;
+    const now = new Date();
+    const formattedDate =
+        [now.getDate(), now.getMonth() + 1, now.getFullYear()]
+            .map((n) => n.toString().padStart(2, '0'))
+            .join('.') +
+        ' ' +
+        [now.getHours(), now.getMinutes()]
+            .map((n) => n.toString().padStart(2, '0'))
+            .join(':');
+
     localMessages.value.push({
         id: tempId,
         sender_role: 'student',
         sender_id: meId.value,
         sender_name: 'Siz',
         body,
-        created_at: new Date().toISOString(),
+        created_at: formattedDate,
     });
 
     messageBody.value = '';
