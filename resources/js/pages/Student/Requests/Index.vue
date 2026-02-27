@@ -1,173 +1,188 @@
 <script setup lang="ts">
-import { computed, ref, watch, onBeforeUnmount, nextTick } from 'vue'
-import { Head, router, usePage } from '@inertiajs/vue3'
-import AppStudentLayout from '@/layouts/AppStudentLayout.vue'
+import AppStudentLayout from '@/layouts/AppStudentLayout.vue';
+import { Head, router, usePage } from '@inertiajs/vue3';
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue';
 
 type Conversation = {
-  id: number
-  channel: 'admin' | 'psiholog'
-  subject: string | null
-  status: 'open' | 'closed'
-  last_message_at: string | null
-  created_at: string
-}
+    id: number;
+    channel: 'admin' | 'psiholog';
+    subject: string | null;
+    status: 'open' | 'closed';
+    last_message_at: string | null;
+    created_at: string;
+    unread_count?: number;
+};
 
 type ActiveConversation = {
-  id: number
-  channel: 'admin' | 'psiholog'
-  subject: string | null
-  status: 'open' | 'closed'
-} | null
+    id: number;
+    channel: 'admin' | 'psiholog';
+    subject: string | null;
+    status: 'open' | 'closed';
+} | null;
 
 type Message = {
-  id: number
-  sender_role: 'student' | 'staff'
-  sender_id: number
-  sender_name?: string | null
-  body: string
-  created_at: string
-}
+    id: number;
+    sender_role: 'student' | 'staff';
+    sender_id: number;
+    sender_name?: string | null;
+    body: string;
+    created_at: string;
+};
 
 const props = defineProps<{
-  conversations: Conversation[]
-  activeConversation: ActiveConversation
-  messages: Message[]
-}>()
+    conversations: Conversation[];
+    activeConversation: ActiveConversation;
+    messages: Message[];
+}>();
 // scroll
-const localMessages = ref<Message[]>([...props.messages])
-const autoScrollEnabled = ref(true)
-const messagesElDesktop = ref<HTMLElement | null>(null)
-const messagesElMobile = ref<HTMLElement | null>(null)
+const localMessages = ref<Message[]>([...props.messages]);
+const autoScrollEnabled = ref(true);
+const messagesElDesktop = ref<HTMLElement | null>(null);
+const messagesElMobile = ref<HTMLElement | null>(null);
 const messagesElActive = computed(() => {
-  const d = messagesElDesktop.value
-  const m = messagesElMobile.value
+    const d = messagesElDesktop.value;
+    const m = messagesElMobile.value;
 
-  if (m && m.offsetParent !== null) return m
-  if (d && d.offsetParent !== null) return d
+    if (m && m.offsetParent !== null) return m;
+    if (d && d.offsetParent !== null) return d;
 
-  // fallback
-  return m ?? d ?? null
-})
+    // fallback
+    return m ?? d ?? null;
+});
 
 function isNearBottom(el: HTMLElement, threshold = 120) {
-  return el.scrollHeight - el.scrollTop - el.clientHeight < threshold
+    return el.scrollHeight - el.scrollTop - el.clientHeight < threshold;
 }
 
 async function scrollToBottom(force = false) {
-  await nextTick()
-  await nextTick()
-  requestAnimationFrame(() => {
-    const el = messagesElActive.value
-    if (!el) return
-    if (!force && !autoScrollEnabled.value) return
-    el.scrollTop = el.scrollHeight
-  })
+    await nextTick();
+    await nextTick();
+    requestAnimationFrame(() => {
+        const el = messagesElActive.value;
+        if (!el) return;
+        if (!force && !autoScrollEnabled.value) return;
+        el.scrollTop = el.scrollHeight;
+    });
 }
 
 function onScrollMessages() {
-  const el = messagesElActive.value
-  if (!el) return
-  autoScrollEnabled.value = isNearBottom(el)
+    const el = messagesElActive.value;
+    if (!el) return;
+    autoScrollEnabled.value = isNearBottom(el);
 }
 
-const page = usePage()
-const meId = computed(() => (page.props.auth as any)?.user?.id as number)
+const page = usePage();
+const meId = computed(() => (page.props.auth as any)?.user?.id as number);
 
-const messageBody = ref('')
-const sending = ref(false)
+const messageBody = ref('');
+const sending = ref(false);
 
-const activeId = computed(() => props.activeConversation?.id ?? null)
+const activeId = computed(() => props.activeConversation?.id ?? null);
 // scrol
 
-watch(() => localMessages.value.length, () => {
-  scrollToBottom(false)
-})
+watch(
+    () => localMessages.value.length,
+    () => {
+        scrollToBottom(false);
+    },
+);
 function openConversation(id: number) {
-  router.get(
-    '/student/requests',
-    { conversation: id },
-    {
-      preserveScroll: true,
-      preserveState: false, // ✅ MUHIM: props/messages yangilansin
-    }
-  )
+    router.get(
+        '/student/requests',
+        { conversation: id },
+        {
+            preserveScroll: true,
+            preserveState: false, // ✅ MUHIM: props/messages yangilansin
+        },
+    );
 }
 
 function createConversation(channel: 'admin' | 'psiholog') {
-  if (props.conversations.find((c) => c.channel === channel)) {
-    return
-  }
-  router.post('/student/requests', { channel }, { preserveScroll: true })
+    if (props.conversations.find((c) => c.channel === channel)) {
+        return;
+    }
+    router.post('/student/requests', { channel }, { preserveScroll: true });
 }
 
 async function sendMessage() {
-  if (!activeId.value) return
-  const body = messageBody.value.trim()
-  if (!body) return
+    if (!activeId.value) return;
+    const body = messageBody.value.trim();
+    if (!body) return;
 
-  // optimistic (xohlasangiz qoldiring)
-  const tempId = Date.now() * -1
-  localMessages.value.push({
-    id: tempId,
-    sender_role: 'student',
-    sender_id: meId.value,
-    sender_name: 'Siz',
-    body,
-    created_at: new Date().toISOString(),
-  })
+    // optimistic (xohlasangiz qoldiring)
+    const tempId = Date.now() * -1;
+    localMessages.value.push({
+        id: tempId,
+        sender_role: 'student',
+        sender_id: meId.value,
+        sender_name: 'Siz',
+        body,
+        created_at: new Date().toISOString(),
+    });
 
-  messageBody.value = ''
-  sending.value = true
+    messageBody.value = '';
+    sending.value = true;
 
-  router.post(`/student/requests/${activeId.value}/messages`, { body }, {
-    preserveScroll: true,
-    onFinish: () => {
-      sending.value = false
-    },
-    onError: () => {
-      localMessages.value = localMessages.value.filter(m => m.id !== tempId)
-    },
-  })
+    router.post(
+        `/student/requests/${activeId.value}/messages`,
+        { body },
+        {
+            preserveScroll: true,
+            onFinish: () => {
+                sending.value = false;
+            },
+            onError: () => {
+                localMessages.value = localMessages.value.filter(
+                    (m) => m.id !== tempId,
+                );
+            },
+        },
+    );
 }
 
-let channelRef: any = null
+let channelRef: any = null;
 
 function subscribe(conversationId: number) {
-  if (!window.Echo) return
+    if (!window.Echo) return;
 
-  channelRef = window.Echo.private(`conversations.${conversationId}`)
-    .listen('.message.created', (e: any) => {
-      // ✅ optimistic bo‘lsa: server kelganda tempId qolib ketmasin (ixtiyoriy)
-      // localMessages.value = localMessages.value.filter(m => m.id > 0)
+    channelRef = window.Echo.private(`conversations.${conversationId}`)
+        .listen('.message.created', (e: any) => {
+            // ✅ optimistic bo‘lsa: server kelganda tempId qolib ketmasin (ixtiyoriy)
+            // localMessages.value = localMessages.value.filter(m => m.id > 0)
 
-      if (!localMessages.value.some(m => m.id === e.id)) {
-        localMessages.value.push(e)
-      }
-    })
-    .listenForWhisper('typing', (e: any) => {
-      typingName.value = e?.name ?? ''
-      typingUntil.value = Date.now() + 1500
-    })
+            if (!localMessages.value.some((m) => m.id === e.id)) {
+                localMessages.value.push(e);
+            }
+        })
+        .listenForWhisper('typing', (e: any) => {
+            typingName.value = e?.name ?? '';
+            typingUntil.value = Date.now() + 1500;
+        });
 }
 
 function unsubscribe(conversationId: number) {
-  if (!window.Echo) return
-  window.Echo.leave(`conversations.${conversationId}`)
-  channelRef = null
+    if (!window.Echo) return;
+    window.Echo.leave(`conversations.${conversationId}`);
+    channelRef = null;
 }
 
-const typingName = ref('')
-const typingUntil = ref(0)
+const typingName = ref('');
+const typingUntil = ref(0);
 
-const canSend = computed(() => !!activeId.value && messageBody.value.trim().length > 0 && !sending.value)
+const canSend = computed(
+    () =>
+        !!activeId.value &&
+        messageBody.value.trim().length > 0 &&
+        !sending.value,
+);
 
-let typingTimer: number | null = null
+let typingTimer: number | null = null;
 function whisperTyping() {
-  if (!activeId.value || !channelRef) return
-  channelRef.whisper('typing', { name: 'Siz yozayapsiz...' })
+    if (!activeId.value || !channelRef) return;
+    channelRef.whisper('typing', { name: 'Siz yozayapsiz...' });
 
-  if (typingTimer) window.clearTimeout(typingTimer)
-  typingTimer = window.setTimeout(() => {}, 800)
+    if (typingTimer) window.clearTimeout(typingTimer);
+    typingTimer = window.setTimeout(() => {}, 800);
 }
 
 /**
@@ -175,24 +190,24 @@ function whisperTyping() {
  * localMessages’ni props bilan sync qilamiz, keyin scroll.
  */
 watch(
-  () => props.messages,
-  async (v) => {
-    localMessages.value = [...v]
-    autoScrollEnabled.value = true
-    await scrollToBottom(true)
-  },
-  { immediate: true }
-)
+    () => props.messages,
+    async (v) => {
+        localMessages.value = [...v];
+        autoScrollEnabled.value = true;
+        await scrollToBottom(true);
+    },
+    { immediate: true },
+);
 
 /**
  * ✅ localMessages o‘zgarsa (realtime push) -> pastga tushsin (agar user pastga yaqin bo‘lsa)
  */
 watch(
-  () => localMessages.value.length,
-  async () => {
-    await scrollToBottom(false)
-  }
-)
+    () => localMessages.value.length,
+    async () => {
+        await scrollToBottom(false);
+    },
+);
 
 /**
  * ✅ Bitta watch: conversation change:
@@ -202,366 +217,523 @@ watch(
  * - input reset
  * - scroll (DOM render bo‘lgach)
  */
-const showChat = ref(!!activeId.value)
+const showChat = ref(!!activeId.value);
 
 watch(
-  activeId,
-  async (id, oldId) => {
-    if (oldId) unsubscribe(oldId)
-    if (id) subscribe(id)
+    activeId,
+    async (id, oldId) => {
+        if (oldId) unsubscribe(oldId);
+        if (id) subscribe(id);
 
-    showChat.value = !!id
-    messageBody.value = ''
-    autoScrollEnabled.value = true
-    await scrollToBottom(true)
-  },
-  { immediate: true }
-)
+        showChat.value = !!id;
+        messageBody.value = '';
+        autoScrollEnabled.value = true;
+        await scrollToBottom(true);
+    },
+    { immediate: true },
+);
 
 function goBackToList() {
-  showChat.value = false
+    showChat.value = false;
 }
 
 onBeforeUnmount(() => {
-  if (activeId.value) unsubscribe(activeId.value)
-})
+    if (activeId.value) unsubscribe(activeId.value);
+});
 watch(showChat, async (v) => {
-  if (v) await scrollToBottom(true)
-})
+    if (v) await scrollToBottom(true);
+});
 </script>
 
-
 <template>
-  <Head title="Murojaatlar" />
-  <AppStudentLayout>
-    <div class="h-[calc(100vh-0px)] w-full p-4">
-      <div class="grid h-full grid-cols-1 lg:grid-cols-12 gap-4">
-
-        <!-- ===================== -->
-        <!-- DESKTOP: SIDEBAR      -->
-        <!-- ===================== -->
-        <aside class="lg:col-span-3 h-full rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 overflow-hidden hidden lg:block">
-          <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-800">
-            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Murojaatlar</div>
-          </div>
-
-          <div class="p-3 flex gap-2">
-            <button
-              class="w-full rounded-xl border px-3 py-2 text-xs font-medium
-                     border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
-              @click="createConversation('admin')"
-            >
-              Admin bilan suhbat
-            </button>
-            <button
-              class="w-full rounded-xl border px-3 py-2 text-xs font-medium
-                     border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
-              @click="createConversation('psiholog')"
-            >
-              Psixolog bilan suhbat
-            </button>
-          </div>
-
-          <div class="h-[calc(100%-110px)] overflow-y-auto px-2 pb-3">
-            <button
-              v-for="c in conversations"
-              :key="c.id"
-              class="mb-2 w-full rounded-xl border px-3 py-3 text-left transition
-                     border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
-              :class="activeId === c.id ? 'ring-2 ring-offset-2 ring-gray-300 dark:ring-gray-700 dark:ring-offset-gray-950' : ''"
-              @click="openConversation(c.id)"
-            >
-              <div class="flex items-center justify-between gap-2">
-                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {{ c.channel === 'admin' ? 'Admin' : 'Psixolog' }}
-                </div>
-                <span
-                  class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                  :class="c.status === 'open'
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200'
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200'"
+    <Head title="Murojaatlar" />
+    <AppStudentLayout>
+        <div class="h-[calc(100vh-0px)] w-full p-4">
+            <div class="grid h-full grid-cols-1 gap-4 lg:grid-cols-12">
+                <!-- ===================== -->
+                <!-- DESKTOP: SIDEBAR      -->
+                <!-- ===================== -->
+                <aside
+                    class="hidden h-full overflow-hidden rounded-2xl border border-gray-200 bg-white lg:col-span-3 lg:block dark:border-gray-800 dark:bg-gray-950"
                 >
-                  {{ c.status }}
-                </span>
-              </div>
+                    <div
+                        class="border-b border-gray-200 px-4 py-3 dark:border-gray-800"
+                    >
+                        <div
+                            class="text-sm font-semibold text-gray-900 dark:text-gray-100"
+                        >
+                            Murojaatlar
+                        </div>
+                    </div>
 
-              <div class="mt-1 text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                {{ c.subject ?? 'Mavzu: (yo‘q)' }}
-              </div>
+                    <div class="flex gap-2 p-3">
+                        <button
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                            @click="createConversation('admin')"
+                        >
+                            Admin bilan suhbat
+                        </button>
+                        <button
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                            @click="createConversation('psiholog')"
+                        >
+                            Psixolog bilan suhbat
+                        </button>
+                    </div>
 
-              <div class="mt-2 text-[11px] text-gray-500 dark:text-gray-500">
-                Oxirgi: {{ c.last_message_at ?? c.created_at }}
-              </div>
-            </button>
+                    <div class="h-[calc(100%-110px)] overflow-y-auto px-2 pb-3">
+                        <button
+                            v-for="c in conversations"
+                            :key="c.id"
+                            class="mb-2 w-full rounded-xl border border-gray-200 px-3 py-3 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                            :class="
+                                activeId === c.id
+                                    ? 'ring-2 ring-gray-300 ring-offset-2 dark:ring-gray-700 dark:ring-offset-gray-950'
+                                    : ''
+                            "
+                            @click="openConversation(c.id)"
+                        >
+                            <div
+                                class="flex items-center justify-between gap-2"
+                            >
+                                <div
+                                    class="flex max-w-[70%] items-center gap-2"
+                                >
+                                    <div
+                                        class="max-w-[80%] truncate text-sm font-semibold text-gray-900 dark:text-gray-100"
+                                    >
+                                        {{
+                                            c.channel === 'admin'
+                                                ? 'Admin'
+                                                : 'Psixolog'
+                                        }}
+                                    </div>
+                                    <span
+                                        v-if="
+                                            c.unread_count && c.unread_count > 0
+                                        "
+                                        class="inline-flex shrink-0 items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white"
+                                    >
+                                        {{ c.unread_count }}
+                                    </span>
+                                </div>
+                                <span
+                                    class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                    :class="
+                                        c.status === 'open'
+                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200'
+                                            : 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200'
+                                    "
+                                >
+                                    {{ c.status }}
+                                </span>
+                            </div>
 
-            <div v-if="conversations.length === 0" class="px-3 py-6 text-sm text-gray-500 dark:text-gray-400">
-              Hali murojaat yo‘q. Yuqoridan suhbat boshlang.
-            </div>
-          </div>
-        </aside>
+                            <div
+                                class="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400"
+                            >
+                                {{ c.subject ?? 'Mavzu: (yo‘q)' }}
+                            </div>
 
-        <!-- ===================== -->
-        <!-- DESKTOP: CHAT         -->
-        <!-- ===================== -->
-        <section class="lg:col-span-9 h-full rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 overflow-hidden hidden lg:block">
-          <!-- Header -->
-          <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800">
-            <div class="min-w-0">
-              <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                <template v-if="activeConversation">
-                  {{ activeConversation.channel === 'admin' ? 'Admin bilan chat' : 'Psixolog bilan chat' }}
-                </template>
-                <template v-else>
-                  Chat tanlang
-                </template>
-              </div>
-              <div class="text-xs text-gray-600 dark:text-gray-400 truncate">
-                <template v-if="activeConversation">
-                  {{ activeConversation.subject ?? 'Mavzu: (yo‘q)' }}
-                </template>
-                <template v-else>
-                  Chapdan murojaat tanlang yoki yangisini yarating
-                </template>
-              </div>
-            </div>
+                            <div
+                                class="mt-2 text-[11px] text-gray-500 dark:text-gray-500"
+                            >
+                                Oxirgi: {{ c.last_message_at ?? c.created_at }}
+                            </div>
+                        </button>
 
-            <div class="flex gap-2">
-              <div class="h-8 w-40 rounded-lg border border-gray-200 dark:border-gray-800"></div>
-              <div class="h-8 w-40 rounded-lg border border-gray-200 dark:border-gray-800"></div>
-            </div>
-          </div>
+                        <div
+                            v-if="conversations.length === 0"
+                            class="px-3 py-6 text-sm text-gray-500 dark:text-gray-400"
+                        >
+                            Hali murojaat yo‘q. Yuqoridan suhbat boshlang.
+                        </div>
+                    </div>
+                </aside>
 
-          <!-- Messages -->
-          <div ref="messagesElDesktop" @scroll="onScrollMessages" class="h-[calc(100%-120px)] overflow-y-auto p-4 flex flex-col">
-            <template v-if="activeConversation">
-              <div v-if="localMessages.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
-                Hali xabar yo‘q. Birinchi bo‘lib yozing.
-              </div>
-
-              <div
-                v-for="m in localMessages"
-                :key="m.id"
-                class="mb-3 flex"
-                :class="m.sender_id === meId ? 'justify-end' : 'justify-start'"
-              >
-                <div
-                  class="max-w-[70%] rounded-2xl border px-3 py-2 text-sm leading-relaxed"
-                  :class="m.sender_id === meId
-                    ? 'border-gray-200 bg-gray-50 text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100'
-                    : 'border-gray-200 bg-white text-gray-900 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100'"
+                <!-- ===================== -->
+                <!-- DESKTOP: CHAT         -->
+                <!-- ===================== -->
+                <section
+                    class="hidden h-full overflow-hidden rounded-2xl border border-gray-200 bg-white lg:col-span-9 lg:block dark:border-gray-800 dark:bg-gray-950"
                 >
-                  <div class="text-[11px] font-semibold opacity-70 mb-1">
-                    {{ m.sender_id === meId ? 'Siz' : (m.sender_name ?? 'Operator') }}
-                  </div>
-                  <div class="whitespace-pre-wrap">{{ m.body }}</div>
-                  <div class="mt-1 text-[10px] opacity-60">{{ m.created_at }}</div>
-                </div>
-              </div>
+                    <!-- Header -->
+                    <div
+                        class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800"
+                    >
+                        <div class="min-w-0">
+                            <div
+                                class="text-sm font-semibold text-gray-900 dark:text-gray-100"
+                            >
+                                <template v-if="activeConversation">
+                                    {{
+                                        activeConversation.channel === 'admin'
+                                            ? 'Admin bilan chat'
+                                            : 'Psixolog bilan chat'
+                                    }}
+                                </template>
+                                <template v-else> Chat tanlang </template>
+                            </div>
+                            <div
+                                class="truncate text-xs text-gray-600 dark:text-gray-400"
+                            >
+                                <template v-if="activeConversation">
+                                    {{
+                                        activeConversation.subject ??
+                                        'Mavzu: (yo‘q)'
+                                    }}
+                                </template>
+                                <template v-else>
+                                    Chapdan murojaat tanlang yoki yangisini
+                                    yarating
+                                </template>
+                            </div>
+                        </div>
 
-              <div v-if="typingName && Date.now() < typingUntil" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                {{ typingName }} yozayapti...
-              </div>
-            </template>
+                        <div class="flex gap-2">
+                            <div
+                                class="h-8 w-40 rounded-lg border border-gray-200 dark:border-gray-800"
+                            ></div>
+                            <div
+                                class="h-8 w-40 rounded-lg border border-gray-200 dark:border-gray-800"
+                            ></div>
+                        </div>
+                    </div>
 
-            <template v-else>
-              <div class="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                Chat tanlanmagan
-              </div>
-            </template>
-          </div>
+                    <!-- Messages -->
+                    <div
+                        ref="messagesElDesktop"
+                        @scroll="onScrollMessages"
+                        class="flex h-[calc(100%-120px)] flex-col overflow-y-auto p-4"
+                    >
+                        <template v-if="activeConversation">
+                            <div
+                                v-if="localMessages.length === 0"
+                                class="text-sm text-gray-500 dark:text-gray-400"
+                            >
+                                Hali xabar yo‘q. Birinchi bo‘lib yozing.
+                            </div>
 
-          <!-- Input -->
-          <div class="border-t border-gray-200 p-3 dark:border-gray-800">
-            <div class="flex items-center gap-3">
-              <input
-                v-model="messageBody"
-                @input="whisperTyping"
-                :disabled="!activeId || sending"
-                @keydown.enter.prevent="sendMessage"
-                class="h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-gray-300
-                       disabled:opacity-60
-                       dark:border-gray-800 dark:bg-gray-950 dark:focus:ring-gray-700"
-                placeholder="Xabar yozing..."
-              />
+                            <div
+                                v-for="m in localMessages"
+                                :key="m.id"
+                                class="mb-3 flex"
+                                :class="
+                                    m.sender_id === meId
+                                        ? 'justify-end'
+                                        : 'justify-start'
+                                "
+                            >
+                                <div
+                                    class="max-w-[70%] rounded-2xl border px-3 py-2 text-sm leading-relaxed"
+                                    :class="
+                                        m.sender_id === meId
+                                            ? 'border-gray-200 bg-gray-50 text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100'
+                                            : 'border-gray-200 bg-white text-gray-900 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100'
+                                    "
+                                >
+                                    <div
+                                        class="mb-1 text-[11px] font-semibold opacity-70"
+                                    >
+                                        {{
+                                            m.sender_id === meId
+                                                ? 'Siz'
+                                                : (m.sender_name ?? 'Operator')
+                                        }}
+                                    </div>
+                                    <div class="whitespace-pre-wrap">
+                                        {{ m.body }}
+                                    </div>
+                                    <div class="mt-1 text-[10px] opacity-60">
+                                        {{ m.created_at }}
+                                    </div>
+                                </div>
+                            </div>
 
-              <button
-                class="h-11 rounded-xl border px-4 text-sm font-semibold
-                       border-gray-200 hover:bg-gray-50 disabled:opacity-60
-                       dark:border-gray-800 dark:hover:bg-gray-900"
-                :disabled="!canSend"
-                @click="sendMessage"
-              >
-                Send
-              </button>
-            </div>
-          </div>
-        </section>
+                            <div
+                                v-if="typingName && Date.now() < typingUntil"
+                                class="mt-2 text-xs text-gray-500 dark:text-gray-400"
+                            >
+                                {{ typingName }} yozayapti...
+                            </div>
+                        </template>
 
-        <!-- ===================== -->
-        <!-- MOBILE: LIST (showChat=false) -->
-        <!-- ===================== -->
-        <aside v-if="!showChat" class="h-full rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 overflow-hidden lg:hidden">
-          <div class="border-b border-gray-200 px-4 py-3 dark:border-gray-800">
-            <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">Murojaatlar</div>
-          </div>
+                        <template v-else>
+                            <div
+                                class="flex h-full items-center justify-center text-gray-500 dark:text-gray-400"
+                            >
+                                Chat tanlanmagan
+                            </div>
+                        </template>
+                    </div>
 
-          <div class="p-3 flex gap-2">
-            <button
-              class="w-full rounded-xl border px-3 py-2 text-xs font-medium
-                     border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
-              @click="createConversation('admin')"
-            >
-              Admin bilan suhbat
-            </button>
-            <button
-              class="w-full rounded-xl border px-3 py-2 text-xs font-medium
-                     border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
-              @click="createConversation('psiholog')"
-            >
-              Psixolog bilan suhbat
-            </button>
-          </div>
+                    <!-- Input -->
+                    <div
+                        class="border-t border-gray-200 p-3 dark:border-gray-800"
+                    >
+                        <div class="flex items-center gap-3">
+                            <input
+                                v-model="messageBody"
+                                @input="whisperTyping"
+                                :disabled="!activeId || sending"
+                                @keydown.enter.prevent="sendMessage"
+                                class="h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none disabled:opacity-60 dark:border-gray-800 dark:bg-gray-950 dark:focus:ring-gray-700"
+                                placeholder="Xabar yozing..."
+                            />
 
-          <div class="h-[calc(100%-110px)] overflow-y-auto px-2 pb-3">
-            <button
-              v-for="c in conversations"
-              :key="c.id"
-              class="mb-2 w-full rounded-xl border px-3 py-3 text-left transition
-                     border-gray-200 hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
-              :class="activeId === c.id ? 'ring-2 ring-offset-2 ring-gray-300 dark:ring-gray-700 dark:ring-offset-gray-950' : ''"
-              @click="openConversation(c.id)"
-            >
-              <div class="flex items-center justify-between gap-2">
-                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  {{ c.channel === 'admin' ? 'Admin' : 'Psixolog' }}
-                </div>
-                <span
-                  class="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                  :class="c.status === 'open'
-                    ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200'
-                    : 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200'"
+                            <button
+                                class="h-11 rounded-xl border border-gray-200 px-4 text-sm font-semibold hover:bg-gray-50 disabled:opacity-60 dark:border-gray-800 dark:hover:bg-gray-900"
+                                :disabled="!canSend"
+                                @click="sendMessage"
+                            >
+                                Send
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ===================== -->
+                <!-- MOBILE: LIST (showChat=false) -->
+                <!-- ===================== -->
+                <aside
+                    v-if="!showChat"
+                    class="h-full overflow-hidden rounded-2xl border border-gray-200 bg-white lg:hidden dark:border-gray-800 dark:bg-gray-950"
                 >
-                  {{ c.status }}
-                </span>
-              </div>
+                    <div
+                        class="border-b border-gray-200 px-4 py-3 dark:border-gray-800"
+                    >
+                        <div
+                            class="text-sm font-semibold text-gray-900 dark:text-gray-100"
+                        >
+                            Murojaatlar
+                        </div>
+                    </div>
 
-              <div class="mt-1 text-xs text-gray-600 dark:text-gray-400 line-clamp-2">
-                {{ c.subject ?? 'Mavzu: (yo‘q)' }}
-              </div>
+                    <div class="flex gap-2 p-3">
+                        <button
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                            @click="createConversation('admin')"
+                        >
+                            Admin bilan suhbat
+                        </button>
+                        <button
+                            class="w-full rounded-xl border border-gray-200 px-3 py-2 text-xs font-medium hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                            @click="createConversation('psiholog')"
+                        >
+                            Psixolog bilan suhbat
+                        </button>
+                    </div>
 
-              <div class="mt-2 text-[11px] text-gray-500 dark:text-gray-500">
-                Oxirgi: {{ c.last_message_at ?? c.created_at }}
-              </div>
-            </button>
+                    <div class="h-[calc(100%-110px)] overflow-y-auto px-2 pb-3">
+                        <button
+                            v-for="c in conversations"
+                            :key="c.id"
+                            class="mb-2 w-full rounded-xl border border-gray-200 px-3 py-3 text-left transition hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                            :class="
+                                activeId === c.id
+                                    ? 'ring-2 ring-gray-300 ring-offset-2 dark:ring-gray-700 dark:ring-offset-gray-950'
+                                    : ''
+                            "
+                            @click="openConversation(c.id)"
+                        >
+                            <div
+                                class="flex items-center justify-between gap-2"
+                            >
+                                <div
+                                    class="flex max-w-[70%] items-center gap-2"
+                                >
+                                    <div
+                                        class="max-w-[80%] truncate text-sm font-semibold text-gray-900 dark:text-gray-100"
+                                    >
+                                        {{
+                                            c.channel === 'admin'
+                                                ? 'Admin'
+                                                : 'Psixolog'
+                                        }}
+                                    </div>
+                                    <span
+                                        v-if="
+                                            c.unread_count && c.unread_count > 0
+                                        "
+                                        class="inline-flex shrink-0 items-center justify-center rounded-full bg-red-500 px-2 py-0.5 text-xs font-semibold text-white"
+                                    >
+                                        {{ c.unread_count }}
+                                    </span>
+                                </div>
+                                <span
+                                    class="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+                                    :class="
+                                        c.status === 'open'
+                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-200'
+                                            : 'bg-gray-100 text-gray-700 dark:bg-gray-900 dark:text-gray-200'
+                                    "
+                                >
+                                    {{ c.status }}
+                                </span>
+                            </div>
 
-            <div v-if="conversations.length === 0" class="px-3 py-6 text-sm text-gray-500 dark:text-gray-400">
-              Hali murojaat yo‘q. Yuqoridan suhbat boshlang.
-            </div>
-          </div>
-        </aside>
+                            <div
+                                class="mt-1 line-clamp-2 text-xs text-gray-600 dark:text-gray-400"
+                            >
+                                {{ c.subject ?? 'Mavzu: (yo‘q)' }}
+                            </div>
 
-        <!-- ===================== -->
-        <!-- MOBILE: CHAT (showChat=true) -->
-        <!-- ===================== -->
-        <section v-else class="h-full rounded-2xl border border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950 overflow-hidden lg:hidden">
-          <!-- Header (with Back) -->
-          <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800">
-            <div class="flex items-center gap-2 min-w-0">
-              <button
-                class="inline-flex items-center justify-center rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold
-                       hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
-                @click="goBackToList"
-              >
-                Back
-              </button>
+                            <div
+                                class="mt-2 text-[11px] text-gray-500 dark:text-gray-500"
+                            >
+                                Oxirgi: {{ c.last_message_at ?? c.created_at }}
+                            </div>
+                        </button>
 
-              <div class="min-w-0">
-                <div class="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                  <template v-if="activeConversation">
-                    {{ activeConversation.channel === 'admin' ? 'Admin bilan chat' : 'Psixolog bilan chat' }}
-                  </template>
-                  <template v-else>Chat tanlang</template>
-                </div>
-                <div class="text-xs text-gray-600 dark:text-gray-400 truncate">
-                  <template v-if="activeConversation">
-                    {{ activeConversation.subject ?? 'Mavzu: (yo‘q)' }}
-                  </template>
-                  <template v-else>Chat tanlanmagan</template>
-                </div>
-              </div>
-            </div>
-          </div>
+                        <div
+                            v-if="conversations.length === 0"
+                            class="px-3 py-6 text-sm text-gray-500 dark:text-gray-400"
+                        >
+                            Hali murojaat yo‘q. Yuqoridan suhbat boshlang.
+                        </div>
+                    </div>
+                </aside>
 
-          <!-- Messages -->
-          <div ref="messagesElMobile" @scroll="onScrollMessages" class="h-[calc(100%-120px)] overflow-y-auto p-4">
-            <template v-if="activeConversation">
-              <div v-if="localMessages.length === 0" class="text-sm text-gray-500 dark:text-gray-400">
-                Hali xabar yo‘q. Birinchi bo‘lib yozing.
-              </div>
-
-              <div
-                v-for="m in localMessages"
-                :key="m.id"
-                class="mb-3 flex"
-                :class="m.sender_id === meId ? 'justify-end' : 'justify-start'"
-              >
-                <div
-                  class="max-w-[85%] rounded-2xl border px-3 py-2 text-sm leading-relaxed"
-                  :class="m.sender_id === meId
-                    ? 'border-gray-200 bg-gray-50 text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100'
-                    : 'border-gray-200 bg-white text-gray-900 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100'"
+                <!-- ===================== -->
+                <!-- MOBILE: CHAT (showChat=true) -->
+                <!-- ===================== -->
+                <section
+                    v-else
+                    class="h-full overflow-hidden rounded-2xl border border-gray-200 bg-white lg:hidden dark:border-gray-800 dark:bg-gray-950"
                 >
-                  <div class="text-[11px] font-semibold opacity-70 mb-1">
-                    {{ m.sender_id === meId ? 'Siz' : (m.sender_name ?? 'Operator') }}
-                  </div>
-                  <div class="whitespace-pre-wrap">{{ m.body }}</div>
-                  <div class="mt-1 text-[10px] opacity-60">{{ m.created_at }}</div>
-                </div>
-              </div>
+                    <!-- Header (with Back) -->
+                    <div
+                        class="flex items-center justify-between border-b border-gray-200 px-4 py-3 dark:border-gray-800"
+                    >
+                        <div class="flex min-w-0 items-center gap-2">
+                            <button
+                                class="inline-flex items-center justify-center rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-semibold hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                                @click="goBackToList"
+                            >
+                                Back
+                            </button>
 
-              <div v-if="typingName && Date.now() < typingUntil" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-                {{ typingName }} yozayapti...
-              </div>
-            </template>
+                            <div class="min-w-0">
+                                <div
+                                    class="text-sm font-semibold text-gray-900 dark:text-gray-100"
+                                >
+                                    <template v-if="activeConversation">
+                                        {{
+                                            activeConversation.channel ===
+                                            'admin'
+                                                ? 'Admin bilan chat'
+                                                : 'Psixolog bilan chat'
+                                        }}
+                                    </template>
+                                    <template v-else>Chat tanlang</template>
+                                </div>
+                                <div
+                                    class="truncate text-xs text-gray-600 dark:text-gray-400"
+                                >
+                                    <template v-if="activeConversation">
+                                        {{
+                                            activeConversation.subject ??
+                                            'Mavzu: (yo‘q)'
+                                        }}
+                                    </template>
+                                    <template v-else>Chat tanlanmagan</template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-            <template v-else>
-              <div class="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
-                Chat tanlanmagan
-              </div>
-            </template>
-          </div>
+                    <!-- Messages -->
+                    <div
+                        ref="messagesElMobile"
+                        @scroll="onScrollMessages"
+                        class="h-[calc(100%-120px)] overflow-y-auto p-4"
+                    >
+                        <template v-if="activeConversation">
+                            <div
+                                v-if="localMessages.length === 0"
+                                class="text-sm text-gray-500 dark:text-gray-400"
+                            >
+                                Hali xabar yo‘q. Birinchi bo‘lib yozing.
+                            </div>
 
-          <!-- Input -->
-          <div class="border-t border-gray-200 p-3 dark:border-gray-800">
-            <div class="flex items-center gap-3">
-              <input
-                v-model="messageBody"
-                @input="whisperTyping"
-                :disabled="!activeId || sending"
-                @keydown.enter.prevent="sendMessage"
-                class="h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 text-sm
-                       focus:outline-none focus:ring-2 focus:ring-gray-300
-                       disabled:opacity-60
-                       dark:border-gray-800 dark:bg-gray-950 dark:focus:ring-gray-700"
-                placeholder="Xabar yozing..."
-              />
+                            <div
+                                v-for="m in localMessages"
+                                :key="m.id"
+                                class="mb-3 flex"
+                                :class="
+                                    m.sender_id === meId
+                                        ? 'justify-end'
+                                        : 'justify-start'
+                                "
+                            >
+                                <div
+                                    class="max-w-[85%] rounded-2xl border px-3 py-2 text-sm leading-relaxed"
+                                    :class="
+                                        m.sender_id === meId
+                                            ? 'border-gray-200 bg-gray-50 text-gray-900 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-100'
+                                            : 'border-gray-200 bg-white text-gray-900 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100'
+                                    "
+                                >
+                                    <div
+                                        class="mb-1 text-[11px] font-semibold opacity-70"
+                                    >
+                                        {{
+                                            m.sender_id === meId
+                                                ? 'Siz'
+                                                : (m.sender_name ?? 'Operator')
+                                        }}
+                                    </div>
+                                    <div class="whitespace-pre-wrap">
+                                        {{ m.body }}
+                                    </div>
+                                    <div class="mt-1 text-[10px] opacity-60">
+                                        {{ m.created_at }}
+                                    </div>
+                                </div>
+                            </div>
 
-              <button
-                class="h-11 rounded-xl border px-4 text-sm font-semibold
-                       border-gray-200 hover:bg-gray-50 disabled:opacity-60
-                       dark:border-gray-800 dark:hover:bg-gray-900"
-                :disabled="!canSend"
-                @click="sendMessage"
-              >
-                Send
-              </button>
+                            <div
+                                v-if="typingName && Date.now() < typingUntil"
+                                class="mt-2 text-xs text-gray-500 dark:text-gray-400"
+                            >
+                                {{ typingName }} yozayapti...
+                            </div>
+                        </template>
+
+                        <template v-else>
+                            <div
+                                class="flex h-full items-center justify-center text-gray-500 dark:text-gray-400"
+                            >
+                                Chat tanlanmagan
+                            </div>
+                        </template>
+                    </div>
+
+                    <!-- Input -->
+                    <div
+                        class="border-t border-gray-200 p-3 dark:border-gray-800"
+                    >
+                        <div class="flex items-center gap-3">
+                            <input
+                                v-model="messageBody"
+                                @input="whisperTyping"
+                                :disabled="!activeId || sending"
+                                @keydown.enter.prevent="sendMessage"
+                                class="h-11 flex-1 rounded-xl border border-gray-200 bg-white px-3 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none disabled:opacity-60 dark:border-gray-800 dark:bg-gray-950 dark:focus:ring-gray-700"
+                                placeholder="Xabar yozing..."
+                            />
+
+                            <button
+                                class="h-11 rounded-xl border border-gray-200 px-4 text-sm font-semibold hover:bg-gray-50 disabled:opacity-60 dark:border-gray-800 dark:hover:bg-gray-900"
+                                :disabled="!canSend"
+                                @click="sendMessage"
+                            >
+                                Send
+                            </button>
+                        </div>
+                    </div>
+                </section>
             </div>
-          </div>
-        </section>
-
-      </div>
-    </div>
-  </AppStudentLayout>
+        </div>
+    </AppStudentLayout>
 </template>
-

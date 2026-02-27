@@ -28,13 +28,22 @@ class RequestsController extends Controller
         $q = trim((string) $request->query('q', ''));
 
         $students = User::query()
+            ->select('id', 'name', 'email')
             ->students()
             ->when($q !== '', function ($qq) use ($q) {
                 $qq->where(fn ($w) => $w->where('name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%"));
             })
+            ->addSelect(['unread_count' => \App\Models\Message::selectRaw('COUNT(*)')
+                ->join('conversations', 'messages.conversation_id', '=', 'conversations.id')
+                ->whereColumn('conversations.student_id', 'users.id')
+                ->where('conversations.channel', $channel)
+                ->where('messages.sender_role', 'student')
+                ->whereNull('messages.read_at')
+            ])
+            ->orderByDesc('unread_count')
             ->orderBy('name')
             ->limit(200)
-            ->get(['id', 'name', 'email']);
+            ->get();
 
         $activeStudentId = (int) $request->query('student');
         $activeStudent = null;
@@ -57,6 +66,12 @@ class RequestsController extends Controller
                         'status' => 'open',
                         'staff_id' => $user->id,
                     ]);
+                } else {
+                    // Mark messages from student as read
+                    $activeConversation->messages()
+                        ->where('sender_role', 'student')
+                        ->whereNull('read_at')
+                        ->update(['read_at' => now()]);
                 }
 
                 $this->authorize('viewAsStaff', $activeConversation);

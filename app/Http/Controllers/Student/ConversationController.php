@@ -16,9 +16,13 @@ class ConversationController extends Controller
 
         $conversations = Conversation::query()
             ->where('student_id', $studentId)
+            ->withCount(['messages as unread_count' => function ($query) {
+                $query->where('sender_role', '!=', 'student')
+                      ->whereNull('read_at');
+            }])
             ->orderByDesc('last_message_at')
             ->orderByDesc('id')
-            ->get(['id', 'channel', 'subject', 'status', 'last_message_at', 'created_at']);
+            ->get(['id', 'channel', 'subject', 'status', 'last_message_at', 'created_at', 'unread_count']);
 
         $activeId = (int) $request->query('conversation');
         $activeConversation = null;
@@ -31,6 +35,12 @@ class ConversationController extends Controller
 
             if ($activeConversation) {
                 $this->authorize('view', $activeConversation);
+
+                // Mark messages from staff as read
+                $activeConversation->messages()
+                    ->where('sender_role', '!=', 'student')
+                    ->whereNull('read_at')
+                    ->update(['read_at' => now()]);
 
                 $messages = $activeConversation->messages()
                     ->with('sender:id,name')
@@ -53,6 +63,7 @@ class ConversationController extends Controller
                 'channel' => $c->channel,
                 'subject' => $c->subject,
                 'status' => $c->status,
+                'unread_count' => $c->unread_count,
                 'last_message_at' => optional($c->last_message_at)->toISOString(),
                 'created_at' => $c->created_at->toISOString(),
             ]),

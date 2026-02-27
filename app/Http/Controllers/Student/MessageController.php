@@ -7,7 +7,6 @@ use App\Http\Requests\Student\StoreMessageRequest;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Events\MessageCreated;
-use Illuminate\Support\Facades\Log;
 
 class MessageController extends Controller
 {
@@ -25,11 +24,7 @@ class MessageController extends Controller
         $conversation->forceFill([
             'last_message_at' => $message->created_at,
         ])->save();
-        // event(new MessageCreated($message));
         MessageCreated::dispatch($message);
-        Log::info('Message created', [
-            'message' => $message,
-        ]);
 
         return redirect()->route('student.requests.index', ['conversation' => $conversation->id]);
     }

@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { Link } from '@inertiajs/vue3';
-import { BookOpen, MessageSquare, LayoutGrid } from 'lucide-vue-next';
 import NavFooter from '@/components/NavFooter.vue';
 import NavMain from '@/components/NavMain.vue';
 import NavUser from '@/components/NavUser.vue';
@@ -15,9 +13,17 @@ import {
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
+import { Link, usePage } from '@inertiajs/vue3';
+import { BookOpen, LayoutGrid, MessageSquare } from 'lucide-vue-next';
+import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
-const mainNavItems: NavItem[] = [
+const page = usePage();
+const unreadCount = computed(
+    () => (page.props.unread_requests_count as number) || 0,
+);
+
+const mainNavItems = computed<NavItem[]>(() => [
     {
         title: 'Dashboard',
         href: dashboard(),
@@ -32,8 +38,9 @@ const mainNavItems: NavItem[] = [
         title: 'Murojaatlar',
         href: '/student/requests',
         icon: MessageSquare,
+        badge: unreadCount.value > 0 ? unreadCount.value : undefined,
     },
-];
+]);
 
 const footerNavItems: NavItem[] = [
     // {

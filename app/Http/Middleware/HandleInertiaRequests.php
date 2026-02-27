@@ -29,11 +29,34 @@ class HandleInertiaRequests extends Middleware
 
     public function share(Request $request): array
     {
+        $user = $request->user();
+        $unreadRequestsCount = 0;
+
+        if ($user) {
+            if ($user->role === 'student') {
+                $unreadRequestsCount = \App\Models\Message::whereHas('conversation', function ($query) use ($user) {
+                    $query->where('student_id', $user->id);
+                })
+                    ->where('sender_role', '!=', 'student')
+                    ->whereNull('read_at')
+                    ->count();
+            }
+            else if (in_array($user->role, ['admin', 'psiholog'])) {
+                $unreadRequestsCount = \App\Models\Message::whereHas('conversation', function ($query) use ($user) {
+                    $query->where('channel', $user->role);
+                })
+                    ->where('sender_role', 'student')
+                    ->whereNull('read_at')
+                    ->count();
+            }
+        }
+
         return array_merge(parent::share($request), [
             'name' => config('app.name'),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $user,
             ],
+            'unread_requests_count' => $unreadRequestsCount,
             'sidebarOpen' => !$request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'locale' => fn() => app()->getLocale(),
             'flash' => [
