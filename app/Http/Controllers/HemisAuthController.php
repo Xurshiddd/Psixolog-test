@@ -61,7 +61,7 @@ class HemisAuthController extends Controller
             ['login' => (int)$userData['login']],
             [
                 'name' => $userData['name'],
-                'email' => $userData['email'] ?? $email,
+                'email' => $email,
                 'phone' => $userData['phone'],
                 'picture' => $userData['picture'],
                 'birth_date' => $userData['birth_date'],
