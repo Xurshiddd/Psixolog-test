@@ -56,9 +56,7 @@ class HemisAuthController extends Controller
                 'name' => $userData['data']['specialty']['name'],
             ]
         );
-        if ($userData['email']== null || $userData['email'] == '') {
-            $email = $userData['login'] . '@ttysi.com';
-        }
+        $email = (!isset($userData['email']) || empty($userData['email'])) ? $userData['login'] . '@ttysi.com' : $userData['email'];
         $user = User::updateOrCreate(
             ['login' => (int)$userData['login']],
             [
