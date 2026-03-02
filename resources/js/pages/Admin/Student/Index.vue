@@ -255,7 +255,7 @@ const getStudentLink = (studentId: number) => {
                                     Login
                                 </th>
                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
-                                    Telefon
+                                    Kurs
                                 </th>
                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
                                     Guruh
@@ -291,7 +291,7 @@ const getStudentLink = (studentId: number) => {
                                     {{ student.login }}
                                 </td>
                                 <td class="p-4 align-middle [&:has([role=checkbox])]:pr-0">
-                                    {{ student.phone }}
+                                    {{ student.level }}
                                 </td>
                                 <td class="p-4 align-middle [&:has([role=checkbox])]:pr-0">
                                     <span v-if="student.group">{{ student.group.name }}</span>
