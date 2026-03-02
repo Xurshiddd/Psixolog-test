@@ -50,7 +50,7 @@ class StudentsExportWithDiagnosis implements FromCollection, WithHeadings, WithM
 
         foreach ($this->modules as $module) {
             $moduleResult = $results->get($module->id);
-            $row[] = $moduleResult ? $moduleResult->pivot->diagnosis : 'YO\'Q';
+            $row[] = $moduleResult->pivot->diagnosis ? $moduleResult->pivot->diagnosis : 'YO\'Q';
         }
 
         return $row;
