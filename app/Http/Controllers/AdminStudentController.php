@@ -12,6 +12,7 @@ use App\Models\SolveTest;
 use App\Exports\StudentsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\StudentPdfExportService;
+use App\Exports\StudentsExportWithDiagnosis;
 
 class AdminStudentController extends Controller
 {
@@ -95,7 +96,7 @@ class AdminStudentController extends Controller
         // If psychologist has provided a diagnosis use it, otherwise fall back to generated result_real
         $diagnosisValue = null;
         if ($result) {
-            $diagnosisValue = $result->pivot->diagnosis ?? $result->pivot->result_real;
+            $diagnosisValue = $result->pivot->diagnosis;
         }
 
         return Inertia::render('Admin/Student/Result', [
@@ -152,6 +153,13 @@ class AdminStudentController extends Controller
         $modules = Module::orderBy('name')->get();
         $timestamp = now()->format('Y-m-d_H-i-s');
         return Excel::download(new StudentsExport($students, $modules), "talabalar_$timestamp.xlsx");
+    }
+    public function exportExcelWithDiagnosis(Request $request)
+    {
+        $students = $this->getFilteredStudents($request);
+        $modules = Module::orderBy('name')->get();
+        $timestamp = now()->format('Y-m-d_H-i-s');
+        return Excel::download(new StudentsExportWithDiagnosis($students, $modules), "talabalar_$timestamp.xlsx");
     }
 
     public function exportPdf(Request $request, StudentPdfExportService $pdfExportService)

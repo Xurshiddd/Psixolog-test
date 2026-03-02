@@ -3,7 +3,6 @@ import { Head, useForm, router } from '@inertiajs/vue3';
 import { computed } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-
 const props = defineProps<{
     student: any;
     module: any;
@@ -116,6 +115,9 @@ const optionStats = computed(() => {
                             <div class="w-full bg-muted h-2 rounded overflow-hidden">
                                 <div class="h-2 bg-primary" :style="{ width: stat.percent + '%' }"></div>
                             </div>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <h5 class="text-lg font-bold">Jami: {{ optionStats.stats.reduce((sum, item) => sum + item.value, 0) }}</h5>
                         </div>
                     </div>
 

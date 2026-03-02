@@ -117,6 +117,17 @@ const downloadPdf = () => {
     window.location.href = `/admin/students/export/pdf${queryString ? '?' + queryString : ''}`;
 };
 
+const downloadExcelWithDiagnosis = () => {
+    const params = new URLSearchParams();
+    Object.entries(getFilterParams()).forEach(([key, value]) => {
+        if (value) {
+            params.append(key, String(value));
+        }
+    });
+    const queryString = params.toString();
+    window.location.href = `/admin/students/export/excel-with-diagnosis${queryString ? '?' + queryString : ''}`;
+};
+
 const getStudentLink = (studentId: number) => {
     const filterParams = getFilterParams();
     const params = new URLSearchParams();
@@ -221,6 +232,9 @@ const getStudentLink = (studentId: number) => {
                     </Button>
                     <Button @click="downloadPdf" variant="outline" class="flex-1">
                         📄 PDF'ga yuklash
+                    </Button>
+                    <Button @click="downloadExcelWithDiagnosis" variant="outline" class="flex-1">
+                        📊 Excel'ga yuklash (diagnosis bilan)
                     </Button>
                 </div>
             </div>
