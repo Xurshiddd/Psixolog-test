@@ -323,7 +323,7 @@ const getStudentLink = (studentId: number) => {
                                                     <div class="flex items-start justify-between gap-4">
                                                         <div class="flex items-center gap-3">
                                                             <span class="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-medium">Modul {{ result.pivot.module_id }}</span>
-                                                            <div class="text-sm text-muted-foreground">ID: <span class="font-medium text-foreground ml-1">{{ result.pivot.module_id }}</span></div>
+                                                            <div class="text-sm text-muted-foreground">:<span class="font-medium text-foreground ml-1">{{ result.name }}</span></div>
                                                         </div>
                                                     </div>
 
