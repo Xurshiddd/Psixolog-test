@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { Button } from '@/components/ui/button';
-
+import Button from '@/components/ui/button/Button.vue';
+const page = usePage();
+const user = page.props.auth.user;
 const props = defineProps<{
     student: any;
     results: Array<any>;
@@ -33,6 +34,23 @@ const getBackLink = () => {
     return `/admin/students${queryString ? '?' + queryString : ''}`;
 };
 
+const deleteResult = (resultId: number, studentId: number) => {
+    if (confirm('Haqiqatdan ham ushbu natijani o\'chirmoqchimisiz?')) {
+        removeResult(resultId, studentId);
+    }
+};
+function removeResult(resultId: number, studentId: number) {
+    if (confirm('Haqiqatdan ham ushbu natijani o\'chirmoqchimisiz?')) {
+        router.delete(`/admin/students/${studentId}/results/${resultId}`, {
+            onSuccess: () => {
+                router.reload();
+            },
+            onError: () => {
+                alert('Natijani o\'chirishda xatolik yuz berdi. Iltimos, qayta urinib ko\'ring.');
+            },
+        });
+    }
+}
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Talabalar',
@@ -47,6 +65,7 @@ const breadcrumbs: BreadcrumbItem[] = [
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
 };
+
 </script>
 
 <template>
@@ -105,6 +124,13 @@ const formatDate = (dateString: string) => {
                                         >
                                             Natijani ko'rish
                                         </Link>
+                                        <Button
+                                            @click="deleteResult(result.id, student.id)"
+                                            v-if="user.role === 'admin'"
+                                            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4 py-2 ml-2"
+                                        >
+                                            O'chirish
+                                        </Button>
                                     </td>
                                 </tr>
                                 <tr v-if="results.length === 0">

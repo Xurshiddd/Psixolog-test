@@ -72,6 +72,7 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
         Route::get('/requests', [RequestsController::class, 'adminIndex'])->name('requests.index');
         Route::post('/requests/{conversation}/messages', [MessagesController::class, 'adminStore'])->name('requests.messages.store');
+        Route::delete('/students/{student}/results/{result}', [AdminStudentController::class, 'destroyResult'])->name('students.results.destroy');
     });
 
     Route::prefix('psiholog')->name('psiholog.')->middleware('psiholog')->group(function () {

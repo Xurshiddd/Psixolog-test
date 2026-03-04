@@ -13,6 +13,7 @@ use App\Exports\StudentsExport;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Services\StudentPdfExportService;
 use App\Exports\StudentsExportWithDiagnosis;
+use Illuminate\Support\Facades\DB;
 
 class AdminStudentController extends Controller
 {
@@ -169,5 +170,12 @@ class AdminStudentController extends Controller
         $pdf = $pdfExportService->generatePdf($students);
         return $pdf->download("talabalar_$timestamp.pdf");
     }
-
+    public function destroyResult(User $student, $resultId)
+    {
+        DB::transaction(function () use ($student, $resultId) {
+            DB::table('solve_tests')->where('user_id', $student->id)->where('module_id', $resultId)->delete();
+            DB::table('users_tests_results')->where('user_id', $student->id)->where('module_id', $resultId)->delete();
+        });
+        return to_route('admin.students.show', $student->id)->with('success', 'Natija muvaffaqiyatli o\'chirildi');
+    }
 }
