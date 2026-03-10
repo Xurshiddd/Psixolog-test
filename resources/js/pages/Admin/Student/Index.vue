@@ -323,7 +323,7 @@ const getStudentLink = (studentId: number) => {
                                                 <div v-for="result in student.users_tests_results" :key="result.id" class="bg-background/50 border border-input rounded-lg p-4 shadow-sm last:border-0">
                                                     <div class="flex items-start justify-between gap-4">
                                                         <div class="flex items-center gap-3">
-                                                            <span class="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-medium">Modul {{ result.pivot.module_id }}</span>
+                                                            <span class="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-medium">Modul -></span>
                                                             <div class="text-sm text-muted-foreground">:<span class="font-medium text-foreground ml-1">{{ result.name }}</span></div>
                                                         </div>
                                                     </div>
@@ -425,8 +425,8 @@ const getStudentLink = (studentId: number) => {
                                         <div v-for="result in student.users_tests_results" :key="result.id" class="bg-background/50 border border-input rounded-lg p-4 shadow-sm last:border-0">
                                             <div class="flex items-start justify-between gap-4">
                                                 <div class="flex items-center gap-3">
-                                                    <span class="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-medium">Modul {{ result.pivot.module_id }}</span>
-                                                    <div class="text-sm text-muted-foreground">ID: <span class="font-medium text-foreground ml-1">{{ result.pivot.module_id }}</span></div>
+                                                    <span class="inline-flex items-center justify-center rounded-full bg-primary/10 text-primary px-3 py-1 text-sm font-medium">Modul -></span>
+                                                    <div class="text-sm text-muted-foreground">: <span class="font-medium text-foreground ml-1">{{ result.name }}</span></div>
                                                 </div>
                                             </div>
 
