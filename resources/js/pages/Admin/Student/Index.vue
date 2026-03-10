@@ -136,6 +136,7 @@ const getStudentLink = (studentId: number) => {
             params.append(key, String(value));
         }
     });
+    
     if (props.students.current_page > 1) {
         params.append('page', String(props.students.current_page));
     }

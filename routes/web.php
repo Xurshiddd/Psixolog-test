@@ -16,6 +16,7 @@ use App\Http\Controllers\Staff\MessagesController;
 use App\Http\Controllers\ResultCategoryController;
 use App\Http\Controllers\DashboardController;
 use Illuminate\Support\Facades\DB;
+use App\Http\Controllers\NotificationController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -37,6 +38,9 @@ Route::get('/locale/{locale}', function (string $locale) {
     return back()->withCookie(cookie('locale', $locale, 60 * 24 * 365));
 })->name('locale.switch');
 Route::middleware(['auth', 'double'])->group(function () {
+     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
+    Route::post('/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
     Route::get('/test/index', [TestController::class , 'index'])->name('test_index');
     Route::get('/test/create', [TestController::class , 'create'])->name('test_create');
     Route::post('/test/store', [TestController::class , 'store'])->name('test_store');
@@ -68,7 +72,6 @@ Route::middleware(['auth'])->prefix('student')->name('student.')->group(function
         ->name('requests.messages.store');
 });
 Route::middleware(['auth'])->group(function () {
-
     Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
         Route::get('/requests', [RequestsController::class, 'adminIndex'])->name('requests.index');
         Route::post('/requests/{conversation}/messages', [MessagesController::class, 'adminStore'])->name('requests.messages.store');

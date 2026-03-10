@@ -103,6 +103,12 @@ class StudentTestServices
                 'result_real' => $realResult,
             ]);
             DB::commit();
+
+            // Notify admin and psiholog users
+            $usersToNotify = \App\Models\User::whereIn('role', ['admin', 'psiholog'])->get();
+            $student = \App\Models\User::find($userId);
+            \Illuminate\Support\Facades\Notification::send($usersToNotify, new \App\Notifications\ModuleCompletedNotification($student, $module));
+
             return ['status' => 'success', 'message' => 'Test submitted successfully'];
         } catch (\Throwable $th) {
             DB::rollBack();
