@@ -20,7 +20,7 @@ class AdminStudentController extends Controller
     public function index(Request $request)
     {
         $query = User::where('role', 'student')
-            ->with(['group', 'speciality', 'usersTestsResults']);
+            ->with(['group', 'speciality', 'faculity', 'usersTestsResults']);
 
         if ($request->has('search') && $request->search) {
             $search = $request->search;
@@ -38,6 +38,14 @@ class AdminStudentController extends Controller
             $query->where('speciality_id', $request->speciality_id);
         }
 
+        if ($request->has('faculity_id') && $request->faculity_id) {
+            $query->where('faculity_id', $request->faculity_id);
+        }
+
+        if ($request->has('level') && $request->level) {
+            $query->where('level', $request->level);
+        }
+
         
         if ($request->has('test_status') && $request->test_status) {
             if ($request->test_status === 'submitted') {
@@ -51,15 +59,19 @@ class AdminStudentController extends Controller
 
         $groups = Group::orderBy('name')->get();
         $specialities = Speciality::orderBy('name')->get();
+        $faculities = \App\Models\Faculity::orderBy('name')->get();
 
         return Inertia::render('Admin/Student/Index', [
             'students' => $students,
             'groups' => $groups,
             'specialities' => $specialities,
+            'faculities' => $faculities,
             'filters' => [
                 'search' => $request->get('search'),
-                'group_id' => $request->get('group_id'),
+                'faculity_id' => $request->get('faculity_id'),
                 'speciality_id' => $request->get('speciality_id'),
+                'group_id' => $request->get('group_id'),
+                'level' => $request->get('level'),
                 'test_status' => $request->get('test_status'),
             ]
         ]);
@@ -124,7 +136,7 @@ class AdminStudentController extends Controller
     private function getFilteredStudents(Request $request)
     {
         $query = User::where('role', 'student')
-            ->with(['group', 'speciality', 'usersTestsResults']);
+            ->with(['group', 'speciality', 'faculity', 'usersTestsResults']);
 
         // Filter by group
         if ($request->has('group_id') && $request->group_id) {
@@ -134,6 +146,16 @@ class AdminStudentController extends Controller
         // Filter by speciality
         if ($request->has('speciality_id') && $request->speciality_id) {
             $query->where('speciality_id', $request->speciality_id);
+        }
+
+        // Filter by faculity
+        if ($request->has('faculity_id') && $request->faculity_id) {
+            $query->where('faculity_id', $request->faculity_id);
+        }
+
+        // Filter by level
+        if ($request->has('level') && $request->level) {
+            $query->where('level', $request->level);
         }
 
         // Filter by test status

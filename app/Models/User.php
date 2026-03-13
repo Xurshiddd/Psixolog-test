@@ -30,6 +30,7 @@ class User extends Authenticatable
         'level',
         'speciality_id',
         'password',
+        'faculity_id',
     ];
 
     /**
@@ -83,5 +84,9 @@ public function scopeStudents(Builder $q): Builder
         return $this->belongsToMany(Conversation::class)
             ->withPivot(['last_read_at'])
             ->withTimestamps();
+    }
+    public function faculity()
+    {
+        return $this->belongsTo(Faculity::class);
     }
 }

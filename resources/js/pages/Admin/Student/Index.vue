@@ -32,10 +32,13 @@ const props = defineProps<{
     students: PaginatedData<any>;
     groups: any[];
     specialities: any[];
+    faculities: any[];
     filters: {
         search?: string | null;
-        group_id?: string | null;
+        faculity_id?: string | null;
         speciality_id?: string | null;
+        group_id?: string | null;
+        level?: string | null;
         test_status?: string | null;
     };
 }>();
@@ -49,8 +52,10 @@ const breadcrumbs: BreadcrumbItem[] = [
 
 const selectedStudent = ref<any>(null);
 const searchQuery = ref<string>(props.filters.search || '');
-const groupFilter = ref<string | null>(props.filters.group_id || null);
+const faculityFilter = ref<string | null>(props.filters.faculity_id || null);
 const specialityFilter = ref<string | null>(props.filters.speciality_id || null);
+const groupFilter = ref<string | null>(props.filters.group_id || null);
+const levelFilter = ref<string | null>(props.filters.level || null);
 const testStatusFilter = ref<string | null>(props.filters.test_status || null);
 
 const formatDate = (dateString: string) => {
@@ -64,8 +69,10 @@ const openDiagnosisModal = (student: any) => {
 const getFilterParams = () => {
     return {
         search: searchQuery.value,
-        group_id: groupFilter.value,
+        faculity_id: faculityFilter.value,
         speciality_id: specialityFilter.value,
+        group_id: groupFilter.value,
+        level: levelFilter.value,
         test_status: testStatusFilter.value,
     };
 };
@@ -77,8 +84,10 @@ const applyFilters = () => {
 
 const resetFilters = () => {
     searchQuery.value = '';
-    groupFilter.value = null;
+    faculityFilter.value = null;
     specialityFilter.value = null;
+    groupFilter.value = null;
+    levelFilter.value = null;
     testStatusFilter.value = null;
     router.get('/admin/students');
 };
@@ -155,7 +164,8 @@ const getStudentLink = (studentId: number) => {
 
             <!-- Filter Section -->
             <div class="rounded-md border bg-card text-card-foreground shadow-sm p-4">
-                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- 1 Qidirish -->
                     <div>
                         <label for="search-filter" class="block text-sm font-medium mb-2">
                             Qidirish (Login yoki Ism)
@@ -169,22 +179,24 @@ const getStudentLink = (studentId: number) => {
                         />
                     </div>
 
+                    <!-- 2 fakultet -->
                     <div>
-                        <label for="group-filter" class="block text-sm font-medium mb-2">
-                            Guruh
+                        <label for="faculity-filter" class="block text-sm font-medium mb-2">
+                            Fakultet
                         </label>
                         <select 
-                            id="group-filter"
-                            v-model="groupFilter"
+                            id="faculity-filter"
+                            v-model="faculityFilter"
                             class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
                         >
                             <option value="" selected>Barchasi</option>
-                            <option v-for="group in groups" :key="group.id" :value="group.id">
-                                {{ group.name }}
+                            <option v-for="faculity in faculities" :key="faculity.id" :value="faculity.id">
+                                {{ faculity.name }}
                             </option>
                         </select>
                     </div>
 
+                    <!-- 3 Mutaxassislik -->
                     <div>
                         <label for="speciality-filter" class="block text-sm font-medium mb-2">
                             Mutaxassislik
@@ -201,6 +213,43 @@ const getStudentLink = (studentId: number) => {
                         </select>
                     </div>
 
+                    <!-- 4 Guruh -->
+                    <div>
+                        <label for="group-filter" class="block text-sm font-medium mb-2">
+                            Guruh
+                        </label>
+                        <select 
+                            id="group-filter"
+                            v-model="groupFilter"
+                            class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                        >
+                            <option value="" selected>Barchasi</option>
+                            <option v-for="group in groups" :key="group.id" :value="group.id">
+                                {{ group.name }}
+                            </option>
+                        </select>
+                    </div>
+
+                    <!-- 5 livel yani kurs bo'yicha -->
+                    <div>
+                        <label for="level-filter" class="block text-sm font-medium mb-2">
+                            Kurs
+                        </label>
+                        <select 
+                            id="level-filter"
+                            v-model="levelFilter"
+                            class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                        >
+                            <option value="" selected>Barchasi</option>
+                            <option value="1-kurs">1-kurs</option>
+                            <option value="2-kurs">2-kurs</option>
+                            <option value="3-kurs">3-kurs</option>
+                            <option value="4-kurs">4-kurs</option>
+                            <option value="5-kurs">5-kurs</option>
+                        </select>
+                    </div>
+
+                    <!-- 6 Test Statusi -->
                     <div>
                         <label for="test-status-filter" class="block text-sm font-medium mb-2">
                             Test Statusi
@@ -216,7 +265,7 @@ const getStudentLink = (studentId: number) => {
                         </select>
                     </div>
 
-                    <div class="flex items-end gap-2">
+                    <div class="flex items-end gap-2 lg:col-span-2">
                         <Button @click="applyFilters" class="flex-1">
                             Filterlash
                         </Button>

@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
+use App\Models\Faculity;
 
 class HemisAuthController extends Controller
 {
@@ -40,8 +41,13 @@ class HemisAuthController extends Controller
         if ($userData['data']['studentStatus']['name'] !== "O‘qimoqda") {
             return redirect()->route('home')->withErrors('Siz hozirda Institutda o‘qimayotganingiz uchun kira olmaysiz');
         }
-        Log::info($userData);
         DB::beginTransaction();
+        $faculity = Faculity::firstOrCreate(
+            ['code' => $userData['data']['faculty']['code']],
+            [
+                'name' => $userData['data']['faculty']['name'],
+            ]
+        );
         $group = Group::firstOrCreate(
             ['code' => $userData['groups'][0]['id']],
             [
@@ -70,6 +76,7 @@ class HemisAuthController extends Controller
                 'password' => Hash::make($userData['passport_number']),
                 'level' =>  $userData['data']['level']['name'],
                 'speciality_id' => $specialty->id,
+                'faculity_id' => $faculity->id,
                 'role' => 'student',
             ]
         );
