@@ -118,7 +118,7 @@ class AdminStudentController extends Controller
             'diagnosis' => $request->diagnosis,
         ]);
 
-        return to_route('admin.students.index')->with('success', 'Diagnostika muvaffaqiyatli saqlandi');
+        return redirect()->back()->with('success', 'Diagnostika muvaffaqiyatli saqlandi');
     }
 
     private function getFilteredStudents(Request $request)

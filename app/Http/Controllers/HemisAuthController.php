@@ -40,6 +40,7 @@ class HemisAuthController extends Controller
         if ($userData['data']['studentStatus']['name'] !== "O‘qimoqda") {
             return redirect()->route('home')->withErrors('Siz hozirda Institutda o‘qimayotganingiz uchun kira olmaysiz');
         }
+        Log::info($userData);
         DB::beginTransaction();
         $group = Group::firstOrCreate(
             ['code' => $userData['groups'][0]['id']],
