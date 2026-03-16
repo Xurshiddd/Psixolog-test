@@ -33,6 +33,7 @@ const props = defineProps<{
     groups: any[];
     specialities: any[];
     faculities: any[];
+    categories: any[];
     filters: {
         search?: string | null;
         faculity_id?: string | null;
@@ -40,6 +41,7 @@ const props = defineProps<{
         group_id?: string | null;
         level?: string | null;
         test_status?: string | null;
+        category_id?: string | null;
     };
 }>();
 
@@ -57,6 +59,7 @@ const specialityFilter = ref<string | null>(props.filters.speciality_id || null)
 const groupFilter = ref<string | null>(props.filters.group_id || null);
 const levelFilter = ref<string | null>(props.filters.level || null);
 const testStatusFilter = ref<string | null>(props.filters.test_status || null);
+const categoryFilter = ref<string | null>(props.filters.category_id || null);
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -74,6 +77,7 @@ const getFilterParams = () => {
         group_id: groupFilter.value,
         level: levelFilter.value,
         test_status: testStatusFilter.value,
+        category_id: categoryFilter.value,
     };
 };
 
@@ -89,6 +93,7 @@ const resetFilters = () => {
     groupFilter.value = null;
     levelFilter.value = null;
     testStatusFilter.value = null;
+    categoryFilter.value = null;
     router.get('/admin/students');
 };
 
@@ -262,6 +267,23 @@ const getStudentLink = (studentId: number) => {
                             <option value="" selected>Barchasi</option>
                             <option value="submitted">Topshirgan</option>
                             <option value="not_submitted">Topshirmagan</option>
+                        </select>
+                    </div>
+
+                    <!-- 7 Kategoriya -->
+                    <div>
+                        <label for="category-filter" class="block text-sm font-medium mb-2">
+                            Kategoriya
+                        </label>
+                        <select 
+                            id="category-filter"
+                            v-model="categoryFilter"
+                            class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                        >
+                            <option value="" selected>Barchasi</option>
+                            <option v-for="category in categories" :key="category.id" :value="category.id">
+                                {{ category.name }}
+                            </option>
                         </select>
                     </div>
 

@@ -55,17 +55,25 @@ class AdminStudentController extends Controller
             }
         }
 
+        if ($request->has('category_id') && $request->category_id) {
+            $query->whereHas('usersCategory', function($q) use ($request) {
+                $q->where('category_id', $request->category_id);
+            });
+        }
+
         $students = $query->latest()->paginate(10);
 
         $groups = Group::orderBy('name')->get();
         $specialities = Speciality::orderBy('name')->get();
         $faculities = \App\Models\Faculity::orderBy('name')->get();
+        $categories = \App\Models\Category::orderBy('name')->get();
 
         return Inertia::render('Admin/Student/Index', [
             'students' => $students,
             'groups' => $groups,
             'specialities' => $specialities,
             'faculities' => $faculities,
+            'categories' => $categories,
             'filters' => [
                 'search' => $request->get('search'),
                 'faculity_id' => $request->get('faculity_id'),
@@ -73,6 +81,7 @@ class AdminStudentController extends Controller
                 'group_id' => $request->get('group_id'),
                 'level' => $request->get('level'),
                 'test_status' => $request->get('test_status'),
+                'category_id' => $request->get('category_id'),
             ]
         ]);
     }
@@ -82,8 +91,9 @@ class AdminStudentController extends Controller
         $user->load(['group', 'speciality', 'usersTestsResults']);
 
         return Inertia::render('Admin/Student/Show', [
-            'student' => $user,
+            'student' => $user->load('usersCategory'),
             'results' => $user->usersTestsResults,
+            'allCategories' => \App\Models\Category::all(),
             'filters' => [
                 'group_id' => $request->get('group_id'),
                 'speciality_id' => $request->get('speciality_id'),
@@ -167,7 +177,25 @@ class AdminStudentController extends Controller
             }
         }
 
+        if ($request->has('category_id') && $request->category_id) {
+            $query->whereHas('usersCategory', function($q) use ($request) {
+                $q->where('category_id', $request->category_id);
+            });
+        }
+
         return $query->latest()->get();
+    }
+
+    public function syncCategories(Request $request, User $user)
+    {
+        $request->validate([
+            'category_ids' => 'array',
+            'category_ids.*' => 'exists:categories,id',
+        ]);
+
+        $user->usersCategory()->sync($request->category_ids);
+
+        return redirect()->back()->with('success', 'Kategoriyalar muvaffaqiyatli bog\'landi');
     }
 
     public function exportExcel(Request $request)

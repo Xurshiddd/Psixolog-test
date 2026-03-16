@@ -47,6 +47,11 @@ const mainNavItems = computed<NavItem[]>(() => [
         icon: Users,
     },
     {
+        title: 'Kategoriyalar',
+        href: '/categories',
+        icon: LayoutGrid,
+    },
+    {
         title: 'Murojaatlar',
         href: route,
         icon: MessageSquare,

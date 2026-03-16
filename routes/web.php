@@ -15,8 +15,8 @@ use App\Http\Controllers\Staff\RequestsController;
 use App\Http\Controllers\Staff\MessagesController;
 use App\Http\Controllers\ResultCategoryController;
 use App\Http\Controllers\DashboardController;
-use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\CategoryController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -57,6 +57,8 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::get('/admin/students/{user}/results/{module}', [AdminStudentController::class , 'showResult'])->name('admin.students.results.show');
     Route::post('/admin/students/{user}/results/{module}/diagnosis', [AdminStudentController::class , 'updateDiagnosis'])->name('admin.students.results.diagnosis');
     Route::resource('result-categories', ResultCategoryController::class);
+    Route::resource('categories', CategoryController::class);
+    Route::post('/admin/students/{user}/sync-categories', [AdminStudentController::class, 'syncCategories'])->name('admin.students.sync-categories');
     Route::get('/api/modules/{module}/test-options', [ResultCategoryController::class, 'getModuleTestOptions'])->name('module.test-options');
 });
 Route::middleware(['auth', 'student'])->group(function () {

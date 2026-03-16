@@ -12,7 +12,6 @@ use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
-use PhpOffice\PhpSpreadsheet\Style\Font;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
 class StudentsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithEvents
@@ -35,14 +34,15 @@ class StudentsExport implements FromCollection, WithHeadings, WithMapping, Shoul
     {
         $headings = [
             'Ism Familiya',
-            'Hemis ID',
+            'Fakultet',
+            'Login',
             'Guruh',
         ];
-        
+
         foreach ($this->modules as $module) {
             $headings[] = $module->name;
         }
-        
+
         return $headings;
     }
 
@@ -50,6 +50,7 @@ class StudentsExport implements FromCollection, WithHeadings, WithMapping, Shoul
     {
         $row = [
             $student->name ?? '-',
+            $student->faculity->name ?? '-',
             $student->login ?? '-',
             $student->group->name ?? '-',
         ];

@@ -3,6 +3,7 @@ import { Head } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import ModuleStatsChart from '@/components/ModuleStatsChart.vue';
 import ResultCategoryChart from '@/components/ResultCategoryChart.vue';
+import CategoryStudentChart from '@/components/CategoryStudentChart.vue';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 
@@ -11,9 +12,9 @@ interface ModuleStatItem {
     solvedCount: number;
 }
 
-interface ResultCategoryStatItem {
+interface CategoryStudentStatItem {
     name: string;
-    solvedCount: number;
+    studentCount: number;
 }
 
 const props = defineProps<{ 
@@ -23,6 +24,7 @@ const props = defineProps<{
     modulesCount: number;
     moduleStats?: ModuleStatItem[];
     resultCategoryStats?: ResultCategoryStatItem[];
+    categoryStudentStats?: CategoryStudentStatItem[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -65,7 +67,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                 </div>
             </div>
             <ModuleStatsChart v-if="props.moduleStats && props.moduleStats.length > 0" :module-stats="props.moduleStats" />
-            <ResultCategoryChart v-if="props.resultCategoryStats && props.resultCategoryStats.length > 0" :result-category-stats="props.resultCategoryStats" />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <ResultCategoryChart v-if="props.resultCategoryStats && props.resultCategoryStats.length > 0" :result-category-stats="props.resultCategoryStats" />
+                <CategoryStudentChart v-if="props.categoryStudentStats && props.categoryStudentStats.length > 0" :category-student-stats="props.categoryStudentStats" />
+            </div>
         </div>
     </AppLayout>
 </template>

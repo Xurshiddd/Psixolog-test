@@ -8,6 +8,7 @@ const user = page.props.auth.user;
 const props = defineProps<{
     student: any;
     results: Array<any>;
+    allCategories: Array<any>;
     filters?: {
         group_id?: string | null;
         speciality_id?: string | null;
@@ -15,6 +16,29 @@ const props = defineProps<{
     };
     page?: number;
 }>();
+
+import { ref } from 'vue';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+    DialogFooter,
+} from '@/components/ui/dialog';
+
+const isSyncModalOpen = ref(false);
+const selectedCategoryIds = ref<number[]>(props.student.users_category?.map((c: any) => c.id) || []);
+
+const syncCategories = () => {
+    router.post(`/admin/students/${props.student.id}/sync-categories`, {
+        category_ids: selectedCategoryIds.value,
+    }, {
+        onSuccess: () => {
+            isSyncModalOpen.value = false;
+        },
+    });
+};
 
 const getBackLink = () => {
     const params = new URLSearchParams();
@@ -99,8 +123,47 @@ const formatDate = (dateString: string) => {
                             <span class="text-muted-foreground">Yo'nalish:</span>
                             <span>{{ student.speciality?.name || '-' }}</span>
                         </div>
+                        <div class="flex justify-between items-center py-2">
+                            <span class="text-muted-foreground">Kategoriyalar:</span>
+                            <div class="flex flex-wrap gap-1 justify-end">
+                                <span v-for="cat in student.users_category" :key="cat.id" class="inline-flex items-center rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-medium text-blue-800">
+                                    {{ cat.name }}
+                                </span>
+                                <span v-if="!student.users_category?.length" class="text-muted-foreground">-</span>
+                            </div>
+                        </div>
+                        <div class="pt-4" v-if="results.length > 0">
+                            <Button @click="isSyncModalOpen = true" class="w-full">
+                                Kategoriya Biriktirish
+                            </Button>
+                        </div>
                     </div>
                 </div>
+
+                <Dialog v-model:open="isSyncModalOpen">
+                    <DialogContent class="sm:max-w-[425px]">
+                        <DialogHeader>
+                            <DialogTitle>Kategoriyalarni biriktirish</DialogTitle>
+                        </DialogHeader>
+                        <div class="grid gap-4 py-4">
+                            <div v-for="category in allCategories" :key="category.id" class="flex items-center space-x-2">
+                                <input 
+                                    type="checkbox" 
+                                    :id="'cat-' + category.id" 
+                                    :value="category.id" 
+                                    v-model="selectedCategoryIds"
+                                    class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                                />
+                                <label :for="'cat-' + category.id" class="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70">
+                                    {{ category.name }}
+                                </label>
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button @click="syncCategories">Saqlash</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
 
                 <div class="rounded-lg border bg-card p-6 shadow-sm">
                     <h2 class="text-lg font-semibold mb-4">Topshirilgan Testlar</h2>

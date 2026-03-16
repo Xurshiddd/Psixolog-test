@@ -78,7 +78,10 @@ public function scopeStudents(Builder $q): Builder
     {
         return $this->belongsToMany(Module::class, 'users_tests_results', 'user_id', 'module_id')->withPivot('result_fake', 'result_real', 'diagnosis');
     }
-    // app/Models/User.php
+    public function usersCategory()
+    {
+        return $this->belongsToMany(Category::class, 'users_category', 'user_id', 'category_id');
+    }
     public function conversations()
     {
         return $this->belongsToMany(Conversation::class)

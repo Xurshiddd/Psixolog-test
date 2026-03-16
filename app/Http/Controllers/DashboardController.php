@@ -78,7 +78,13 @@ class DashboardController extends Controller
                     'solvedCount' => $module->users_tests_results_count
                 ];
             }),
-            'resultCategoryStats' => $categoryStatData
+            'resultCategoryStats' => $categoryStatData,
+            'categoryStudentStats' => \App\Models\Category::withCount('usersCategory')->get()->map(function($cat) {
+                return [
+                    'name' => $cat->name,
+                    'studentCount' => $cat->users_category_count
+                ];
+            })
         ]);
     }
 }
