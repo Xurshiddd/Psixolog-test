@@ -31,6 +31,10 @@ class User extends Authenticatable
         'speciality_id',
         'password',
         'faculity_id',
+        'education_type_code',
+        'education_type_name',
+        'education_form_code',
+        'education_form_name',
     ];
 
     /**
