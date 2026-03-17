@@ -14,7 +14,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, LayoutGrid, MessageSquare, Users } from 'lucide-vue-next';
+import { BookOpen, LayoutGrid, MessageSquare, Users, Activity } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -57,6 +57,11 @@ const mainNavItems = computed<NavItem[]>(() => [
         icon: MessageSquare,
         badge: unreadCount.value > 0 ? unreadCount.value : undefined,
     },
+    ...(role.value === 'admin' ? [{
+        title: 'Tizim loglari',
+        href: '/admin/activity-logs',
+        icon: Activity,
+    }] : []),
 ]);
 
 const footerNavItems: NavItem[] = [

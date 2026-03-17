@@ -3,9 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Spatie\Activitylog\LogOptions;
+use Spatie\Activitylog\Traits\LogsActivity;
 
 class Module extends Model
 {
+    use LogsActivity;
+
     protected $fillable = [
         'name',
         'description',
@@ -17,6 +21,16 @@ class Module extends Model
         'is_active' => 'boolean',
         'shuffle' => 'boolean',
     ];
+
+    public function getActivitylogOptions(): LogOptions
+    {
+        return LogOptions::defaults()
+            ->useLogName('module')
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
+    }
+
     public function tests()
     {
         return $this->hasMany(Test::class);

@@ -17,6 +17,7 @@ use App\Http\Controllers\ResultCategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ActivityLogController;
 
 Route::get('/', function () {
     return Inertia::render('Welcome', [
@@ -78,6 +79,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/requests', [RequestsController::class, 'adminIndex'])->name('requests.index');
         Route::post('/requests/{conversation}/messages', [MessagesController::class, 'adminStore'])->name('requests.messages.store');
         Route::delete('/students/{student}/results/{result}', [AdminStudentController::class, 'destroyResult'])->name('students.results.destroy');
+        Route::get('/activity-logs', [ActivityLogController::class, 'index'])->name('activity-logs.index');
     });
 
     Route::prefix('psiholog')->name('psiholog.')->middleware('psiholog')->group(function () {

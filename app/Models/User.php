@@ -7,11 +7,13 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
+use Spatie\Activitylog\Traits\LogsActivity;
+use Spatie\Activitylog\LogOptions;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, TwoFactorAuthenticatable;
+    use HasFactory, Notifiable, TwoFactorAuthenticatable, LogsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -62,10 +64,21 @@ class User extends Authenticatable
             'two_factor_confirmed_at' => 'datetime',
         ];
     }
-public function scopeStudents(Builder $q): Builder
+
+    public function getActivitylogOptions(): LogOptions
     {
-        return $q->where('role', 'student'); // <-- sizda boshqacha bo'lsa shu yerini moslang
+        return LogOptions::defaults()
+            ->useLogName('user')
+            ->logFillable()
+            ->logOnlyDirty()
+            ->dontSubmitEmptyLogs();
     }
+
+    public function scopeStudents(Builder $q): Builder
+    {
+        return $q->where('role', 'student');
+    }
+
     public function group()
     {
         return $this->belongsTo(Group::class);
