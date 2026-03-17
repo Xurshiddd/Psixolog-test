@@ -38,7 +38,7 @@ class UserUpdateCommand extends Command
         // Faqat kerakli ustunlarni olish
         $students = User::query()
             ->where('role', 'student')
-            ->select('id', 'login', 'faculty_id', 'educationTypeCode', 'educationTypeName')
+            ->select('id', 'login', 'faculity_id', 'education_type_code', 'education_type_name', 'education_form_code', 'education_form_name')
             ->get()
             ->keyBy('login');
 
@@ -109,7 +109,7 @@ class UserUpdateCommand extends Command
                 }
 
                 $dirtyData = [
-                    'faculty_id' => $facultyId,
+                    'faculity_id' => $facultyId,
                     'education_type_code' => $educationTypeCode,
                     'education_type_name' => $educationTypeName,
                     'education_form_code' => $educationFormCode,
