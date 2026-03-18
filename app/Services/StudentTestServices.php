@@ -1,7 +1,9 @@
 <?php
 
 namespace App\Services;
+
 use App\Models\Module;
+use App\Models\User;
 use App\Models\SolveTest;
 use App\Models\ResultCategory;
 use App\Models\TestOption;
@@ -22,6 +24,8 @@ class StudentTestServices
     public function processBatchSubmission(int $userId, int $moduleId, array $answers): array
     {
         $module = Module::find($moduleId);
+        $student = User::find($userId);
+
         try {
             DB::beginTransaction();
             $testOptionIds = [];
@@ -104,9 +108,23 @@ class StudentTestServices
             ]);
             DB::commit();
 
+            if ($student && $module) {
+                activity('student_test')
+                    ->causedBy($student)
+                    ->performedOn($module)
+                    ->event('test_submitted')
+                    ->withProperties([
+                        'module_id' => $module->id,
+                        'module_name' => $module->name,
+                        'answers_count' => count($answers),
+                        'result_fake' => $resultFake,
+                        'result_real' => $realResult,
+                    ])
+                    ->log('Student submitted a test');
+            }
+
             // Notify admin and psiholog users
             $usersToNotify = \App\Models\User::whereIn('role', ['admin', 'psiholog'])->get();
-            $student = \App\Models\User::find($userId);
             \Illuminate\Support\Facades\Notification::send($usersToNotify, new \App\Notifications\ModuleCompletedNotification($student, $module));
 
             return ['status' => 'success', 'message' => 'Test submitted successfully'];

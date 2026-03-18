@@ -3,8 +3,10 @@
 namespace App\Providers;
 
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -25,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+        $this->registerActivityListeners();
     }
 
     protected function configureDefaults(): void
@@ -45,5 +48,19 @@ class AppServiceProvider extends ServiceProvider
                 ->uncompromised()
             : null
         );
+    }
+
+    protected function registerActivityListeners(): void
+    {
+        Event::listen(Login::class, function (Login $event): void {
+            activity('auth')
+                ->causedBy($event->user)
+                ->performedOn($event->user)
+                ->event('login')
+                ->withProperties([
+                    'role' => $event->user->role,
+                ])
+                ->log('User logged in');
+        });
     }
 }
