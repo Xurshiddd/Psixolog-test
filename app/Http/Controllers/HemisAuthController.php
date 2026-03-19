@@ -41,7 +41,7 @@ class HemisAuthController extends Controller
         if ($userData['data']['studentStatus']['name'] !== "O‘qimoqda") {
             return redirect()->route('home')->withErrors('Siz hozirda Institutda o‘qimayotganingiz uchun kira olmaysiz');
         }
-        if ($userData['data']['educationType']['code'] !== '11' && $userData['data']['educationForm']['code'] !== '11') {
+        if ($userData['data']['educationType']['code'] !== '11' || $userData['data']['educationForm']['code'] !== '11') {
             return redirect()->route('home')->withErrors('Bu platforma hozirda Bakalavr kunduzgi talabalar uchun');
         }
         DB::beginTransaction();
