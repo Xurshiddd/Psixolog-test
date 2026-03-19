@@ -1,21 +1,19 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Models\Group;
-use App\Models\Speciality;
 use App\Services\HemisOAuthClientService;
+use App\Services\HemisStudentAuthenticator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Models\User;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Exception;
-use App\Models\Faculity;
 
 class HemisAuthController extends Controller
 {
-    public function __construct(private HemisOAuthClientService $service)
+    public function __construct(
+        private HemisOAuthClientService $service,
+        private HemisStudentAuthenticator $authenticator,
+    )
     {
     }
     public function redirectToHemis()
@@ -28,71 +26,22 @@ class HemisAuthController extends Controller
     {
         try {
             if ($request->state !== session('oauth2state')) {
-            return abort(403, 'Invalid state');
-        }
+                return abort(403, 'Invalid state');
+            }
 
+            $accessToken = $this->service->provider()->getAccessToken('authorization_code', [
+                'code' => $request->code,
+            ]);
 
-        $accessToken = $this->service->provider()->getAccessToken('authorization_code', [
-            'code' => $request->code
-        ]);
+            $resourceOwner = $this->service->provider()->getResourceOwner($accessToken);
+            $user = $this->authenticator->syncFromResourceOwner($resourceOwner->toArray());
 
-        $resourceOwner = $this->service->provider()->getResourceOwner($accessToken);
-        $userData = $resourceOwner->toArray();
-        if ($userData['data']['studentStatus']['name'] !== "O‘qimoqda") {
-            return redirect()->route('home')->withErrors('Siz hozirda Institutda o‘qimayotganingiz uchun kira olmaysiz');
-        }
-        if ($userData['data']['educationType']['code'] !== '11' || $userData['data']['educationForm']['code'] !== '11') {
-            return redirect()->route('home')->withErrors('Bu platforma hozirda Bakalavr kunduzgi talabalar uchun');
-        }
-        DB::beginTransaction();
-        $faculity = Faculity::firstOrCreate(
-            ['code' => $userData['data']['faculty']['code']],
-            [
-                'name' => $userData['data']['faculty']['name'],
-            ]
-        );
-        $group = Group::firstOrCreate(
-            ['code' => $userData['groups'][0]['id']],
-            [
-                'name' => $userData['groups'][0]['name'],
-                'education_lang' => $userData['groups'][0]['education_lang']['name'],
-                'education_form' => $userData['groups'][0]['education_form']['name'],
-                'education_type' => $userData['groups'][0]['education_type']['name']
-            ]
-        );
-        $specialty = Speciality::firstOrCreate(
-            ['code' => (int)$userData['data']['specialty']['code']],
-            [
-                'name' => $userData['data']['specialty']['name'],
-            ]
-        );
-        $email = (!isset($userData['email']) || empty($userData['email'])) ? $userData['login'] . '@ttysi.com' : $userData['email'];
-        $user = User::updateOrCreate(
-            ['login' => (int)$userData['login']],
-            [
-                'name' => $userData['name'],
-                'email' => $email,
-                'phone' => $userData['phone'],
-                'picture' => $userData['picture'],
-                'birth_date' => $userData['birth_date'],
-                'group_id' => $group->id,
-                'password' => Hash::make($userData['passport_number']),
-                'level' =>  $userData['data']['level']['name'],
-                'speciality_id' => $specialty->id,
-                'faculity_id' => $faculity->id,
-                'education_type_code' => $userData['data']['educationType']['code'],
-                'education_type_name' => $userData['data']['educationType']['name'],
-                'education_form_code' => $userData['data']['educationForm']['code'],
-                'education_form_name' => $userData['data']['educationForm']['name'],
-                'role' => 'student',
-            ]
-        );
-        DB::commit();
-        Auth::login($user);
-        return redirect()->route('dashboard');    
+            Auth::login($user);
+
+            return redirect()->route('dashboard');
         } catch (Exception $e) {
-            DB::rollBack();
             Log::error($e->getMessage());
+
             return redirect()->route('home')->withErrors($e->getMessage());
         }
     }

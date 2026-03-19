@@ -9,6 +9,7 @@ use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Spatie\Activitylog\Traits\LogsActivity;
 use Spatie\Activitylog\LogOptions;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -37,6 +38,8 @@ class User extends Authenticatable
         'education_type_name',
         'education_form_code',
         'education_form_name',
+        'api_token',
+        'api_token_last_used_at',
     ];
 
     /**
@@ -49,6 +52,7 @@ class User extends Authenticatable
         'two_factor_secret',
         'two_factor_recovery_codes',
         'remember_token',
+        'api_token',
     ];
 
     /**
@@ -62,7 +66,28 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
+            'api_token_last_used_at' => 'datetime',
         ];
+    }
+
+    public function issueApiToken(): string
+    {
+        $plainTextToken = Str::random(80);
+
+        $this->forceFill([
+            'api_token' => hash('sha256', $plainTextToken),
+            'api_token_last_used_at' => now(),
+        ])->save();
+
+        return $plainTextToken;
+    }
+
+    public function revokeApiToken(): void
+    {
+        $this->forceFill([
+            'api_token' => null,
+            'api_token_last_used_at' => null,
+        ])->save();
     }
 
     public function getActivitylogOptions(): LogOptions
@@ -93,7 +118,9 @@ class User extends Authenticatable
     }
     public function usersTestsResults()
     {
-        return $this->belongsToMany(Module::class, 'users_tests_results', 'user_id', 'module_id')->withPivot('result_fake', 'result_real', 'diagnosis');
+        return $this->belongsToMany(Module::class, 'users_tests_results', 'user_id', 'module_id')
+            ->withPivot('result_fake', 'result_real', 'diagnosis')
+            ->withTimestamps();
     }
     public function usersCategory()
     {

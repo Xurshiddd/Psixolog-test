@@ -11,10 +11,12 @@ use App\Http\Middleware\AdminMidleware;
 use App\Http\Middleware\StudentMiddleware;
 use App\Http\Middleware\DoubleMiddleware;
 use App\Http\Middleware\PsihologMiddleware;
+use App\Http\Middleware\StudentApiAuthMiddleware;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
         channels: __DIR__.'/../routes/channels.php',
@@ -26,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'student' => StudentMiddleware::class,
             'psiholog' => PsihologMiddleware::class,
             'double' => DoubleMiddleware::class,
+            'student.api' => StudentApiAuthMiddleware::class,
         ]);
         $middleware->web(append: [
             SetLocale::class,
