@@ -42,7 +42,7 @@ class HemisAuthController extends Controller
             return redirect()->route('home')->withErrors('Siz hozirda Institutda o‘qimayotganingiz uchun kira olmaysiz');
         }
         if ($userData['data']['educationType']['code'] !== '11' && $userData['data']['educationForm']['code'] !== '11') {
-            return redirect()->route('home')->withErrors('Bu platforma hozrda Bakalavr kunduzgi talabalar uchun');
+            return redirect()->route('home')->withErrors('Bu platforma hozirda Bakalavr kunduzgi talabalar uchun');
         }
         DB::beginTransaction();
         $faculity = Faculity::firstOrCreate(
@@ -80,10 +80,10 @@ class HemisAuthController extends Controller
                 'level' =>  $userData['data']['level']['name'],
                 'speciality_id' => $specialty->id,
                 'faculity_id' => $faculity->id,
-                'education_type_code' => $userData['educationType']['code'],
-                'education_type_name' => $userData['educationType']['name'],
-                'education_form_code' => $userData['educationForm']['code'],
-                'education_form_name' => $userData['educationForm']['name'],
+                'education_type_code' => $userData['data']['educationType']['code'],
+                'education_type_name' => $userData['data']['educationType']['name'],
+                'education_form_code' => $userData['data']['educationForm']['code'],
+                'education_form_name' => $userData['data']['educationForm']['name'],
                 'role' => 'student',
             ]
         );
