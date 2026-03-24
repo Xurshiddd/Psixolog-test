@@ -170,3 +170,50 @@
         @apply bg-background text-foreground;
     }
 }
+
+@keyframes apk-float {
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-8px);
+    }
+}
+
+@keyframes apk-shimmer {
+    0% {
+        transform: translateX(-140%) skewX(-20deg);
+    }
+    100% {
+        transform: translateX(220%) skewX(-20deg);
+    }
+}
+
+@layer utilities {
+    .apk-float {
+        animation: apk-float 3.2s ease-in-out infinite;
+    }
+
+    .apk-shimmer {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .apk-shimmer::after {
+        content: '';
+        position: absolute;
+        inset: -20%;
+        width: 36%;
+        background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgb(255 255 255 / 0.15) 45%,
+            rgb(255 255 255 / 0.55) 50%,
+            rgb(255 255 255 / 0.15) 55%,
+            transparent 100%
+        );
+        animation: apk-shimmer 3.8s linear infinite;
+        pointer-events: none;
+    }
+}
