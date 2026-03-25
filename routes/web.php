@@ -57,6 +57,8 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::get('/admin/students/{user}', [AdminStudentController::class , 'show'])->name('admin.students.show');
     Route::get('/admin/students/{user}/results/{module}', [AdminStudentController::class , 'showResult'])->name('admin.students.results.show');
     Route::post('/admin/students/{user}/results/{module}/diagnosis', [AdminStudentController::class , 'updateDiagnosis'])->name('admin.students.results.diagnosis');
+    Route::post('/admin/students/{user}/results/{module}/ai-diagnosis', [AdminStudentController::class , 'generateAiDiagnosis'])->name('admin.students.results.ai-diagnosis');
+    Route::post('/admin/students/{user}/results/{module}/ai-diagnosis-stream', [AdminStudentController::class , 'streamAiDiagnosis'])->name('admin.students.results.ai-diagnosis-stream');
     Route::resource('result-categories', ResultCategoryController::class);
     Route::resource('categories', CategoryController::class);
     Route::post('/admin/students/{user}/sync-categories', [AdminStudentController::class, 'syncCategories'])->name('admin.students.sync-categories');

@@ -14,6 +14,11 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Services\StudentPdfExportService;
 use App\Exports\StudentsExportWithDiagnosis;
 use Illuminate\Support\Facades\DB;
+use App\Ai\Agents\DiagnosisAgent;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Str;
+use Illuminate\Http\Response;
 
 class AdminStudentController extends Controller
 {
@@ -105,6 +110,8 @@ class AdminStudentController extends Controller
 
     public function showResult(User $user, $moduleId)
     {
+        $this->ensureDiagnosisAccess();
+
         $module = Module::with(['tests.options'])->findOrFail($moduleId);
 
         $answers = SolveTest::where('user_id', $user->id)
@@ -116,31 +123,112 @@ class AdminStudentController extends Controller
             ->where('module_id', $moduleId)
             ->first();
 
-        // If psychologist has provided a diagnosis use it, otherwise fall back to generated result_real
-        $diagnosisValue = null;
-        if ($result) {
-            $diagnosisValue = $result->pivot->diagnosis;
-        }
+        abort_if(! $result, Response::HTTP_NOT_FOUND, 'Natija topilmadi.');
 
         return Inertia::render('Admin/Student/Result', [
             'student' => $user,
             'module' => $module,
             'answers' => $answers,
-            'diagnosis' => $diagnosisValue
+            'diagnosis' => $result->pivot->diagnosis,
+            'generatedDiagnosis' => $result->pivot->result_real,
         ]);
     }
 
-    public function updateDiagnosis(Request $request, User $user, $moduleId)
+    public function updateDiagnosis(Request $request, User $user, $moduleId): RedirectResponse
     {
+        $this->ensureDiagnosisAccess();
+
         $request->validate([
-            'diagnosis' => 'nullable|string'
+            'diagnosis' => 'nullable|string|max:10000',
         ]);
 
-        $user->usersTestsResults()->updateExistingPivot($moduleId, [
+        $updated = $user->usersTestsResults()->updateExistingPivot($moduleId, [
             'diagnosis' => $request->diagnosis,
         ]);
 
+        abort_if($updated === 0, Response::HTTP_NOT_FOUND, 'Natija topilmadi.');
+
         return redirect()->back()->with('success', 'Diagnostika muvaffaqiyatli saqlandi');
+    }
+
+    public function generateAiDiagnosis(User $user, $moduleId): JsonResponse
+    {
+        $this->ensureDiagnosisAccess();
+
+        [$provider, $providerError] = $this->resolveDiagnosisProvider();
+
+        if ($providerError !== null) {
+            return response()->json([
+                'error' => $providerError,
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        [$module, $answers, $result] = $this->loadDiagnosisGenerationContext($user, $moduleId);
+
+        $prompt = $this->buildDiagnosisPrompt($user, $module, $answers, $result);
+
+        try {
+            $agent = app(DiagnosisAgent::class);
+            $response = $agent->prompt($prompt, provider: $provider);
+            $text = trim($response->text);
+
+            if ($text === '') {
+                return response()->json([
+                    'error' => 'AI provider bo\'sh javob qaytardi. Qaytadan urinib ko\'ring.',
+                ], Response::HTTP_BAD_GATEWAY);
+            }
+
+            return response()->json([
+                'diagnosis' => $text,
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'error' => $this->formatDiagnosisExceptionMessage($provider, $e),
+            ], $this->diagnosisExceptionStatus($e));
+        }
+    }
+
+    public function streamAiDiagnosis(User $user, $moduleId)
+    {
+        $this->ensureDiagnosisAccess();
+
+        [$provider, $providerError] = $this->resolveDiagnosisProvider();
+
+        if ($providerError !== null) {
+            return response()->json([
+                'error' => $providerError,
+            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        }
+
+        [$module, $answers, $result] = $this->loadDiagnosisGenerationContext($user, $moduleId);
+
+        $prompt = $this->buildDiagnosisPrompt($user, $module, $answers, $result);
+
+        return response()->stream(function () use ($prompt, $provider) {
+            try {
+                $agent = app(DiagnosisAgent::class);
+                $stream = $agent->stream($prompt, provider: $provider);
+
+                foreach ($stream as $event) {
+                    echo 'data: '.((string) $event)."\n\n";
+                    @ob_flush();
+                    flush();
+                }
+            } catch (\Throwable $e) {
+                echo 'data: '.json_encode([
+                    'type' => 'error',
+                    'message' => $this->formatDiagnosisExceptionMessage($provider, $e),
+                ], JSON_UNESCAPED_UNICODE)."\n\n";
+            }
+
+            echo "data: [DONE]\n\n";
+            @ob_flush();
+            flush();
+        }, Response::HTTP_OK, [
+            'Content-Type' => 'text/event-stream',
+            'Cache-Control' => 'no-cache, no-transform',
+            'X-Accel-Buffering' => 'no',
+        ]);
     }
 
     private function getFilteredStudents(Request $request)
@@ -204,6 +292,165 @@ class AdminStudentController extends Controller
         $modules = Module::orderBy('name')->get();
         $timestamp = now()->format('Y-m-d_H-i-s');
         return Excel::download(new StudentsExport($students, $modules), "talabalar_$timestamp.xlsx");
+    }
+
+    private function ensureDiagnosisAccess(): void
+    {
+        abort_unless(
+            auth()->check() && in_array(auth()->user()->role, ['admin', 'psiholog'], true),
+            Response::HTTP_FORBIDDEN
+        );
+    }
+
+    private function resolveDiagnosisProvider(): array
+    {
+        $provider = (string) config('ai.diagnosis_provider', 'deepseek');
+        $providerKey = config("ai.providers.{$provider}.key");
+
+        if (blank($providerKey)) {
+            return [$provider, strtoupper($provider) . ' API kaliti sozlanmagan. .env faylida kerakli provider kalitini kiriting.'];
+        }
+
+        return [$provider, null];
+    }
+
+    private function loadDiagnosisGenerationContext(User $user, $moduleId): array
+    {
+        $module = Module::with(['tests.options'])->findOrFail($moduleId);
+
+        $answers = SolveTest::where('user_id', $user->id)
+            ->where('module_id', $moduleId)
+            ->get()
+            ->groupBy('test_id');
+
+        $result = $user->usersTestsResults()
+            ->where('module_id', $moduleId)
+            ->first();
+
+        abort_if(! $result, Response::HTTP_NOT_FOUND, 'Natija topilmadi.');
+
+        return [$module, $answers, $result];
+    }
+
+    private function diagnosisExceptionStatus(\Throwable $e): int
+    {
+        $message = mb_strtolower($e->getMessage());
+
+        if (str_contains($message, 'insufficient credits') || str_contains($message, 'quota')) {
+            return Response::HTTP_PAYMENT_REQUIRED;
+        }
+
+        return Response::HTTP_INTERNAL_SERVER_ERROR;
+    }
+
+    private function formatDiagnosisExceptionMessage(string $provider, \Throwable $e): string
+    {
+        $message = mb_strtolower($e->getMessage());
+
+        if (str_contains($message, 'insufficient credits') || str_contains($message, 'quota')) {
+            return strtoupper($provider) . ' hisobida kredit yoki quota yetarli emas. Provider kabinetida balansni to\'ldiring yoki .env da AI_DIAGNOSIS_PROVIDER ni boshqa providerga almashtiring.';
+        }
+
+        if (str_contains($message, 'rate limit')) {
+            return strtoupper($provider) . ' vaqtinchalik so\'rov limitiga yetdi. Birozdan keyin qayta urinib ko\'ring.';
+        }
+
+        return 'AI xulosa olishda xatolik: ' . Str::limit($e->getMessage(), 250);
+    }
+
+    private function buildDiagnosisPrompt(User $user, Module $module, $answers, Module $result): string
+    {
+        $lines = [
+            'AI uchun diagnostika konteksti:',
+            "Talaba: {$user->name}",
+            "Modul nomi: {$module->name}",
+            'Modul tavsifi: ' . ($module->description ?: "Mavjud emas"),
+            'Tizimdagi avtomatik xulosa: ' . ($result->pivot->result_real ?: "Mavjud emas"),
+            'Psixologning oldingi xulosasi: ' . ($result->pivot->diagnosis ?: "Mavjud emas"),
+            '',
+            "Muhim eslatma:",
+            "- Har bir savolni modul tavsifi bilan birga tahlil qiling.",
+            "- Tanlangan va tanlanmagan javoblarning ikkalasini ham hisobga oling.",
+            "- Faqat berilgan ma'lumotga tayangan holda xulosa yozing.",
+            '',
+            "Test savollari va javoblar tafsiloti:",
+            '',
+        ];
+
+        $valueCounts = [];
+
+        foreach ($module->tests as $index => $test) {
+            $num = $index + 1;
+            $lines[] = "Savol {$num}: {$test->question}";
+            $lines[] = "Savol turi: {$test->type}";
+
+            $testAnswers = $answers->get($test->id, collect());
+
+            if ($test->type === 'text') {
+                $answer = trim((string) ($testAnswers->first()?->answer ?? 'Javob berilmagan'));
+                $lines[] = "Talabaning yozma javobi: {$answer}";
+                $lines[] = '';
+
+                continue;
+            }
+
+            $selectedOptions = [];
+            $unselectedOptions = [];
+
+            foreach ($test->options as $option) {
+                $selected = $testAnswers->contains('test_option_id', $option->id);
+                $value = $option->option_value ?? 0;
+                $optionLine = "{$option->option_text} (ball: {$value})";
+
+                if ($selected) {
+                    $valueCounts[$value] = ($valueCounts[$value] ?? 0) + 1;
+                    $selectedOptions[] = $optionLine;
+                } else {
+                    $unselectedOptions[] = $optionLine;
+                }
+            }
+
+            $lines[] = 'Tanlangan javoblar:';
+            if ($selectedOptions === []) {
+                $lines[] = ' - Tanlangan javob yo\'q';
+            } else {
+                foreach ($selectedOptions as $selectedOption) {
+                    $lines[] = " - {$selectedOption}";
+                }
+            }
+
+            $lines[] = 'Tanlanmagan javoblar:';
+            if ($unselectedOptions === []) {
+                $lines[] = ' - Tanlanmagan javob yo\'q';
+            } else {
+                foreach ($unselectedOptions as $unselectedOption) {
+                    $lines[] = " - {$unselectedOption}";
+                }
+            }
+
+            $lines[] = '';
+        }
+
+        if ($valueCounts !== []) {
+            arsort($valueCounts);
+
+            $lines[] = 'Tanlangan variantlar bo‘yicha umumiy taqsimot:';
+            foreach ($valueCounts as $value => $count) {
+                $lines[] = " - Ball {$value}: {$count} ta tanlov";
+            }
+            $lines[] = '';
+        }
+
+        $lines[] = "Vazifa:";
+        $lines[] = "Talabaning psixologik holati haqida professional, ehtiyotkor va amaliy xulosa yozing.";
+        $lines[] = "Xulosani yozishda modul nomi, modul tavsifi, har bir savol va tanlangan/tanlanmagan barcha javoblardan foydalaning.";
+        $lines[] = "Natijani faqat quyidagi 2 bo'limda yozing:";
+        $lines[] = "1. E'tibor talab qiladigan jihatlar.";
+        $lines[] = "2. Tavsiyalar.";
+        $lines[] = "Har bir bo'lim 1-3 jumladan oshmasin.";
+        $lines[] = "Medikal tashxis qo'ymang va mavjud ma'lumotdan tashqariga chiqib keskin hukm qilmang.";
+
+        return implode("\n", $lines);
     }
     public function exportExcelWithDiagnosis(Request $request)
     {
