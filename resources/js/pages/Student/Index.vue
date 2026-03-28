@@ -89,6 +89,11 @@ const breadcrumbs: BreadcrumbItem[] = [
                             >
                                 {{ props.modulesCount }}
                             </h3>
+
+                        </div>
+                        <div>
+                            <!-- make button -->
+                            <a href="/student/index" class="p-2.5 text-cyan-400 hover:text-cyan-300 flex h-11 w-full items-center justify-center rounded-[20px] bg-cyan-500/20 hover:bg-black">Modulelarni ko'rish</a>
                         </div>
                     </div>
                 </div>

@@ -64,7 +64,8 @@ class ModuleController extends Controller
         $response = $studentTestServices->processBatchSubmission(
             $user->id,
             $module->id,
-            $request->validated('answers')
+            $request->validated('answers'),
+            'mobile_app'
         );
 
         if (($response['status'] ?? 'error') !== 'success') {

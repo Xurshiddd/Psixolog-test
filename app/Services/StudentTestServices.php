@@ -19,9 +19,10 @@ class StudentTestServices
      * @param int $userId
      * @param int $moduleId
      * @param array $answers - array where keys are test_ids and values are answers
+     * @param string $source - submission source such as web or mobile_app
      * @return array - results with consequence_fake for each test
      */
-    public function processBatchSubmission(int $userId, int $moduleId, array $answers): array
+    public function processBatchSubmission(int $userId, int $moduleId, array $answers, string $source = 'web'): array
     {
         $module = Module::find($moduleId);
         $student = User::find($userId);
@@ -109,18 +110,23 @@ class StudentTestServices
             DB::commit();
 
             if ($student && $module) {
+                $description = $source === 'mobile_app'
+                    ? 'Student submitted a test via mobile app'
+                    : 'Student submitted a test';
+
                 activity('student_test')
                     ->causedBy($student)
                     ->performedOn($module)
                     ->event('test_submitted')
                     ->withProperties([
+                        'source' => $source,
                         'module_id' => $module->id,
                         'module_name' => $module->name,
                         'answers_count' => count($answers),
                         'result_fake' => $resultFake,
                         'result_real' => $realResult,
                     ])
-                    ->log('Student submitted a test');
+                    ->log($description);
             }
 
             // Notify admin and psiholog users

@@ -24,6 +24,7 @@ type Test = {
 type Module = {
   id: number
   name: string
+  description?: string | null
   tests: Test[]
   shuffle: boolean
 }
@@ -209,8 +210,11 @@ if (tests.value[0]) initIfMissing(tests.value[0])
         <div class="flex items-start justify-between gap-4">
           <div>
             <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100">
-              {{ module.name }}
+              Module nomi: {{ module.name }}
             </h2>
+            <h4>
+                Module tavsifi: {{ module.description ?? "Tavsif berilmagan" }}
+            </h4>
             <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">
               Savol {{ totalQuestions ? (currentQuestionIndex + 1) : 0 }} / {{ totalQuestions }}
             </p>
@@ -277,7 +281,7 @@ if (tests.value[0]) initIfMissing(tests.value[0])
             <div v-if="flash.message" class="text-sm font-medium text-emerald-700 dark:text-emerald-300 mt-2">
               {{ flash.message }}
             </div>
-            
+
             <div v-if="existingResult" class="mt-4 p-4 rounded-xl bg-emerald-100/50 dark:bg-emerald-900/40 border border-emerald-200 dark:border-emerald-700">
                <h4 class="text-lg font-bold text-emerald-900 dark:text-emerald-100 mb-2">Sizning Natijangiz:</h4>
                <p class="text-emerald-800 dark:text-emerald-200 text-lg">
@@ -352,7 +356,7 @@ if (tests.value[0]) initIfMissing(tests.value[0])
 
         <!-- Main -->
         <div class="lg:col-span-3">
-          
+
           <!-- Existing Result View -->
           <div
              v-if="existingResult"
@@ -363,12 +367,12 @@ if (tests.value[0]) initIfMissing(tests.value[0])
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
              </div>
-             
+
              <h2 class="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-2">Test Yakunlangan</h2>
              <p class="text-slate-600 dark:text-slate-400 mb-6">
                Siz ushbu testni muvaffaqiyatli yakunlagansiz.
              </p>
-             
+
              <button
                 @click="showResults = true"
                 class="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-md hover:shadow-lg"
