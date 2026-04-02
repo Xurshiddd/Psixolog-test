@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { Head } from '@inertiajs/vue3';
+import { computed, ref } from 'vue';
+import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import CategoryStudentChart from '@/components/CategoryStudentChart.vue';
 import FaculityStudentChart from '@/components/FaculityStudentChart.vue';
@@ -39,16 +40,51 @@ interface StudentPopulationStats {
     solvedAllModulesPercentage: number;
 }
 
+interface DashboardModule {
+    id: number;
+    name: string;
+}
+
+interface ModuleScoreReportStudent {
+    id: number;
+    login: string;
+    name: string;
+    faculity_name: string;
+    group_name: string;
+    level: string;
+    score: number;
+}
+
+interface PaginatedData<T> {
+    data: T[];
+    current_page: number;
+    last_page: number;
+    per_page: number;
+    total: number;
+    links: Array<{
+        url: string | null;
+        label: string;
+        active: boolean;
+    }>;
+}
+
 const props = defineProps<{ 
     tests: any; 
     testsCount: number; 
-    modules: any; 
+    modules: DashboardModule[];
     modulesCount: number;
     moduleStats?: ModuleStatItem[];
     resultCategoryStats?: ResultCategoryStatItem[];
     categoryStudentStats?: CategoryStudentStatItem[];
     faculityStudentStats?: FaculityStudentStatItem[];
     studentPopulationStats: StudentPopulationStats;
+    reportFilters: {
+        module_id?: number | null;
+        min_score?: number | null;
+        max_score?: number | null;
+        is_ready?: boolean;
+    };
+    moduleScoreReport?: PaginatedData<ModuleScoreReportStudent> | null;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -78,6 +114,71 @@ const completionStats = [
         tone: 'from-amber-500 to-orange-500',
     },
 ];
+
+const selectedModuleId = ref(props.reportFilters.module_id ? String(props.reportFilters.module_id) : '');
+const minScore = ref(
+    props.reportFilters.min_score !== null && typeof props.reportFilters.min_score !== 'undefined'
+        ? String(props.reportFilters.min_score)
+        : '',
+);
+const maxScore = ref(
+    props.reportFilters.max_score !== null && typeof props.reportFilters.max_score !== 'undefined'
+        ? String(props.reportFilters.max_score)
+        : '',
+);
+
+const showScoreInputs = computed(() => selectedModuleId.value !== '');
+const normalizedMinScore = computed(() => (minScore.value === '' ? null : Number(minScore.value)));
+const normalizedMaxScore = computed(() => (maxScore.value === '' ? null : Number(maxScore.value)));
+
+const canSubmitReport = computed(() => {
+    if (!selectedModuleId.value || normalizedMinScore.value === null || normalizedMaxScore.value === null) {
+        return false;
+    }
+
+    return normalizedMinScore.value >= 0 && normalizedMaxScore.value >= 0 && normalizedMinScore.value <= normalizedMaxScore.value;
+});
+
+const selectedModuleName = computed(
+    () => props.modules.find((module) => String(module.id) === selectedModuleId.value)?.name ?? '',
+);
+
+const buildReportParams = () => ({
+    report_module_id: selectedModuleId.value,
+    min_score: minScore.value,
+    max_score: maxScore.value,
+});
+
+const submitReport = () => {
+    if (!canSubmitReport.value) {
+        return;
+    }
+
+    router.get(dashboard().url, buildReportParams(), {
+        preserveScroll: true,
+        replace: true,
+    });
+};
+
+const resetReport = () => {
+    selectedModuleId.value = '';
+    minScore.value = '';
+    maxScore.value = '';
+
+    router.get(dashboard().url, {}, {
+        preserveScroll: true,
+        replace: true,
+    });
+};
+
+const downloadReportExcel = () => {
+    if (!canSubmitReport.value) {
+        return;
+    }
+
+    const params = new URLSearchParams(buildReportParams());
+    window.location.href = `/dashboard/module-score-report/export?${params.toString()}`;
+};
 </script>
 <template>
     <Head title="Dashboard" />
@@ -149,6 +250,170 @@ const completionStats = [
             </div>
 
             <ModuleStatsChart v-if="props.moduleStats && props.moduleStats.length > 0" :module-stats="props.moduleStats" />
+
+            <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                <div class="flex flex-col gap-5">
+                    <div class="flex flex-col gap-2 lg:flex-row lg:items-start lg:justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Modul bo‘yicha ball oralig‘i natijalari</h3>
+                            <p class="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                Ball `Student/Result` sahifasidagi `Jami` formulasi bilan bir xil hisoblanadi.
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button
+                                type="button"
+                                class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700/50"
+                                :disabled="!canSubmitReport"
+                                @click="downloadReportExcel"
+                            >
+                                Excel yuklab olish
+                            </button>
+                            <button
+                                type="button"
+                                class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700/50"
+                                @click="resetReport"
+                            >
+                                Tozalash
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
+                        <div>
+                            <label for="module-score-report-module" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                                Modul
+                            </label>
+                            <select
+                                id="module-score-report-module"
+                                v-model="selectedModuleId"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                            >
+                                <option value="">Modulni tanlang</option>
+                                <option v-for="module in props.modules" :key="module.id" :value="String(module.id)">
+                                    {{ module.name }}
+                                </option>
+                            </select>
+                        </div>
+
+                        <div v-if="showScoreInputs">
+                            <label for="module-score-report-min" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                                Necha balldan yuqori
+                            </label>
+                            <input
+                                id="module-score-report-min"
+                                v-model="minScore"
+                                type="number"
+                                min="0"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                                placeholder="Masalan, 10"
+                            />
+                        </div>
+
+                        <div v-if="showScoreInputs">
+                            <label for="module-score-report-max" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                                Nechi ballgacha
+                            </label>
+                            <input
+                                id="module-score-report-max"
+                                v-model="maxScore"
+                                type="number"
+                                min="0"
+                                class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                                placeholder="Masalan, 20"
+                            />
+                        </div>
+
+                        <div v-if="showScoreInputs" class="flex items-end">
+                            <button
+                                type="button"
+                                class="inline-flex w-full items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-400"
+                                :disabled="!canSubmitReport"
+                                @click="submitReport"
+                            >
+                                Natija olish
+                            </button>
+                        </div>
+                    </div>
+
+                    <p v-if="showScoreInputs && !canSubmitReport" class="text-sm text-amber-600 dark:text-amber-400">
+                        Ball oralig‘ini to‘liq kiriting. Minimal ball maksimal balldan katta bo‘lmasligi kerak.
+                    </p>
+
+                    <div v-if="props.reportFilters.is_ready" class="rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div class="flex flex-col gap-2 border-b border-slate-200 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <span class="font-medium text-slate-900 dark:text-slate-100">{{ selectedModuleName }}</span>
+                                uchun
+                                <span class="font-medium">{{ props.reportFilters.min_score }}</span>
+                                dan
+                                <span class="font-medium">{{ props.reportFilters.max_score }}</span>
+                                gacha bo‘lgan natijalar
+                            </div>
+                            <div>
+                                Jami: <span class="font-semibold text-slate-900 dark:text-slate-100">{{ props.moduleScoreReport?.total ?? 0 }}</span> ta talaba
+                            </div>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full divide-y divide-slate-200 text-sm dark:divide-slate-700">
+                                <thead class="bg-slate-50 dark:bg-slate-900/60">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Login</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Ism Familiya</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Fakultet</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Guruh</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Kurs</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Ball</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-700 dark:bg-slate-800">
+                                    <tr v-if="!props.moduleScoreReport || props.moduleScoreReport.data.length === 0">
+                                        <td colspan="6" class="px-4 py-6 text-center text-slate-500 dark:text-slate-400">
+                                            Berilgan parametr bo‘yicha talaba topilmadi.
+                                        </td>
+                                    </tr>
+                                    <tr v-for="student in props.moduleScoreReport?.data ?? []" :key="student.id">
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ student.login }}</td>
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ student.name }}</td>
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ student.faculity_name }}</td>
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ student.group_name }}</td>
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ student.level }}</td>
+                                        <td class="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{{ student.score }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div
+                            v-if="props.moduleScoreReport && props.moduleScoreReport.last_page > 1"
+                            class="flex flex-wrap items-center justify-end gap-2 border-t border-slate-200 px-4 py-3 dark:border-slate-700"
+                        >
+                            <template v-for="link in props.moduleScoreReport.links" :key="link.label + (link.url ?? 'null')">
+                                <span
+                                    v-if="!link.url"
+                                    class="rounded-lg border border-slate-200 px-3 py-2 text-sm text-slate-400 dark:border-slate-700"
+                                    v-html="link.label"
+                                />
+                                <Link
+                                    v-else
+                                    :href="link.url"
+                                    class="rounded-lg border px-3 py-2 text-sm transition"
+                                    :class="link.active
+                                        ? 'border-blue-600 bg-blue-600 text-white'
+                                        : 'border-slate-200 text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700/50'"
+                                    v-html="link.label"
+                                />
+                            </template>
+                        </div>
+                    </div>
+
+                    <div v-else class="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500 dark:border-slate-600 dark:text-slate-400">
+                        Modulni tanlang, ball oralig‘ini kiriting va `Natija olish` tugmasini bosing.
+                    </div>
+                </div>
+            </div>
+
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <ResultCategoryChart v-if="props.resultCategoryStats && props.resultCategoryStats.length > 0" :result-category-stats="props.resultCategoryStats" />
                 <CategoryStudentChart v-if="props.categoryStudentStats && props.categoryStudentStats.length > 0" :category-student-stats="props.categoryStudentStats" />

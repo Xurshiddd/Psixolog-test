@@ -28,6 +28,9 @@ Route::fallback(function () {
     return Inertia::render('Error404')->toResponse(request())->setStatusCode(404);
 });
 Route::get('dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('dashboard/module-score-report/export', [DashboardController::class, 'exportModuleScoreReport'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.module-score-report.export');
 
 Route::get('/hemis/redirect', [HemisAuthController::class , 'redirectToHemis'])->name('hemis_redirect');
 Route::get('/hemis/callback', [HemisAuthController::class , 'login'])->name('hemis.callback');
