@@ -6,163 +6,236 @@
     <style>
         @page {
             size: A4 landscape;
-            margin: 24px 28px;
+            margin: 14px 18px;
         }
 
         body {
-            color: #2f3747;
+            background: #ffffff;
+            color: #243247;
             font-family: DejaVu Sans, sans-serif;
-            font-size: 13px;
+            font-size: 11px;
             margin: 0;
         }
 
-        .header {
-            margin-bottom: 26px;
-            width: 100%;
+        .page {
+            border: 1px solid #cdd6e1;
+            padding: 12px 14px 10px;
+        }
+
+        .top-rule {
+            background: #425b84;
+            height: 5px;
+            margin: -12px -14px 10px;
         }
 
         .header-table,
-        .content-table,
+        .main-table,
+        .logo-layout,
+        .meta-table,
+        .profile-head-table,
         .info-table {
             border-collapse: collapse;
             width: 100%;
         }
 
-        .logo-cell {
-            vertical-align: top;
-            width: 37%;
+        .header {
+            margin-bottom: 10px;
         }
 
-        .title-cell {
-            color: #55698d;
-            font-size: 30px;
-            font-weight: 700;
-            padding-top: 8px;
-            text-align: center;
+        .header-left {
             vertical-align: top;
+            width: 36%;
+        }
+
+        .header-center {
+            padding: 0 10px;
+            text-align: center;
+            vertical-align: middle;
+            width: 44%;
+        }
+
+        .header-right {
+            vertical-align: top;
+            width: 20%;
+        }
+
+        .logo-box,
+        .meta-box,
+        .profile-card,
+        .section-card,
+        .accent-card {
+            background: #ffffff;
+            border: 1px solid #d7dfe8;
         }
 
         .logo-box {
-            border: 1px solid #d5d8de;
-            padding: 8px 10px;
-            width: 238px;
-        }
-
-        .logo-layout {
-            width: 100%;
+            padding: 6px 8px;
         }
 
         .logo-icon-cell {
             vertical-align: top;
-            width: 58px;
+            width: 54px;
         }
 
         .logo-text-cell {
-            padding-left: 10px;
+            padding-left: 8px;
             vertical-align: top;
         }
 
         .logo-box img {
             display: block;
-            height: 58px;
-            width: 58px;
+            height: 50px;
+            width: 50px;
         }
 
         .logo-title {
-            color: #1f2430;
-            font-size: 12px;
+            color: #1d2736;
+            font-size: 11px;
             font-weight: 700;
             line-height: 1.2;
             margin: 0;
         }
 
         .logo-subtitle {
-            color: #4c5565;
-            font-size: 10px;
-            margin-top: 8px;
+            color: #667489;
+            font-size: 9px;
+            margin-top: 5px;
         }
 
-        .content-table td {
+        .document-name {
+            color: #425b84;
+            font-family: DejaVu Serif, serif;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: 0.2px;
+            margin: 0;
+        }
+
+        .document-subtitle {
+            color: #6d7b90;
+            font-size: 9px;
+            letter-spacing: 1.1px;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        .meta-box {
+            padding: 7px 9px;
+        }
+
+        .meta-label {
+            color: #758297;
+            font-size: 8px;
+            text-transform: uppercase;
+        }
+
+        .meta-value {
+            color: #223147;
+            font-size: 10px;
+            font-weight: 700;
+            padding-top: 2px;
+        }
+
+        .meta-row + .meta-row td {
+            border-top: 1px solid #e4eaf0;
+            padding-top: 5px;
+        }
+
+        .meta-row td {
+            padding-bottom: 5px;
+        }
+
+        .main-table td {
             vertical-align: top;
         }
 
         .left-column {
-            padding-right: 22px;
-            width: 52%;
+            padding-right: 10px;
+            width: 41%;
         }
 
         .right-column {
-            width: 48%;
+            width: 59%;
+        }
+
+        .profile-card {
+            padding: 12px;
+        }
+
+        .profile-head-table {
+            margin-bottom: 10px;
+        }
+
+        .photo-cell {
+            vertical-align: top;
+            width: 112px;
+        }
+
+        .identity-cell {
+            padding-left: 10px;
+            vertical-align: top;
         }
 
         .student-photo {
-            border: 1px solid #cfd4dc;
-            height: 150px;
-            margin: 4px 0 20px;
+            border: 1px solid #cad3df;
+            height: 132px;
             text-align: center;
-            width: 120px;
+            width: 102px;
         }
 
         .student-photo img {
-            height: 150px;
+            display: block;
+            height: 132px;
             object-fit: cover;
-            width: 120px;
+            width: 102px;
         }
 
         .student-photo-placeholder {
-            color: #78808e;
-            font-size: 12px;
-            line-height: 150px;
-            text-align: center;
+            color: #8592a5;
+            font-size: 10px;
+            line-height: 132px;
+            text-transform: uppercase;
         }
 
         .student-name {
-            font-size: 18px;
+            color: #1d2736;
+            font-size: 17px;
             font-weight: 700;
-            margin-bottom: 16px;
+            line-height: 1.25;
+            margin: 1px 0 4px;
         }
 
-        .box {
-            border: 1px solid #d5d8de;
-            margin-bottom: 22px;
-            padding: 16px;
+        .student-role {
+            color: #647287;
+            font-size: 10px;
+            line-height: 1.35;
+            margin-bottom: 8px;
+            text-transform: uppercase;
         }
 
-        .box-title {
-            font-size: 16px;
-            font-style: italic;
+        .identity-note {
+            background: #f3f6fa;
+            border-left: 3px solid #425b84;
+            color: #4d5e74;
+            font-size: 10px;
+            line-height: 1.35;
+            padding: 6px 8px;
+        }
+
+        .section-title {
+            border-bottom: 1px solid #dbe3ec;
+            color: #425b84;
+            font-size: 10px;
             font-weight: 700;
-            margin: 0 0 12px;
-        }
-
-        .traits-list {
-            margin: 0;
-            padding-left: 24px;
-        }
-
-        .traits-list li {
-            line-height: 1.6;
-            margin-bottom: 6px;
-        }
-
-        .temperament-text,
-        .conclusion-text {
-            font-size: 15px;
-            font-style: italic;
-            font-weight: 700;
-            line-height: 1.45;
-            margin: 0;
-        }
-
-        .info-title {
-            font-size: 16px;
-            font-weight: 700;
-            margin: 0 0 14px;
+            letter-spacing: 1.2px;
+            margin: 0 0 8px;
+            padding-bottom: 5px;
+            text-transform: uppercase;
         }
 
         .info-row td {
-            border-top: 1px solid #e6e9ef;
-            padding: 10px 0;
+            border-top: 1px solid #e8edf3;
+            padding: 7px 0;
         }
 
         .info-row:first-child td {
@@ -171,104 +244,198 @@
         }
 
         .info-label {
-            color: #606a79;
-            width: 42%;
+            color: #667489;
+            width: 40%;
         }
 
         .info-value {
+            color: #1f2b3d;
+            font-weight: 700;
             text-align: right;
-            width: 58%;
+            width: 60%;
+        }
+
+        .section-card,
+        .accent-card {
+            margin-bottom: 10px;
+            padding: 10px 12px;
+        }
+
+        .card-caption {
+            color: #77859a;
+            font-size: 9px;
+            letter-spacing: 1.1px;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+        }
+
+        .card-heading {
+            color: #223147;
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.35;
+            margin: 0 0 8px;
+        }
+
+        .traits-list {
+            margin: 0;
+            padding-left: 18px;
+        }
+
+        .traits-list li {
+            color: #2c3a4f;
+            line-height: 1.45;
+            margin-bottom: 2px;
+        }
+
+        .accent-card {
+            background: #f6f8fb;
+        }
+
+        .temperament-text {
+            color: #1e2a3b;
+            font-size: 14px;
+            font-weight: 700;
+            line-height: 1.35;
+            margin: 0;
+        }
+
+        .conclusion-text {
+            border-left: 4px solid #425b84;
+            color: #28374c;
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 0;
+            padding-left: 10px;
+            text-align: justify;
         }
     </style>
 </head>
 <body>
-    <table class="header-table header">
-        <tr>
-            <td class="logo-cell">
-                <div class="logo-box">
-                    <table class="logo-layout">
-                        <tr>
-                            <td class="logo-icon-cell">
-                                @if($logoDataUri)
-                                    <img src="{{ $logoDataUri }}" alt="Logo">
-                                @endif
-                            </td>
-                            <td class="logo-text-cell">
-                                <p class="logo-title">Toshkent to‘qimachilik</p>
-                                <p class="logo-title">va yengil sanoat</p>
-                                <p class="logo-title">instituti</p>
-                                <div class="logo-subtitle">1932-yildan beri</div>
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </td>
-            <td class="title-cell">Ijtimoiy-psixologik passport</td>
-        </tr>
-    </table>
+    <div class="page">
+        <div class="top-rule"></div>
 
-    <table class="content-table">
-        <tr>
-            <td class="left-column">
-                <div class="student-photo">
-                    @if($studentPictureDataUri)
-                        <img src="{{ $studentPictureDataUri }}" alt="{{ $student->name }}">
-                    @else
-                        <div class="student-photo-placeholder">Student picture</div>
-                    @endif
-                </div>
+        <table class="header-table header">
+            <tr>
+                <td class="header-left">
+                    <div class="logo-box">
+                        <table class="logo-layout">
+                            <tr>
+                                <td class="logo-icon-cell">
+                                    @if($logoDataUri)
+                                        <img src="{{ $logoDataUri }}" alt="Logo">
+                                    @endif
+                                </td>
+                                <td class="logo-text-cell">
+                                    <p class="logo-title">Toshkent to‘qimachilik</p>
+                                    <p class="logo-title">va yengil sanoat</p>
+                                    <p class="logo-title">instituti</p>
+                                    <div class="logo-subtitle">1932-yildan beri</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </td>
+                <td class="header-center">
+                    <h1 class="document-name">Ijtimoiy-psixologik passport</h1>
+                    <div class="document-subtitle">Rasmiy psixologik tavsif hujjati</div>
+                </td>
+                <td class="header-right">
+                    <div class="meta-box">
+                        <table class="meta-table">
+                            <tr class="meta-row">
+                                <td>
+                                    <div class="meta-label">Hujjat sanasi</div>
+                                    <div class="meta-value">{{ now()->format('d.m.Y') }}</div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </td>
+            </tr>
+        </table>
 
-                <div class="student-name">{{ $student->name ?? '-' }}</div>
+        <table class="main-table">
+            <tr>
+                <td class="left-column">
+                    <div class="profile-card">
+                        <table class="profile-head-table">
+                            <tr>
+                                <td class="photo-cell">
+                                    <div class="student-photo">
+                                        @if($studentPictureDataUri)
+                                            <img src="{{ $studentPictureDataUri }}" alt="{{ $student->name }}">
+                                        @else
+                                            <div class="student-photo-placeholder">Student picture</div>
+                                        @endif
+                                    </div>
+                                </td>
+                                <td class="identity-cell">
+                                    <div class="student-name">{{ $student->name ?? '-' }}</div>
+                                    <div class="student-role">Talabaning ijtimoiy-psixologik profili</div>
+                                    <div class="identity-note">
+                                        Mazkur passport talabaning umumiy ma’lumotlari hamda psixologik tavsifini
+                                        rasmiy ko‘rinishda aks ettirish uchun tayyorlandi.
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
 
-                <div class="box">
-                    <div class="info-title">Ma'lumotlar</div>
+                        <div class="section-title">Asosiy ma’lumotlar</div>
 
-                    <table class="info-table">
-                        <tr class="info-row">
-                            <td class="info-label">Login:</td>
-                            <td class="info-value">{{ $student->login ?? '-' }}</td>
-                        </tr>
-                        <tr class="info-row">
-                            <td class="info-label">Telefon:</td>
-                            <td class="info-value">{{ $student->phone ?? '-' }}</td>
-                        </tr>
-                        <tr class="info-row">
-                            <td class="info-label">Guruh:</td>
-                            <td class="info-value">{{ $student->group?->name ?? '-' }}</td>
-                        </tr>
-                        <tr class="info-row">
-                            <td class="info-label">Yo'nalish:</td>
-                            <td class="info-value">{{ $student->speciality?->name ?? '-' }}</td>
-                        </tr>
-                        <tr class="info-row">
-                            <td class="info-label">Kategoriyalar:</td>
-                            <td class="info-value">
-                                {{ $student->usersCategory->pluck('name')->filter()->implode(', ') ?: '-' }}
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-            </td>
+                        <table class="info-table">
+                            <tr class="info-row">
+                                <td class="info-label">Login</td>
+                                <td class="info-value">{{ $student->login ?? '-' }}</td>
+                            </tr>
+                            <tr class="info-row">
+                                <td class="info-label">Telefon</td>
+                                <td class="info-value">{{ $student->phone ?? '-' }}</td>
+                            </tr>
+                            <tr class="info-row">
+                                <td class="info-label">Guruh</td>
+                                <td class="info-value">{{ $student->group?->name ?? '-' }}</td>
+                            </tr>
+                            <tr class="info-row">
+                                <td class="info-label">Yo‘nalish</td>
+                                <td class="info-value">{{ $student->speciality?->name ?? '-' }}</td>
+                            </tr>
+                            <tr class="info-row">
+                                <td class="info-label">Kategoriyalar</td>
+                                <td class="info-value">
+                                    {{ $student->usersCategory->pluck('name')->filter()->implode(', ') ?: '-' }}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </td>
 
-            <td class="right-column">
-                <div class="box">
-                    <div class="box-title">Xarakterdagi qobiliyatlar ketma-ketligi :</div>
-                    <ol class="traits-list">
-                        @foreach($passportData['character_traits'] as $trait)
-                            <li>{{ $trait }}</li>
-                        @endforeach
-                    </ol>
-                </div>
+                <td class="right-column">
+                    <div class="section-card">
+                        <div class="card-caption">1-bo‘lim</div>
+                        <h2 class="card-heading">Xarakterdagi qobiliyatlar ketma-ketligi</h2>
+                        <ol class="traits-list">
+                            @foreach($passportData['character_traits'] as $trait)
+                                <li>{{ $trait }}</li>
+                            @endforeach
+                        </ol>
+                    </div>
 
-                <div class="box">
-                    <p class="temperament-text">Temperament tipi: {{ $passportData['temperament_type'] }}</p>
-                </div>
+                    <div class="accent-card">
+                        <div class="card-caption">2-bo‘lim</div>
+                        <h2 class="card-heading">Temperament tavsifi</h2>
+                        <p class="temperament-text">{{ $passportData['temperament_type'] }}</p>
+                    </div>
 
-                <div class="box" style="margin-top: 64px;">
-                    <p class="conclusion-text">Talaba: {{ $passportData['student_conclusion'] }}</p>
-                </div>
-            </td>
-        </tr>
-    </table>
+                    <div class="section-card">
+                        <div class="card-caption">3-bo‘lim</div>
+                        <h2 class="card-heading">Talaba bo‘yicha xulosa</h2>
+                        <p class="conclusion-text">{{ $passportData['student_conclusion'] }}</p>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+    </div>
 </body>
 </html>
