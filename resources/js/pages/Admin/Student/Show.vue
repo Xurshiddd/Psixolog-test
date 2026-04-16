@@ -1,10 +1,20 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
+import { ref } from 'vue';
+import Button from '@/components/ui/button/Button.vue';
+import {
+    Dialog,
+    DialogContent,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import Button from '@/components/ui/button/Button.vue';
+
 const page = usePage();
 const user = page.props.auth.user;
+
 const props = defineProps<{
     student: any;
     results: Array<any>;
@@ -17,18 +27,17 @@ const props = defineProps<{
     page?: number;
 }>();
 
-import { ref } from 'vue';
-import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogTrigger,
-    DialogFooter,
-} from '@/components/ui/dialog';
-
 const isSyncModalOpen = ref(false);
 const selectedCategoryIds = ref<number[]>(props.student.users_category?.map((c: any) => c.id) || []);
+const isPassportModalOpen = ref(false);
+const isDownloadingPassport = ref(false);
+const passportRequestError = ref('');
+const passportErrors = ref<Record<string, string>>({});
+const passportForm = ref({
+    characterTraits: ['', '', '', '', ''],
+    temperamentType: '',
+    studentConclusion: '',
+});
 
 const syncCategories = () => {
     router.post(`/admin/students/${props.student.id}/sync-categories`, {
@@ -75,6 +84,135 @@ function removeResult(resultId: number, studentId: number) {
         });
     }
 }
+
+const extractFilename = (disposition: string | null) => {
+    if (!disposition) {
+        return null;
+    }
+
+    const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+    if (utf8Match?.[1]) {
+        return decodeURIComponent(utf8Match[1]);
+    }
+
+    const asciiMatch = disposition.match(/filename="?([^"]+)"?/i);
+    return asciiMatch?.[1] || null;
+};
+
+const slugify = (value: string) =>
+    value
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+
+const validatePassportForm = () => {
+    const errors: Record<string, string> = {};
+
+    passportForm.value.characterTraits.forEach((trait, index) => {
+        if (!trait.trim()) {
+            errors[`characterTraits.${index}`] = `${index + 1}-qobiliyatni kiriting.`;
+        }
+    });
+
+    if (!passportForm.value.temperamentType.trim()) {
+        errors.temperamentType = 'Temperament tipini kiriting.';
+    }
+
+    if (!passportForm.value.studentConclusion.trim()) {
+        errors.studentConclusion = 'Talaba uchun xulosani kiriting.';
+    }
+
+    passportErrors.value = errors;
+
+    return Object.keys(errors).length === 0;
+};
+
+const closePassportModal = () => {
+    isPassportModalOpen.value = false;
+    passportRequestError.value = '';
+    passportErrors.value = {};
+};
+
+const downloadPassportPdf = async () => {
+    passportRequestError.value = '';
+
+    if (!validatePassportForm()) {
+        return;
+    }
+
+    isDownloadingPassport.value = true;
+
+    try {
+        const formData = new FormData();
+
+        passportForm.value.characterTraits.forEach((trait, index) => {
+            formData.append(`character_traits[${index}]`, trait.trim());
+        });
+
+        formData.append('temperament_type', passportForm.value.temperamentType.trim());
+        formData.append('student_conclusion', passportForm.value.studentConclusion.trim());
+
+        const response = await fetch(`/admin/students/${props.student.id}/passport/pdf`, {
+            method: 'POST',
+            headers: {
+                Accept: 'application/pdf, application/json',
+                'X-CSRF-TOKEN':
+                    (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '',
+            },
+            body: formData,
+        });
+
+        if (!response.ok) {
+            const errorPayload = await response.json().catch(() => null);
+
+            if (response.status === 422 && errorPayload?.errors) {
+                const validationErrors: Record<string, string> = {};
+
+                Object.entries(errorPayload.errors).forEach(([key, value]) => {
+                    if (Array.isArray(value) && value[0]) {
+                        if (key.startsWith('character_traits.')) {
+                            const index = key.split('.').pop();
+                            validationErrors[`characterTraits.${index}`] = value[0];
+                        } else if (key === 'temperament_type') {
+                            validationErrors.temperamentType = value[0];
+                        } else if (key === 'student_conclusion') {
+                            validationErrors.studentConclusion = value[0];
+                        }
+                    }
+                });
+
+                passportErrors.value = validationErrors;
+            } else {
+                passportRequestError.value =
+                    errorPayload?.message || 'PDF tayyorlashda xatolik yuz berdi. Qayta urinib ko‘ring.';
+            }
+
+            return;
+        }
+
+        const pdfBlob = await response.blob();
+        const downloadUrl = URL.createObjectURL(pdfBlob);
+        const downloadLink = document.createElement('a');
+        const fileName =
+            extractFilename(response.headers.get('content-disposition')) ||
+            `ijtimoiy-psixologik-passport-${slugify(props.student.name || 'talaba')}.pdf`;
+
+        downloadLink.href = downloadUrl;
+        downloadLink.download = fileName;
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        URL.revokeObjectURL(downloadUrl);
+
+        closePassportModal();
+    } catch {
+        passportRequestError.value = 'Server bilan bog‘lanishda xatolik yuz berdi.';
+    } finally {
+        isDownloadingPassport.value = false;
+    }
+};
+
 const breadcrumbs: BreadcrumbItem[] = [
     {
         title: 'Talabalar',
@@ -85,11 +223,6 @@ const breadcrumbs: BreadcrumbItem[] = [
         href: `/admin/students/${props.student.id}`,
     },
 ];
-
-const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString();
-};
-
 </script>
 
 <template>
@@ -132,9 +265,12 @@ const formatDate = (dateString: string) => {
                                 <span v-if="!student.users_category?.length" class="text-muted-foreground">-</span>
                             </div>
                         </div>
-                        <div class="pt-4" v-if="results.length > 0">
-                            <Button @click="isSyncModalOpen = true" class="w-full">
+                        <div class="space-y-2 pt-4">
+                            <Button v-if="results.length > 0" @click="isSyncModalOpen = true" class="w-full">
                                 Kategoriya Biriktirish
+                            </Button>
+                            <Button variant="outline" @click="isPassportModalOpen = true" class="w-full">
+                                Ijtimoiy-psixologik passport
                             </Button>
                         </div>
                     </div>
@@ -161,6 +297,77 @@ const formatDate = (dateString: string) => {
                         </div>
                         <DialogFooter>
                             <Button @click="syncCategories">Saqlash</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
+
+                <Dialog v-model:open="isPassportModalOpen">
+                    <DialogContent class="sm:max-w-2xl">
+                        <DialogHeader>
+                            <DialogTitle>Ijtimoiy-psixologik passport</DialogTitle>
+                        </DialogHeader>
+                        <div class="grid gap-5 py-4">
+                            <div class="rounded-lg border bg-muted/20 p-4">
+                                <p class="text-sm font-medium">{{ student.name }}</p>
+                                <p class="mt-1 text-sm text-muted-foreground">
+                                    Ma'lumotlar chap tomonda avtomatik joylanadi. Quyidagi maydonlarni to‘ldirib PDF yuklab olishingiz mumkin.
+                                </p>
+                            </div>
+
+                            <div class="grid gap-3">
+                                <label class="text-sm font-medium">Xarakterdagi qobiliyatlar ketma-ketligi</label>
+                                <div class="grid gap-3 sm:grid-cols-2">
+                                    <div v-for="(_, index) in passportForm.characterTraits" :key="index" class="space-y-1">
+                                        <input
+                                            v-model="passportForm.characterTraits[index]"
+                                            type="text"
+                                            :placeholder="`${index + 1}-qobiliyat`"
+                                            class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                                        />
+                                        <p v-if="passportErrors[`characterTraits.${index}`]" class="text-sm text-red-600">
+                                            {{ passportErrors[`characterTraits.${index}`] }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-sm font-medium" for="temperament-type">Temperament tipi</label>
+                                <input
+                                    id="temperament-type"
+                                    v-model="passportForm.temperamentType"
+                                    type="text"
+                                    placeholder="Masalan: Flegmatik"
+                                    class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                                />
+                                <p v-if="passportErrors.temperamentType" class="text-sm text-red-600">
+                                    {{ passportErrors.temperamentType }}
+                                </p>
+                            </div>
+
+                            <div class="space-y-1">
+                                <label class="text-sm font-medium" for="student-conclusion">Talaba xulosasi</label>
+                                <textarea
+                                    id="student-conclusion"
+                                    v-model="passportForm.studentConclusion"
+                                    rows="5"
+                                    placeholder="Talaba uchun xulosani kiriting"
+                                    class="placeholder:text-muted-foreground dark:bg-input/30 border-input min-h-28 w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
+                                />
+                                <p v-if="passportErrors.studentConclusion" class="text-sm text-red-600">
+                                    {{ passportErrors.studentConclusion }}
+                                </p>
+                            </div>
+
+                            <p v-if="passportRequestError" class="text-sm text-red-600">
+                                {{ passportRequestError }}
+                            </p>
+                        </div>
+                        <DialogFooter class="gap-2 sm:justify-end">
+                            <Button variant="outline" @click="closePassportModal">Bekor qilish</Button>
+                            <Button @click="downloadPassportPdf" :disabled="isDownloadingPassport">
+                                {{ isDownloadingPassport ? 'Yuklanmoqda...' : 'PDF yuklab olish' }}
+                            </Button>
                         </DialogFooter>
                     </DialogContent>
                 </Dialog>

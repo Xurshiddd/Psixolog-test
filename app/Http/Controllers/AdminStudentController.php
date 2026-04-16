@@ -467,6 +467,26 @@ class AdminStudentController extends Controller
         $pdf = $pdfExportService->generatePdf($students);
         return $pdf->download("talabalar_$timestamp.pdf");
     }
+
+    public function exportStudentPassportPdf(Request $request, User $user, StudentPdfExportService $pdfExportService)
+    {
+        abort_unless($user->role === 'student', Response::HTTP_NOT_FOUND, 'Talaba topilmadi.');
+
+        $validated = $request->validate([
+            'character_traits' => 'required|array|size:5',
+            'character_traits.*' => 'required|string|max:255',
+            'temperament_type' => 'required|string|max:255',
+            'student_conclusion' => 'required|string|max:5000',
+        ]);
+
+        $user->load(['group', 'speciality', 'usersCategory']);
+
+        $pdf = $pdfExportService->generateStudentPassportPdf($user, $validated);
+        $fileName = 'ijtimoiy-psixologik-passport_' . Str::slug($user->name ?: 'talaba') . '.pdf';
+
+        return $pdf->download($fileName);
+    }
+
     public function destroyResult(User $student, $resultId)
     {
         DB::transaction(function () use ($student, $resultId) {

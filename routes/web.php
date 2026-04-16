@@ -58,6 +58,7 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::get('/admin/students/export/excel-with-diagnosis', [AdminStudentController::class , 'exportExcelWithDiagnosis'])->name('admin.students.export.excel-with-diagnosis');
     Route::get('/admin/students/export/pdf', [AdminStudentController::class , 'exportPdf'])->name('admin.students.export.pdf');
     Route::get('/admin/students/{user}', [AdminStudentController::class , 'show'])->name('admin.students.show');
+    Route::post('/admin/students/{user}/passport/pdf', [AdminStudentController::class, 'exportStudentPassportPdf'])->name('admin.students.passport.pdf');
     Route::get('/admin/students/{user}/results/{module}', [AdminStudentController::class , 'showResult'])->name('admin.students.results.show');
     Route::post('/admin/students/{user}/results/{module}/diagnosis', [AdminStudentController::class , 'updateDiagnosis'])->name('admin.students.results.diagnosis');
     Route::post('/admin/students/{user}/results/{module}/ai-diagnosis', [AdminStudentController::class , 'generateAiDiagnosis'])->name('admin.students.results.ai-diagnosis');
