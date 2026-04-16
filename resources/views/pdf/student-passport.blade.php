@@ -5,6 +5,7 @@
     <title>Ijtimoiy-psixologik passport</title>
     <style>
         @page {
+            size: A4 landscape;
             margin: 24px 28px;
         }
 

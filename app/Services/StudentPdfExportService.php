@@ -28,7 +28,7 @@ class StudentPdfExportService
             'passportData' => $passportData,
             'logoDataUri' => $this->imageToDataUri(public_path('logo-pic.svg')),
             'studentPictureDataUri' => $this->resolveStudentPictureDataUri($student->picture),
-        ])->setPaper('a4');
+        ])->setPaper('a4', 'landscape');
     }
 
     /**
