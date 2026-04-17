@@ -8,6 +8,7 @@ use App\Models\Speciality;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use RuntimeException;
 
@@ -83,6 +84,7 @@ class HemisStudentAuthenticator
             || data_get($userData, 'data.educationForm.code') !== '11'
             || data_get($userData, 'data.educationForm.code') !== '20'
         ) {
+            Log::error('Bakalavr kunduzgi talabalar uchun platformaga kirish urinishlari', ['userData' => $userData]);
             throw new RuntimeException('Bu platforma hozirda Bakalavr kunduzgi talabalar uchun');
         }
     }
