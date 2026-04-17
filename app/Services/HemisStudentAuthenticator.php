@@ -81,6 +81,7 @@ class HemisStudentAuthenticator
         if (
             data_get($userData, 'data.educationType.code') !== '11'
             || data_get($userData, 'data.educationForm.code') !== '11'
+            || data_get($userData, 'data.educationForm.code') !== '20'
         ) {
             throw new RuntimeException('Bu platforma hozirda Bakalavr kunduzgi talabalar uchun');
         }
