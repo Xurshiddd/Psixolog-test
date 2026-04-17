@@ -13,9 +13,13 @@ class StudentPopulationStatsService
     {
         $data = $this->getCachedStats();
 
-        $daytimeStudents = data_get($data, 'data.education_form.Bakalavr.Kunduzgi', []);
+        $bachelorEducationForms = data_get($data, 'data.education_form.Bakalavr', []);
+        $daytimeStudents = collect([
+            data_get($bachelorEducationForms, 'Kunduzgi', []),
+            data_get($bachelorEducationForms, 'Qo‘shma (kunduzgi)', []),
+        ])->flatten(1);
 
-        return collect($daytimeStudents)
+        return $daytimeStudents
             ->filter(fn ($count) => is_numeric($count))
             ->sum();
     }
