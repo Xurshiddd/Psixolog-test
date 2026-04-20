@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\StudentPassport;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -24,8 +25,7 @@ class AdminStudentController extends Controller
 {
     public function index(Request $request)
     {
-        $query = User::where('role', 'student')
-            ->with(['group', 'speciality', 'faculity', 'usersTestsResults']);
+        $query = $this->buildStudentIndexQuery($request);
 
         if ($request->has('search') && $request->search) {
             $search = $request->search;
@@ -66,7 +66,7 @@ class AdminStudentController extends Controller
             });
         }
 
-        $students = $query->latest()->paginate(10);
+        $students = $query->latest()->paginate(10)->withQueryString();
 
         $groups = Group::orderBy('name')->get();
         $specialities = Speciality::orderBy('name')->get();
@@ -87,22 +87,28 @@ class AdminStudentController extends Controller
                 'level' => $request->get('level'),
                 'test_status' => $request->get('test_status'),
                 'category_id' => $request->get('category_id'),
+                'passport_status' => $request->get('passport_status'),
             ]
         ]);
     }
 
     public function show(Request $request, User $user)
     {
-        $user->load(['group', 'speciality', 'usersTestsResults']);
+        $user->load(['group', 'speciality', 'faculity', 'usersTestsResults', 'studentPassport']);
 
         return Inertia::render('Admin/Student/Show', [
             'student' => $user->load('usersCategory'),
             'results' => $user->usersTestsResults,
             'allCategories' => \App\Models\Category::all(),
             'filters' => [
+                'search' => $request->get('search'),
+                'faculity_id' => $request->get('faculity_id'),
                 'group_id' => $request->get('group_id'),
                 'speciality_id' => $request->get('speciality_id'),
+                'level' => $request->get('level'),
                 'test_status' => $request->get('test_status'),
+                'category_id' => $request->get('category_id'),
+                'passport_status' => $request->get('passport_status'),
             ],
             'page' => $request->get('page', 1)
         ]);
@@ -233,8 +239,15 @@ class AdminStudentController extends Controller
 
     private function getFilteredStudents(Request $request)
     {
-        $query = User::where('role', 'student')
-            ->with(['group', 'speciality', 'faculity', 'usersTestsResults']);
+        $query = $this->buildStudentIndexQuery($request);
+
+        if ($request->has('search') && $request->search) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('login', 'like', "%{$search}%")
+                  ->orWhere('name', 'like', "%{$search}%");
+            });
+        }
 
         // Filter by group
         if ($request->has('group_id') && $request->group_id) {
@@ -272,6 +285,22 @@ class AdminStudentController extends Controller
         }
 
         return $query->latest()->get();
+    }
+
+    private function buildStudentIndexQuery(Request $request)
+    {
+        $query = User::where('role', 'student')
+            ->with(['group', 'speciality', 'faculity', 'usersTestsResults', 'studentPassport']);
+
+        if ($request->has('passport_status') && $request->passport_status) {
+            if ($request->passport_status === 'exists') {
+                $query->whereHas('studentPassport');
+            } elseif ($request->passport_status === 'not_exists') {
+                $query->whereDoesntHave('studentPassport');
+            }
+        }
+
+        return $query;
     }
 
     public function syncCategories(Request $request, User $user)
@@ -472,16 +501,30 @@ class AdminStudentController extends Controller
     {
         abort_unless($user->role === 'student', Response::HTTP_NOT_FOUND, 'Talaba topilmadi.');
 
-        $validated = $request->validate([
-            'character_traits' => 'required|array|size:5',
-            'character_traits.*' => 'required|string|max:255',
-            'temperament_type' => 'required|string|max:255',
-            'student_conclusion' => 'required|string|max:5000',
-        ]);
+        $validated = $this->validateStudentPassport($request);
+        $passport = $this->saveStudentPassport($user, $validated);
 
         $user->load(['group', 'speciality', 'usersCategory']);
 
-        $pdf = $pdfExportService->generateStudentPassportPdf($user, $validated);
+        $pdf = $pdfExportService->generateStudentPassportPdf($user, $this->passportPayload($passport));
+        $fileName = 'ijtimoiy-psixologik-passport_' . Str::slug($user->name ?: 'talaba') . '.pdf';
+
+        return $pdf->download($fileName);
+    }
+
+    public function downloadSavedStudentPassportPdf(User $user, StudentPdfExportService $pdfExportService)
+    {
+        abort_unless($user->role === 'student', Response::HTTP_NOT_FOUND, 'Talaba topilmadi.');
+
+        $user->load(['group', 'speciality', 'usersCategory', 'studentPassport']);
+
+        abort_if($user->studentPassport === null, Response::HTTP_NOT_FOUND, 'Passport ma\'lumoti topilmadi.');
+
+        $pdf = $pdfExportService->generateStudentPassportPdf(
+            $user,
+            $this->passportPayload($user->studentPassport)
+        );
+
         $fileName = 'ijtimoiy-psixologik-passport_' . Str::slug($user->name ?: 'talaba') . '.pdf';
 
         return $pdf->download($fileName);
@@ -494,5 +537,39 @@ class AdminStudentController extends Controller
             DB::table('users_tests_results')->where('user_id', $student->id)->where('module_id', $resultId)->delete();
         });
         return to_route('admin.students.show', $student->id)->with('success', 'Natija muvaffaqiyatli o\'chirildi');
+    }
+
+    private function validateStudentPassport(Request $request): array
+    {
+        return $request->validate([
+            'character_traits' => 'required|array|size:5',
+            'character_traits.*' => 'required|string|max:255',
+            'temperament_type' => 'required|string|max:255',
+            'student_conclusion' => 'required|string|max:5000',
+        ]);
+    }
+
+    private function saveStudentPassport(User $user, array $validated): StudentPassport
+    {
+        return StudentPassport::updateOrCreate(
+            ['student_id' => $user->id],
+            [
+                'character_traits' => array_map(
+                    static fn (string $trait) => trim($trait),
+                    $validated['character_traits']
+                ),
+                'temperament_type' => trim($validated['temperament_type']),
+                'student_conclusion' => trim($validated['student_conclusion']),
+            ]
+        );
+    }
+
+    private function passportPayload(StudentPassport $passport): array
+    {
+        return [
+            'character_traits' => $passport->character_traits ?? [],
+            'temperament_type' => $passport->temperament_type,
+            'student_conclusion' => $passport->student_conclusion,
+        ];
     }
 }

@@ -42,6 +42,7 @@ const props = defineProps<{
         level?: string | null;
         test_status?: string | null;
         category_id?: string | null;
+        passport_status?: string | null;
     };
 }>();
 
@@ -60,6 +61,7 @@ const groupFilter = ref<string | null>(props.filters.group_id || null);
 const levelFilter = ref<string | null>(props.filters.level || null);
 const testStatusFilter = ref<string | null>(props.filters.test_status || null);
 const categoryFilter = ref<string | null>(props.filters.category_id || null);
+const passportStatusFilter = ref<string | null>(props.filters.passport_status || null);
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -78,6 +80,7 @@ const getFilterParams = () => {
         level: levelFilter.value,
         test_status: testStatusFilter.value,
         category_id: categoryFilter.value,
+        passport_status: passportStatusFilter.value,
     };
 };
 
@@ -94,7 +97,14 @@ const resetFilters = () => {
     levelFilter.value = null;
     testStatusFilter.value = null;
     categoryFilter.value = null;
+    passportStatusFilter.value = null;
     router.get('/admin/students');
+};
+
+const hasPassport = (student: any) => Boolean(student.student_passport);
+
+const downloadPassport = (studentId: number) => {
+    window.location.href = `/admin/students/${studentId}/passport/pdf`;
 };
 
 const getPaginationLink = (url: string | null) => {
@@ -287,6 +297,21 @@ const getStudentLink = (studentId: number) => {
                         </select>
                     </div>
 
+                    <div>
+                        <label for="passport-status-filter" class="block text-sm font-medium mb-2">
+                            Passport
+                        </label>
+                        <select
+                            id="passport-status-filter"
+                            v-model="passportStatusFilter"
+                            class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                        >
+                            <option value="" selected>Barchasi</option>
+                            <option value="exists">Mavjud</option>
+                            <option value="not_exists">Mavjud emas</option>
+                        </select>
+                    </div>
+
                     <div class="flex items-end gap-2 lg:col-span-2">
                         <Button @click="applyFilters" class="flex-1">
                             Filterlash
@@ -416,9 +441,19 @@ const getStudentLink = (studentId: number) => {
                                     <span v-else class="text-muted-foreground text-sm">-</span>
                                 </td>
                                 <td class="p-4 align-middle [&:has([role=checkbox])]:pr-0">
-                                    <Link :href="getStudentLink(student.id)" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
-                                        Ko'rish
-                                    </Link>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <Link :href="getStudentLink(student.id)" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                                            Ko'rish
+                                        </Link>
+                                        <Button
+                                            v-if="hasPassport(student)"
+                                            variant="outline"
+                                            size="sm"
+                                            @click="downloadPassport(student.id)"
+                                        >
+                                            Passport
+                                        </Button>
+                                    </div>
                                 </td>
                             </tr>
                             <tr v-if="students.data.length === 0">
@@ -448,9 +483,6 @@ const getStudentLink = (studentId: number) => {
                                     <p class="text-sm text-muted-foreground">{{ student.login }}</p>
                                 </div>
                             </div>
-                            <Link :href="getStudentLink(student.id)" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3 py-2">
-                                Ko'rish
-                            </Link>
                         </div>
                         
                         <div class="grid grid-cols-2 gap-2 text-sm">
@@ -476,6 +508,24 @@ const getStudentLink = (studentId: number) => {
                                 <span class="text-muted-foreground">Sana:</span>
                                 <p class="font-medium">{{ formatDate(student.created_at) }}</p>
                             </div>
+                            <div>
+                                <span class="text-muted-foreground">Passport:</span>
+                                <p class="font-medium">{{ hasPassport(student) ? 'Mavjud' : 'Mavjud emas' }}</p>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-wrap gap-2 pt-2 border-t">
+                            <Link :href="getStudentLink(student.id)" class="inline-flex flex-1 items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3 py-2">
+                                Ko'rish
+                            </Link>
+                            <Button
+                                v-if="hasPassport(student)"
+                                variant="outline"
+                                class="flex-1"
+                                @click="downloadPassport(student.id)"
+                            >
+                                Passport
+                            </Button>
                         </div>
 
                         <div v-if="student.users_tests_results && student.users_tests_results.length > 0" class="pt-2 border-t">

@@ -136,4 +136,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Faculity::class);
     }
+
+    public function studentPassport()
+    {
+        return $this->hasOne(StudentPassport::class, 'student_id');
+    }
 }

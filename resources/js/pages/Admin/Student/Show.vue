@@ -20,9 +20,14 @@ const props = defineProps<{
     results: Array<any>;
     allCategories: Array<any>;
     filters?: {
+        search?: string | null;
+        faculity_id?: string | null;
         group_id?: string | null;
         speciality_id?: string | null;
+        level?: string | null;
         test_status?: string | null;
+        category_id?: string | null;
+        passport_status?: string | null;
     };
     page?: number;
 }>();
@@ -33,11 +38,29 @@ const isPassportModalOpen = ref(false);
 const isDownloadingPassport = ref(false);
 const passportRequestError = ref('');
 const passportErrors = ref<Record<string, string>>({});
-const passportForm = ref({
-    characterTraits: ['', '', '', '', ''],
-    temperamentType: '',
-    studentConclusion: '',
+
+const normalizeCharacterTraits = (traits: unknown) => {
+    const values = Array.isArray(traits)
+        ? traits
+            .map((trait) => String(trait ?? '').trim())
+            .slice(0, 5)
+        : [];
+
+    while (values.length < 5) {
+        values.push('');
+    }
+
+    return values;
+};
+
+const buildPassportForm = (passport: any = null) => ({
+    characterTraits: normalizeCharacterTraits(passport?.character_traits),
+    temperamentType: passport?.temperament_type || '',
+    studentConclusion: passport?.student_conclusion || '',
 });
+
+const savedPassport = ref(props.student.student_passport || null);
+const passportForm = ref(buildPassportForm(savedPassport.value));
 
 const syncCategories = () => {
     router.post(`/admin/students/${props.student.id}/sync-categories`, {
@@ -51,15 +74,24 @@ const syncCategories = () => {
 
 const getBackLink = () => {
     const params = new URLSearchParams();
-    if (props.filters?.group_id && props.filters.group_id !== 'null') {
-        params.append('group_id', props.filters.group_id);
-    }
-    if (props.filters?.speciality_id && props.filters.speciality_id !== 'null') {
-        params.append('speciality_id', props.filters.speciality_id);
-    }
-    if (props.filters?.test_status && props.filters.test_status !== 'null') {
-        params.append('test_status', props.filters.test_status);
-    }
+
+    const filters = {
+        search: props.filters?.search,
+        faculity_id: props.filters?.faculity_id,
+        group_id: props.filters?.group_id,
+        speciality_id: props.filters?.speciality_id,
+        level: props.filters?.level,
+        test_status: props.filters?.test_status,
+        category_id: props.filters?.category_id,
+        passport_status: props.filters?.passport_status,
+    };
+
+    Object.entries(filters).forEach(([key, value]) => {
+        if (value && value !== 'null') {
+            params.append(key, String(value));
+        }
+    });
+
     if (props.page && props.page > 1) {
         params.append('page', String(props.page));
     }
@@ -128,10 +160,20 @@ const validatePassportForm = () => {
     return Object.keys(errors).length === 0;
 };
 
-const closePassportModal = () => {
-    isPassportModalOpen.value = false;
+const resetPassportForm = () => {
+    passportForm.value = buildPassportForm(savedPassport.value);
     passportRequestError.value = '';
     passportErrors.value = {};
+};
+
+const openPassportModal = () => {
+    resetPassportForm();
+    isPassportModalOpen.value = true;
+};
+
+const closePassportModal = () => {
+    isPassportModalOpen.value = false;
+    resetPassportForm();
 };
 
 const downloadPassportPdf = async () => {
@@ -205,6 +247,13 @@ const downloadPassportPdf = async () => {
         downloadLink.remove();
         URL.revokeObjectURL(downloadUrl);
 
+        savedPassport.value = {
+            ...(savedPassport.value || {}),
+            character_traits: passportForm.value.characterTraits.map((trait) => trait.trim()),
+            temperament_type: passportForm.value.temperamentType.trim(),
+            student_conclusion: passportForm.value.studentConclusion.trim(),
+        };
+
         closePassportModal();
     } catch {
         passportRequestError.value = 'Server bilan bog‘lanishda xatolik yuz berdi.';
@@ -269,7 +318,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                             <Button v-if="results.length > 0" @click="isSyncModalOpen = true" class="w-full">
                                 Kategoriya Biriktirish
                             </Button>
-                            <Button variant="outline" @click="isPassportModalOpen = true" class="w-full">
+                            <Button variant="outline" @click="openPassportModal" class="w-full">
                                 Ijtimoiy-psixologik passport
                             </Button>
                         </div>
@@ -310,7 +359,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                             <div class="rounded-lg border bg-muted/20 p-4">
                                 <p class="text-sm font-medium">{{ student.name }}</p>
                                 <p class="mt-1 text-sm text-muted-foreground">
-                                    Ma'lumotlar chap tomonda avtomatik joylanadi. Quyidagi maydonlarni to‘ldirib PDF yuklab olishingiz mumkin.
+                                    Saqlangan ma'lumot bo‘lsa avtomatik chiqadi. PDF yuklab olish bosilganda avval ma'lumot saqlanadi yoki yangilanadi, keyin fayl yuklanadi.
                                 </p>
                             </div>
 
