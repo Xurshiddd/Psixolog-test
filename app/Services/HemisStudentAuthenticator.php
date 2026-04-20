@@ -80,9 +80,8 @@ class HemisStudentAuthenticator
         }
 
         if (
-            data_get($userData, 'data.educationType.code') !== '11'
-            || data_get($userData, 'data.educationForm.code') !== '11'
-            || data_get($userData, 'data.educationForm.code') !== '20'
+             data_get($userData, 'data.educationType.code') !== '11' ||
+            !in_array(data_get($userData, 'data.educationForm.code'), ['11', '20'], true)
         ) {
             Log::error('Bakalavr kunduzgi talabalar uchun platformaga kirish urinishlari', ['userData' => $userData]);
             throw new RuntimeException('Bu platforma hozirda Bakalavr kunduzgi talabalar uchun');
