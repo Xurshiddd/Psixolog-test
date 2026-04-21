@@ -2,32 +2,32 @@
 
 namespace App\Exports;
 
-use App\Models\User;
 use App\Models\Module;
-use Illuminate\Database\Eloquent\Collection;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 
-class StudentsExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithEvents
+class StudentsExport implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithEvents
 {
-    protected $students;
-    protected $modules;
-
-    public function __construct(Collection $students, ?Collection $modules = null)
+    public function __construct(
+        protected Builder $query,
+        protected ?Collection $modules = null,
+    )
     {
-        $this->students = $students;
         $this->modules = $modules ?? Module::orderBy('name')->get();
     }
 
-    public function collection(): Collection
+    public function query(): Builder
     {
-        return $this->students;
+        return clone $this->query;
     }
 
     public function headings(): array
@@ -48,19 +48,20 @@ class StudentsExport implements FromCollection, WithHeadings, WithMapping, Shoul
 
     public function map($student): array
     {
+        $resultIds = $student->usersTestsResults?->pluck('id')->flip() ?? collect();
+
         $row = [
             $student->name ?? '-',
-            $student->faculity->name ?? '-',
+            $student->faculity?->name ?? '-',
             $student->login ?? '-',
-            $student->group->name ?? '-',
+            $student->group?->name ?? '-',
         ];
-        
+
         foreach ($this->modules as $module) {
-            $hasResult = $student->usersTestsResults 
-                && $student->usersTestsResults->where('id', $module->id)->count() > 0;
+            $hasResult = $resultIds->has($module->id);
             $row[] = $hasResult ? 'HA' : 'YO\'Q';
         }
-        
+
         return $row;
     }
 
@@ -84,55 +85,31 @@ class StudentsExport implements FromCollection, WithHeadings, WithMapping, Shoul
                     ]
                 ]);
 
-                // Har bir satrni tekshir va HA/YO'Q ni rangla
-                $row = 2;
-                foreach ($this->students as $student) {
-                    // D, E, F... ustunlardan boshlanadi
-                    $colIndex = 3; // D ustuni (A=0, B=1, C=2, D=3)
-                    
-                    foreach ($this->modules as $module) {
-                        $col = chr(65 + $colIndex); // ASCII: 65=A, 66=B...
-                        $cell = $col . $row;
+                $highestColumn = $event->sheet->getHighestColumn();
+                $highestRow = $event->sheet->getHighestRow();
+                $highestColumnIndex = Coordinate::columnIndexFromString($highestColumn);
 
-                        $hasResult = $student->usersTestsResults 
-                            && $student->usersTestsResults->where('id', $module->id)->count() > 0;
+                for ($row = 2; $row <= $highestRow; $row++) {
+                    for ($col = 5; $col <= $highestColumnIndex; $col++) {
+                        $cellCoordinate = Coordinate::stringFromColumnIndex($col) . $row;
+                        $value = $event->sheet->getCell($cellCoordinate)->getValue();
+                        $color = $value === 'HA' ? '70AD47' : 'FF0000';
 
-                        if ($hasResult) {
-                            // Yashil rang HA uchun
-                            $event->sheet->getStyle($cell)->applyFromArray([
-                                'fill' => [
-                                    'fillType' => Fill::FILL_SOLID,
-                                    'startColor' => ['rgb' => '70AD47'],
-                                ],
-                                'font' => [
-                                    'bold' => true,
-                                    'color' => ['rgb' => 'FFFFFF'],
-                                ],
-                                'alignment' => [
-                                    'horizontal' => Alignment::HORIZONTAL_CENTER,
-                                    'vertical' => Alignment::VERTICAL_CENTER,
-                                ]
-                            ]);
-                        } else {
-                            // Qizil rang YO'Q uchun
-                            $event->sheet->getStyle($cell)->applyFromArray([
-                                'fill' => [
-                                    'fillType' => Fill::FILL_SOLID,
-                                    'startColor' => ['rgb' => 'FF0000'],
-                                ],
-                                'font' => [
-                                    'bold' => true,
-                                    'color' => ['rgb' => 'FFFFFF'],
-                                ],
-                                'alignment' => [
-                                    'horizontal' => Alignment::HORIZONTAL_CENTER,
-                                    'vertical' => Alignment::VERTICAL_CENTER,
-                                ]
-                            ]);
-                        }
-                        $colIndex++;
+                        $event->sheet->getStyle($cellCoordinate)->applyFromArray([
+                            'fill' => [
+                                'fillType' => Fill::FILL_SOLID,
+                                'startColor' => ['rgb' => $color],
+                            ],
+                            'font' => [
+                                'bold' => true,
+                                'color' => ['rgb' => 'FFFFFF'],
+                            ],
+                            'alignment' => [
+                                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                                'vertical' => Alignment::VERTICAL_CENTER,
+                            ]
+                        ]);
                     }
-                    $row++;
                 }
             }
         ];

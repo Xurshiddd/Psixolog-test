@@ -2,8 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ResultCategory;
 use App\Models\Module;
+use App\Models\ResultCategory;
+use App\Services\LookupCacheService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -16,7 +17,7 @@ class ResultCategoryController extends Controller
     public function index()
     {
         $categories = ResultCategory::with('module')->paginate(15);
-        
+
         return Inertia::render('ResultCategories/Index', [
             'categories' => $categories,
         ]);
@@ -27,10 +28,8 @@ class ResultCategoryController extends Controller
      */
     public function create()
     {
-        $modules = Module::all();
-        
         return Inertia::render('ResultCategories/Create', [
-            'modules' => $modules,
+            'modules' => app(LookupCacheService::class)->modules(),
         ]);
     }
 
@@ -68,7 +67,7 @@ class ResultCategoryController extends Controller
     public function show(ResultCategory $resultCategory)
     {
         $resultCategory->load('module');
-        
+
         return Inertia::render('ResultCategories/Show', [
             'category' => $resultCategory,
         ]);
@@ -79,11 +78,9 @@ class ResultCategoryController extends Controller
      */
     public function edit(ResultCategory $resultCategory)
     {
-        $modules = Module::all();
-        
         return Inertia::render('ResultCategories/Edit', [
             'category' => $resultCategory,
-            'modules' => $modules,
+            'modules' => app(LookupCacheService::class)->modules(),
         ]);
     }
 
@@ -117,7 +114,7 @@ class ResultCategoryController extends Controller
         $resultCategory->update($validated);
 
         return redirect()->route('result-categories.index')
-                        ->with('success', 'Result Category updated successfully.');
+            ->with('success', 'Result Category updated successfully.');
     }
 
     /**
@@ -128,7 +125,7 @@ class ResultCategoryController extends Controller
         $resultCategory->delete();
 
         return redirect()->route('result-categories.index')
-                        ->with('success', 'Result Category deleted successfully.');
+            ->with('success', 'Result Category deleted successfully.');
     }
 
     /**
@@ -137,14 +134,14 @@ class ResultCategoryController extends Controller
     public function getModuleTestOptions(Module $module)
     {
         $values = $module->tests()
-                        ->with('options')
-                        ->get()
-                        ->flatMap(function ($test) {
-                            return $test->options->pluck('option_value');
-                        })
-                        ->unique()
-                        ->values()
-                        ->sort();
+            ->with('options')
+            ->get()
+            ->flatMap(function ($test) {
+                return $test->options->pluck('option_value');
+            })
+            ->unique()
+            ->values()
+            ->sort();
 
         return response()->json($values);
     }

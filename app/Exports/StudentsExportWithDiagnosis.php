@@ -3,8 +3,9 @@
 namespace App\Exports;
 
 use App\Models\Module;
-use Illuminate\Database\Eloquent\Collection;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\FromQuery;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -12,22 +13,20 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Events\AfterSheet;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
-use Illuminate\Support\Facades\Log;
 
-class StudentsExportWithDiagnosis implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize, WithEvents
+class StudentsExportWithDiagnosis implements FromQuery, WithHeadings, WithMapping, ShouldAutoSize, WithEvents
 {
-    protected $students;
-    protected $modules;
-
-    public function __construct(Collection $students, ?Collection $modules = null)
+    public function __construct(
+        protected Builder $query,
+        protected ?Collection $modules = null,
+    )
     {
-        $this->students = $students;
         $this->modules = $modules ?? Module::orderBy('name')->get();
     }
 
-    public function collection(): Collection
+    public function query(): Builder
     {
-        return $this->students;
+        return clone $this->query;
     }
 
     public function headings(): array

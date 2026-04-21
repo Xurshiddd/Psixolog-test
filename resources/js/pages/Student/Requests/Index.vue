@@ -29,10 +29,20 @@ type Message = {
     created_at: string;
 };
 
+type PaginationMeta = {
+    current_page: number;
+    per_page: number;
+    next_page_url: string | null;
+    prev_page_url: string | null;
+    has_more_pages: boolean;
+} | null;
+
 const props = defineProps<{
     conversations: Conversation[];
     activeConversation: ActiveConversation;
     messages: Message[];
+    conversationsPagination?: PaginationMeta;
+    messagesPagination?: PaginationMeta;
 }>();
 // scroll
 const localMessages = ref<Message[]>([...props.messages]);
@@ -95,6 +105,34 @@ function openConversation(id: number) {
             preserveState: false, // ✅ MUHIM: props/messages yangilansin
         },
     );
+}
+
+function openConversationPage(page: number) {
+    const params: Record<string, number> = {
+        conversations_page: page,
+    };
+
+    if (activeId.value) {
+        params.conversation = activeId.value;
+    }
+
+    router.get('/student/requests', params, {
+        preserveScroll: true,
+        preserveState: false,
+    });
+}
+
+function openMessagePage(page: number) {
+    if (!activeId.value) return;
+
+    router.get('/student/requests', {
+        conversation: activeId.value,
+        conversations_page: props.conversationsPagination?.current_page,
+        messages_page: page,
+    }, {
+        preserveScroll: true,
+        preserveState: false,
+    });
 }
 
 function createConversation(channel: 'admin' | 'psiholog') {
@@ -358,6 +396,29 @@ watch(showChat, async (v) => {
                         >
                             Hali murojaat yo‘q. Yuqoridan suhbat boshlang.
                         </div>
+
+                        <div
+                            v-if="conversationsPagination && (conversationsPagination.prev_page_url || conversationsPagination.next_page_url)"
+                            class="mt-3 flex items-center justify-between gap-2 px-1"
+                        >
+                            <button
+                                class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                                :disabled="!conversationsPagination.prev_page_url"
+                                @click="openConversationPage(conversationsPagination.current_page - 1)"
+                            >
+                                Oldingi
+                            </button>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                                Sahifa {{ conversationsPagination.current_page }}
+                            </span>
+                            <button
+                                class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                                :disabled="!conversationsPagination.next_page_url"
+                                @click="openConversationPage(conversationsPagination.current_page + 1)"
+                            >
+                                Keyingi
+                            </button>
+                        </div>
                     </div>
                 </aside>
 
@@ -465,6 +526,29 @@ watch(showChat, async (v) => {
                                 class="mt-2 text-xs text-gray-500 dark:text-gray-400"
                             >
                                 {{ typingName }} yozayapti...
+                            </div>
+
+                            <div
+                                v-if="messagesPagination && (messagesPagination.prev_page_url || messagesPagination.next_page_url)"
+                                class="mt-4 flex items-center justify-between gap-2"
+                            >
+                                <button
+                                    class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                                    :disabled="!messagesPagination.next_page_url"
+                                    @click="openMessagePage(messagesPagination.current_page + 1)"
+                                >
+                                    Eski xabarlar
+                                </button>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                    Sahifa {{ messagesPagination.current_page }}
+                                </span>
+                                <button
+                                    class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                                    :disabled="!messagesPagination.prev_page_url"
+                                    @click="openMessagePage(messagesPagination.current_page - 1)"
+                                >
+                                    Yangi xabarlar
+                                </button>
                             </div>
                         </template>
 
@@ -601,6 +685,29 @@ watch(showChat, async (v) => {
                         >
                             Hali murojaat yo‘q. Yuqoridan suhbat boshlang.
                         </div>
+
+                        <div
+                            v-if="conversationsPagination && (conversationsPagination.prev_page_url || conversationsPagination.next_page_url)"
+                            class="mt-3 flex items-center justify-between gap-2 px-1"
+                        >
+                            <button
+                                class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                                :disabled="!conversationsPagination.prev_page_url"
+                                @click="openConversationPage(conversationsPagination.current_page - 1)"
+                            >
+                                Oldingi
+                            </button>
+                            <span class="text-xs text-gray-500 dark:text-gray-400">
+                                Sahifa {{ conversationsPagination.current_page }}
+                            </span>
+                            <button
+                                class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                                :disabled="!conversationsPagination.next_page_url"
+                                @click="openConversationPage(conversationsPagination.current_page + 1)"
+                            >
+                                Keyingi
+                            </button>
+                        </div>
                     </div>
                 </aside>
 
@@ -707,6 +814,29 @@ watch(showChat, async (v) => {
                                 class="mt-2 text-xs text-gray-500 dark:text-gray-400"
                             >
                                 {{ typingName }} yozayapti...
+                            </div>
+
+                            <div
+                                v-if="messagesPagination && (messagesPagination.prev_page_url || messagesPagination.next_page_url)"
+                                class="mt-4 flex items-center justify-between gap-2"
+                            >
+                                <button
+                                    class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                                    :disabled="!messagesPagination.next_page_url"
+                                    @click="openMessagePage(messagesPagination.current_page + 1)"
+                                >
+                                    Eski xabarlar
+                                </button>
+                                <span class="text-xs text-gray-500 dark:text-gray-400">
+                                    Sahifa {{ messagesPagination.current_page }}
+                                </span>
+                                <button
+                                    class="rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium hover:bg-gray-50 disabled:opacity-50 dark:border-gray-800 dark:hover:bg-gray-900"
+                                    :disabled="!messagesPagination.prev_page_url"
+                                    @click="openMessagePage(messagesPagination.current_page - 1)"
+                                >
+                                    Yangi xabarlar
+                                </button>
                             </div>
                         </template>
 

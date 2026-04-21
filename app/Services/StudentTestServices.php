@@ -3,23 +3,26 @@
 namespace App\Services;
 
 use App\Models\Module;
-use App\Models\User;
-use App\Models\SolveTest;
 use App\Models\ResultCategory;
+use App\Models\SolveTest;
 use App\Models\TestOption;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\DB;
+use App\Models\User;
 use App\TestFakeResult;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+
 class StudentTestServices
 {
-    public function __construct(private SolveTest $solveTest){}
+    public function __construct(
+        private SolveTest $solveTest,
+        private DashboardAggregateCacheService $dashboardAggregateCacheService,
+    ) {}
+
     /**
      * Process batch test submission
-     * 
-     * @param int $userId
-     * @param int $moduleId
-     * @param array $answers - array where keys are test_ids and values are answers
-     * @param string $source - submission source such as web or mobile_app
+     *
+     * @param  array  $answers  - array where keys are test_ids and values are answers
+     * @param  string  $source  - submission source such as web or mobile_app
      * @return array - results with consequence_fake for each test
      */
     public function processBatchSubmission(int $userId, int $moduleId, array $answers, string $source = 'web'): array
@@ -32,7 +35,7 @@ class StudentTestServices
             $testOptionIds = [];
             foreach ($answers as $key => $value) {
                 if (is_array($value)) {
-                    for ($i=0; $i < count($value); $i++) { 
+                    for ($i = 0; $i < count($value); $i++) {
                         $this->solveTest->create([
                             'user_id' => $userId,
                             'module_id' => $moduleId,
@@ -43,10 +46,10 @@ class StudentTestServices
                     }
                 } elseif (is_int($value)) {
                     $this->solveTest->create([
-                        'user_id'=> $userId,
-                        'module_id'=> $moduleId,
-                        'test_id'=> $key,
-                        'test_option_id'=> $value,
+                        'user_id' => $userId,
+                        'module_id' => $moduleId,
+                        'test_id' => $key,
+                        'test_option_id' => $value,
                     ]);
                     $testOptionIds[] = $value;
                 } else {
@@ -58,11 +61,11 @@ class StudentTestServices
                     ]);
                 }
             }
-            
+
             // Map submitted test_option_ids to their option_value and find the most frequent option_value
             $resultFake = TestFakeResult::NORMAL->value;
             $realResult = null;
-            if (!empty($testOptionIds)) {
+            if (! empty($testOptionIds)) {
                 $countedOptions = array_count_values($testOptionIds); // counts per option id
 
                 // Fetch option_value for each option id
@@ -80,7 +83,7 @@ class StudentTestServices
                     $valueCounts[$optValue] = ($valueCounts[$optValue] ?? 0) + $cnt;
                 }
 
-                if (!empty($valueCounts)) {
+                if (! empty($valueCounts)) {
                     // Find the most frequent option_value
                     $mostFrequentValue = null;
                     $maxCount = -1;
@@ -102,12 +105,15 @@ class StudentTestServices
                     }
                 }
             }
-            
+
             $module->usersTestsResults()->attach($userId, [
                 'result_fake' => $resultFake,
                 'result_real' => $realResult,
             ]);
             DB::commit();
+            $this->dashboardAggregateCacheService->forgetAll();
+            app(ResultCategoryStatsService::class)->flush();
+            app(ModuleScoreRangeReportService::class)->flush();
 
             if ($student && $module) {
                 $description = $source === 'mobile_app'
@@ -137,6 +143,7 @@ class StudentTestServices
         } catch (\Throwable $th) {
             DB::rollBack();
             Log::error($th->getMessage());
+
             return ['status' => 'error', 'message' => $th->getMessage()];
         }
     }

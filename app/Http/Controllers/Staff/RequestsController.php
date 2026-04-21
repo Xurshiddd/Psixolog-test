@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Staff;
 use App\Http\Controllers\Controller;
 use App\Models\Conversation;
 use App\Models\User;
+use App\Services\UnreadRequestsCountService;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -38,7 +39,7 @@ class RequestsController extends Controller
                 ->whereColumn('conversations.student_id', 'users.id')
                 ->where('conversations.channel', $channel)
                 ->where('messages.sender_role', 'student')
-                ->whereNull('messages.read_at')
+                ->whereNull('messages.read_at'),
             ])
             ->orderByDesc('unread_count')
             ->orderBy('name')
@@ -59,7 +60,7 @@ class RequestsController extends Controller
                     ->where('channel', $channel)
                     ->first();
 
-                if (!$activeConversation) {
+                if (! $activeConversation) {
                     $activeConversation = Conversation::create([
                         'student_id' => $activeStudent->id,
                         'channel' => $channel,
@@ -72,6 +73,7 @@ class RequestsController extends Controller
                         ->where('sender_role', 'student')
                         ->whereNull('read_at')
                         ->update(['read_at' => now()]);
+                    app(UnreadRequestsCountService::class)->forgetForConversation($activeConversation);
                 }
 
                 $this->authorize('viewAsStaff', $activeConversation);
@@ -83,7 +85,7 @@ class RequestsController extends Controller
                 $messages = $activeConversation->messages()
                     ->with('sender:id,name')
                     ->orderBy('id')
-                    ->get(['id','conversation_id','sender_role','sender_id','body','created_at'])
+                    ->get(['id', 'conversation_id', 'sender_role', 'sender_id', 'body', 'created_at'])
                     ->map(fn ($m) => [
                         'id' => $m->id,
                         'sender_role' => $m->sender_role,

@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Http;
 
 class StudentPdfExportService
@@ -12,12 +11,13 @@ class StudentPdfExportService
     /**
      * Generate PDF from students collection
      * 
-     * @param Collection $students
+     * @param iterable<array-key, object> $students
+     * @param int $totalStudents
      * @return \Barryvdh\DomPDF\PDF
      */
-    public function generatePdf(Collection $students)
+    public function generatePdf(iterable $students, int $totalStudents)
     {
-        $html = $this->buildHtml($students);
+        $html = $this->buildHtml($students, $totalStudents);
         return Pdf::loadHTML($html);
     }
 
@@ -34,16 +34,17 @@ class StudentPdfExportService
     /**
      * Build HTML table for PDF
      * 
-     * @param Collection $students
+     * @param iterable<array-key, object> $students
+     * @param int $totalStudents
      * @return string
      */
-    private function buildHtml(Collection $students): string
+    private function buildHtml(iterable $students, int $totalStudents): string
     {
         $html = '<html><head><meta charset="utf-8"><style>';
         $html .= $this->getStyles();
         $html .= '</style></head><body>';
         $html .= '<h1>Talabalar Ro\'yxati</h1>';
-        $html .= '<p>Jami talabalar: ' . $students->count() . ' ta</p>';
+        $html .= '<p>Jami talabalar: ' . $totalStudents . ' ta</p>';
         $html .= '<table>';
         $html .= $this->buildTableHead();
         $html .= $this->buildTableBody($students);
@@ -89,10 +90,10 @@ class StudentPdfExportService
     /**
      * Build table body with student data
      * 
-     * @param Collection $students
+     * @param iterable<array-key, object> $students
      * @return string
      */
-    private function buildTableBody(Collection $students): string
+    private function buildTableBody(iterable $students): string
     {
         $html = '';
 
@@ -118,8 +119,12 @@ class StudentPdfExportService
      */
     private function getTestStatus($student): string
     {
-        return $student->usersTestsResults && $student->usersTestsResults->count() > 0 
-            ? 'Topshirgan' 
+        if (isset($student->has_test_results)) {
+            return $student->has_test_results ? 'Topshirgan' : 'Topshirmagan';
+        }
+
+        return $student->usersTestsResults && $student->usersTestsResults->count() > 0
+            ? 'Topshirgan'
             : 'Topshirmagan';
     }
 

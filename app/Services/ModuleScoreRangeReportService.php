@@ -65,6 +65,11 @@ class ModuleScoreRangeReportService
         return collect($rows)->map(fn (array $row) => (object) $row);
     }
 
+    public function flush(): void
+    {
+        Cache::forever($this->versionKey(), $this->cacheVersion() + 1);
+    }
+
     private function filteredQuery(int $moduleId, int $minScore, int $maxScore)
     {
         return DB::query()
@@ -106,11 +111,21 @@ class ModuleScoreRangeReportService
 
     private function makeCacheKey(int $moduleId, int $minScore, int $maxScore, string $suffix, array $extra = []): string
     {
-        return 'dashboard:module-score-range-report:'.$suffix.':'.md5(json_encode([
+        return 'dashboard:module-score-range-report:v'.$this->cacheVersion().':'.$suffix.':'.md5(json_encode([
             'module_id' => $moduleId,
             'min_score' => $minScore,
             'max_score' => $maxScore,
             'extra' => $extra,
         ]));
+    }
+
+    private function cacheVersion(): int
+    {
+        return (int) Cache::get($this->versionKey(), 1);
+    }
+
+    private function versionKey(): string
+    {
+        return 'dashboard:module-score-range-report:version';
     }
 }

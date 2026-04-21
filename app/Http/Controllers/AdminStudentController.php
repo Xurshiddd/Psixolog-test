@@ -2,325 +2,146 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\StudentPassport;
+use App\Application\AdminStudents\Data\AdminStudentFilters;
+use App\Application\AdminStudents\Services\AdminStudentDiagnosisService;
+use App\Application\AdminStudents\Services\AdminStudentExportService;
+use App\Application\AdminStudents\Services\AdminStudentPassportService;
+use App\Application\AdminStudents\Services\AdminStudentRecordService;
+use App\Application\AdminStudents\Services\BuildAdminStudentPages;
+use App\Http\Requests\AdminStudentFilterRequest;
+use App\Http\Requests\StoreStudentPassportRequest;
+use App\Http\Requests\SyncStudentCategoriesRequest;
+use App\Http\Requests\UpdateStudentDiagnosisRequest;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Inertia\Inertia;
-use App\Models\Group;
-use App\Models\Speciality;
-use App\Models\Module;
-use App\Models\SolveTest;
-use App\Exports\StudentsExport;
-use Maatwebsite\Excel\Facades\Excel;
-use App\Services\StudentPdfExportService;
-use App\Exports\StudentsExportWithDiagnosis;
-use Illuminate\Support\Facades\DB;
-use App\Ai\Agents\DiagnosisAgent;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Str;
 use Illuminate\Http\Response;
+use Inertia\Inertia;
 
 class AdminStudentController extends Controller
 {
-    public function index(Request $request)
+    public function __construct(
+        private BuildAdminStudentPages $buildAdminStudentPages,
+        private AdminStudentDiagnosisService $adminStudentDiagnosisService,
+        private AdminStudentExportService $adminStudentExportService,
+        private AdminStudentPassportService $adminStudentPassportService,
+        private AdminStudentRecordService $adminStudentRecordService,
+    ) {}
+
+    public function index(AdminStudentFilterRequest $request)
     {
-        $query = $this->buildStudentIndexQuery($request);
-
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('login', 'like', "%{$search}%")
-                  ->orWhere('name', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->has('group_id') && $request->group_id) {
-            $query->where('group_id', $request->group_id);
-        }
-
-        if ($request->has('speciality_id') && $request->speciality_id) {
-            $query->where('speciality_id', $request->speciality_id);
-        }
-
-        if ($request->has('faculity_id') && $request->faculity_id) {
-            $query->where('faculity_id', $request->faculity_id);
-        }
-
-        if ($request->has('level') && $request->level) {
-            $query->where('level', $request->level);
-        }
-
-        
-        if ($request->has('test_status') && $request->test_status) {
-            if ($request->test_status === 'submitted') {
-                $query->whereHas('usersTestsResults');
-            } elseif ($request->test_status === 'not_submitted') {
-                $query->whereDoesntHave('usersTestsResults');
-            }
-        }
-
-        if ($request->has('category_id') && $request->category_id) {
-            $query->whereHas('usersCategory', function($q) use ($request) {
-                $q->where('category_id', $request->category_id);
-            });
-        }
-
-        $students = $query->latest()->paginate(10)->withQueryString();
-
-        $groups = Group::orderBy('name')->get();
-        $specialities = Speciality::orderBy('name')->get();
-        $faculities = \App\Models\Faculity::orderBy('name')->get();
-        $categories = \App\Models\Category::orderBy('name')->get();
-
-        return Inertia::render('Admin/Student/Index', [
-            'students' => $students,
-            'groups' => $groups,
-            'specialities' => $specialities,
-            'faculities' => $faculities,
-            'categories' => $categories,
-            'filters' => [
-                'search' => $request->get('search'),
-                'faculity_id' => $request->get('faculity_id'),
-                'speciality_id' => $request->get('speciality_id'),
-                'group_id' => $request->get('group_id'),
-                'level' => $request->get('level'),
-                'test_status' => $request->get('test_status'),
-                'category_id' => $request->get('category_id'),
-                'passport_status' => $request->get('passport_status'),
-            ]
-        ]);
+        return Inertia::render(
+            'Admin/Student/Index',
+            $this->buildAdminStudentPages->indexProps(
+                AdminStudentFilters::fromArray($request->validated())
+            )
+        );
     }
 
-    public function show(Request $request, User $user)
+    public function show(AdminStudentFilterRequest $request, User $user)
     {
-        $user->load(['group', 'speciality', 'faculity', 'usersTestsResults', 'studentPassport']);
-
-        return Inertia::render('Admin/Student/Show', [
-            'student' => $user->load('usersCategory'),
-            'results' => $user->usersTestsResults,
-            'allCategories' => \App\Models\Category::all(),
-            'filters' => [
-                'search' => $request->get('search'),
-                'faculity_id' => $request->get('faculity_id'),
-                'group_id' => $request->get('group_id'),
-                'speciality_id' => $request->get('speciality_id'),
-                'level' => $request->get('level'),
-                'test_status' => $request->get('test_status'),
-                'category_id' => $request->get('category_id'),
-                'passport_status' => $request->get('passport_status'),
-            ],
-            'page' => $request->get('page', 1)
-        ]);
+        return Inertia::render(
+            'Admin/Student/Show',
+            $this->buildAdminStudentPages->showProps(
+                $user,
+                AdminStudentFilters::fromArray($request->validated())
+            )
+        );
     }
 
-    public function showResult(User $user, $moduleId)
+    public function showResult(User $user, int $moduleId)
     {
         $this->ensureDiagnosisAccess();
 
-        $module = Module::with(['tests.options'])->findOrFail($moduleId);
+        $props = $this->buildAdminStudentPages->showResultProps($user, $moduleId);
 
-        $answers = SolveTest::where('user_id', $user->id)
-            ->where('module_id', $moduleId)
-            ->get()
-            ->groupBy('test_id');
+        abort_if($props === null, Response::HTTP_NOT_FOUND, 'Natija topilmadi.');
 
-        $result = $user->usersTestsResults()
-            ->where('module_id', $moduleId)
-            ->first();
-
-        abort_if(! $result, Response::HTTP_NOT_FOUND, 'Natija topilmadi.');
-
-        return Inertia::render('Admin/Student/Result', [
-            'student' => $user,
-            'module' => $module,
-            'answers' => $answers,
-            'diagnosis' => $result->pivot->diagnosis,
-            'generatedDiagnosis' => $result->pivot->result_real,
-        ]);
+        return Inertia::render('Admin/Student/Result', $props);
     }
 
-    public function updateDiagnosis(Request $request, User $user, $moduleId): RedirectResponse
+    public function updateDiagnosis(UpdateStudentDiagnosisRequest $request, User $user, int $moduleId)
     {
-        $this->ensureDiagnosisAccess();
-
-        $request->validate([
-            'diagnosis' => 'nullable|string|max:10000',
-        ]);
-
-        $updated = $user->usersTestsResults()->updateExistingPivot($moduleId, [
-            'diagnosis' => $request->diagnosis,
-        ]);
+        $updated = $this->adminStudentDiagnosisService->update(
+            $user,
+            $moduleId,
+            $request->validated('diagnosis')
+        );
 
         abort_if($updated === 0, Response::HTTP_NOT_FOUND, 'Natija topilmadi.');
 
         return redirect()->back()->with('success', 'Diagnostika muvaffaqiyatli saqlandi');
     }
 
-    public function generateAiDiagnosis(User $user, $moduleId): JsonResponse
+    public function generateAiDiagnosis(User $user, int $moduleId)
     {
         $this->ensureDiagnosisAccess();
 
-        [$provider, $providerError] = $this->resolveDiagnosisProvider();
+        $result = $this->adminStudentDiagnosisService->generate($user, $moduleId);
 
-        if ($providerError !== null) {
-            return response()->json([
-                'error' => $providerError,
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
-        }
-
-        [$module, $answers, $result] = $this->loadDiagnosisGenerationContext($user, $moduleId);
-
-        $prompt = $this->buildDiagnosisPrompt($user, $module, $answers, $result);
-
-        try {
-            $agent = app(DiagnosisAgent::class);
-            $response = $agent->prompt($prompt, provider: $provider);
-            $text = trim($response->text);
-
-            if ($text === '') {
-                return response()->json([
-                    'error' => 'AI provider bo\'sh javob qaytardi. Qaytadan urinib ko\'ring.',
-                ], Response::HTTP_BAD_GATEWAY);
-            }
-
-            return response()->json([
-                'diagnosis' => $text,
-            ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'error' => $this->formatDiagnosisExceptionMessage($provider, $e),
-            ], $this->diagnosisExceptionStatus($e));
-        }
+        return response()->json($result['payload'], $result['status']);
     }
 
-    public function streamAiDiagnosis(User $user, $moduleId)
+    public function streamAiDiagnosis(User $user, int $moduleId)
     {
         $this->ensureDiagnosisAccess();
 
-        [$provider, $providerError] = $this->resolveDiagnosisProvider();
+        $result = $this->adminStudentDiagnosisService->stream($user, $moduleId);
 
-        if ($providerError !== null) {
-            return response()->json([
-                'error' => $providerError,
-            ], Response::HTTP_UNPROCESSABLE_ENTITY);
+        if (isset($result['payload'])) {
+            return response()->json($result['payload'], $result['status']);
         }
 
-        [$module, $answers, $result] = $this->loadDiagnosisGenerationContext($user, $moduleId);
-
-        $prompt = $this->buildDiagnosisPrompt($user, $module, $answers, $result);
-
-        return response()->stream(function () use ($prompt, $provider) {
-            try {
-                $agent = app(DiagnosisAgent::class);
-                $stream = $agent->stream($prompt, provider: $provider);
-
-                foreach ($stream as $event) {
-                    echo 'data: '.((string) $event)."\n\n";
-                    @ob_flush();
-                    flush();
-                }
-            } catch (\Throwable $e) {
-                echo 'data: '.json_encode([
-                    'type' => 'error',
-                    'message' => $this->formatDiagnosisExceptionMessage($provider, $e),
-                ], JSON_UNESCAPED_UNICODE)."\n\n";
-            }
-
-            echo "data: [DONE]\n\n";
-            @ob_flush();
-            flush();
-        }, Response::HTTP_OK, [
-            'Content-Type' => 'text/event-stream',
-            'Cache-Control' => 'no-cache, no-transform',
-            'X-Accel-Buffering' => 'no',
-        ]);
+        return response()->stream($result['callback'], $result['status'], $result['headers']);
     }
 
-    private function getFilteredStudents(Request $request)
+    public function syncCategories(SyncStudentCategoriesRequest $request, User $user)
     {
-        $query = $this->buildStudentIndexQuery($request);
-
-        if ($request->has('search') && $request->search) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('login', 'like', "%{$search}%")
-                  ->orWhere('name', 'like', "%{$search}%");
-            });
-        }
-
-        // Filter by group
-        if ($request->has('group_id') && $request->group_id) {
-            $query->where('group_id', $request->group_id);
-        }
-
-        // Filter by speciality
-        if ($request->has('speciality_id') && $request->speciality_id) {
-            $query->where('speciality_id', $request->speciality_id);
-        }
-
-        // Filter by faculity
-        if ($request->has('faculity_id') && $request->faculity_id) {
-            $query->where('faculity_id', $request->faculity_id);
-        }
-
-        // Filter by level
-        if ($request->has('level') && $request->level) {
-            $query->where('level', $request->level);
-        }
-
-        // Filter by test status
-        if ($request->has('test_status') && $request->test_status) {
-            if ($request->test_status === 'submitted') {
-                $query->whereHas('usersTestsResults');
-            } elseif ($request->test_status === 'not_submitted') {
-                $query->whereDoesntHave('usersTestsResults');
-            }
-        }
-
-        if ($request->has('category_id') && $request->category_id) {
-            $query->whereHas('usersCategory', function($q) use ($request) {
-                $q->where('category_id', $request->category_id);
-            });
-        }
-
-        return $query->latest()->get();
-    }
-
-    private function buildStudentIndexQuery(Request $request)
-    {
-        $query = User::where('role', 'student')
-            ->with(['group', 'speciality', 'faculity', 'usersTestsResults', 'studentPassport']);
-
-        if ($request->has('passport_status') && $request->passport_status) {
-            if ($request->passport_status === 'exists') {
-                $query->whereHas('studentPassport');
-            } elseif ($request->passport_status === 'not_exists') {
-                $query->whereDoesntHave('studentPassport');
-            }
-        }
-
-        return $query;
-    }
-
-    public function syncCategories(Request $request, User $user)
-    {
-        $request->validate([
-            'category_ids' => 'array',
-            'category_ids.*' => 'exists:categories,id',
-        ]);
-
-        $user->usersCategory()->sync($request->category_ids);
+        $this->adminStudentRecordService->syncCategories(
+            $user,
+            $request->validated('category_ids', [])
+        );
 
         return redirect()->back()->with('success', 'Kategoriyalar muvaffaqiyatli bog\'landi');
     }
 
-    public function exportExcel(Request $request)
+    public function exportExcel(AdminStudentFilterRequest $request)
     {
-        $students = $this->getFilteredStudents($request);
-        $modules = Module::orderBy('name')->get();
-        $timestamp = now()->format('Y-m-d_H-i-s');
-        return Excel::download(new StudentsExport($students, $modules), "talabalar_$timestamp.xlsx");
+        return $this->adminStudentExportService->downloadExcel(
+            AdminStudentFilters::fromArray($request->validated())
+        );
+    }
+
+    public function exportExcelWithDiagnosis(AdminStudentFilterRequest $request)
+    {
+        return $this->adminStudentExportService->downloadDiagnosisExcel(
+            AdminStudentFilters::fromArray($request->validated())
+        );
+    }
+
+    public function exportPdf(AdminStudentFilterRequest $request)
+    {
+        return $this->adminStudentExportService->downloadPdf(
+            AdminStudentFilters::fromArray($request->validated())
+        );
+    }
+
+    public function exportStudentPassportPdf(StoreStudentPassportRequest $request, User $user)
+    {
+        return $this->adminStudentPassportService->downloadGeneratedPassport(
+            $user,
+            $request->validated()
+        );
+    }
+
+    public function downloadSavedStudentPassportPdf(User $user)
+    {
+        return $this->adminStudentPassportService->downloadSavedPassport($user);
+    }
+
+    public function destroyResult(User $student, int $resultId)
+    {
+        $this->adminStudentRecordService->destroyResult($student, $resultId);
+
+        return to_route('admin.students.show', $student->id)->with('success', 'Natija muvaffaqiyatli o\'chirildi');
     }
 
     private function ensureDiagnosisAccess(): void
@@ -329,247 +150,5 @@ class AdminStudentController extends Controller
             auth()->check() && in_array(auth()->user()->role, ['admin', 'psiholog'], true),
             Response::HTTP_FORBIDDEN
         );
-    }
-
-    private function resolveDiagnosisProvider(): array
-    {
-        $provider = (string) config('ai.diagnosis_provider', 'deepseek');
-        $providerKey = config("ai.providers.{$provider}.key");
-
-        if (blank($providerKey)) {
-            return [$provider, strtoupper($provider) . ' API kaliti sozlanmagan. .env faylida kerakli provider kalitini kiriting.'];
-        }
-
-        return [$provider, null];
-    }
-
-    private function loadDiagnosisGenerationContext(User $user, $moduleId): array
-    {
-        $module = Module::with(['tests.options'])->findOrFail($moduleId);
-
-        $answers = SolveTest::where('user_id', $user->id)
-            ->where('module_id', $moduleId)
-            ->get()
-            ->groupBy('test_id');
-
-        $result = $user->usersTestsResults()
-            ->where('module_id', $moduleId)
-            ->first();
-
-        abort_if(! $result, Response::HTTP_NOT_FOUND, 'Natija topilmadi.');
-
-        return [$module, $answers, $result];
-    }
-
-    private function diagnosisExceptionStatus(\Throwable $e): int
-    {
-        $message = mb_strtolower($e->getMessage());
-
-        if (str_contains($message, 'insufficient credits') || str_contains($message, 'quota')) {
-            return Response::HTTP_PAYMENT_REQUIRED;
-        }
-
-        return Response::HTTP_INTERNAL_SERVER_ERROR;
-    }
-
-    private function formatDiagnosisExceptionMessage(string $provider, \Throwable $e): string
-    {
-        $message = mb_strtolower($e->getMessage());
-
-        if (str_contains($message, 'insufficient credits') || str_contains($message, 'quota')) {
-            return strtoupper($provider) . ' hisobida kredit yoki quota yetarli emas. Provider kabinetida balansni to\'ldiring yoki .env da AI_DIAGNOSIS_PROVIDER ni boshqa providerga almashtiring.';
-        }
-
-        if (str_contains($message, 'rate limit')) {
-            return strtoupper($provider) . ' vaqtinchalik so\'rov limitiga yetdi. Birozdan keyin qayta urinib ko\'ring.';
-        }
-
-        return 'AI xulosa olishda xatolik: ' . Str::limit($e->getMessage(), 250);
-    }
-
-    private function buildDiagnosisPrompt(User $user, Module $module, $answers, Module $result): string
-    {
-        $lines = [
-            'AI uchun diagnostika konteksti:',
-            "Talaba: {$user->name}",
-            "Modul nomi: {$module->name}",
-            'Modul tavsifi: ' . ($module->description ?: "Mavjud emas"),
-            'Tizimdagi avtomatik xulosa: ' . ($result->pivot->result_real ?: "Mavjud emas"),
-            'Psixologning oldingi xulosasi: ' . ($result->pivot->diagnosis ?: "Mavjud emas"),
-            '',
-            "Muhim eslatma:",
-            "- Har bir savolni modul tavsifi bilan birga tahlil qiling.",
-            "- Tanlangan va tanlanmagan javoblarning ikkalasini ham hisobga oling.",
-            "- Faqat berilgan ma'lumotga tayangan holda xulosa yozing.",
-            '',
-            "Test savollari va javoblar tafsiloti:",
-            '',
-        ];
-
-        $valueCounts = [];
-
-        foreach ($module->tests as $index => $test) {
-            $num = $index + 1;
-            $lines[] = "Savol {$num}: {$test->question}";
-            $lines[] = "Savol turi: {$test->type}";
-
-            $testAnswers = $answers->get($test->id, collect());
-
-            if ($test->type === 'text') {
-                $answer = trim((string) ($testAnswers->first()?->answer ?? 'Javob berilmagan'));
-                $lines[] = "Talabaning yozma javobi: {$answer}";
-                $lines[] = '';
-
-                continue;
-            }
-
-            $selectedOptions = [];
-            $unselectedOptions = [];
-
-            foreach ($test->options as $option) {
-                $selected = $testAnswers->contains('test_option_id', $option->id);
-                $value = $option->option_value ?? 0;
-                $optionLine = "{$option->option_text} (ball: {$value})";
-
-                if ($selected) {
-                    $valueCounts[$value] = ($valueCounts[$value] ?? 0) + 1;
-                    $selectedOptions[] = $optionLine;
-                } else {
-                    $unselectedOptions[] = $optionLine;
-                }
-            }
-
-            $lines[] = 'Tanlangan javoblar:';
-            if ($selectedOptions === []) {
-                $lines[] = ' - Tanlangan javob yo\'q';
-            } else {
-                foreach ($selectedOptions as $selectedOption) {
-                    $lines[] = " - {$selectedOption}";
-                }
-            }
-
-            $lines[] = 'Tanlanmagan javoblar:';
-            if ($unselectedOptions === []) {
-                $lines[] = ' - Tanlanmagan javob yo\'q';
-            } else {
-                foreach ($unselectedOptions as $unselectedOption) {
-                    $lines[] = " - {$unselectedOption}";
-                }
-            }
-
-            $lines[] = '';
-        }
-
-        if ($valueCounts !== []) {
-            arsort($valueCounts);
-
-            $lines[] = 'Tanlangan variantlar bo‘yicha umumiy taqsimot:';
-            foreach ($valueCounts as $value => $count) {
-                $lines[] = " - Ball {$value}: {$count} ta tanlov";
-            }
-            $lines[] = '';
-        }
-
-        $lines[] = "Vazifa:";
-        $lines[] = "Talabaning psixologik holati haqida professional, ehtiyotkor va amaliy xulosa yozing.";
-        $lines[] = "Xulosani yozishda modul nomi, modul tavsifi, har bir savol va tanlangan/tanlanmagan barcha javoblardan foydalaning.";
-        $lines[] = "Natijani faqat quyidagi 2 bo'limda yozing:";
-        $lines[] = "1. E'tibor talab qiladigan jihatlar.";
-        $lines[] = "2. Tavsiyalar.";
-        $lines[] = "Har bir bo'lim 1-3 jumladan oshmasin.";
-        $lines[] = "Medikal tashxis qo'ymang va mavjud ma'lumotdan tashqariga chiqib keskin hukm qilmang.";
-
-        return implode("\n", $lines);
-    }
-    public function exportExcelWithDiagnosis(Request $request)
-    {
-        $students = $this->getFilteredStudents($request);
-        $modules = Module::orderBy('name')->get();
-        $timestamp = now()->format('Y-m-d_H-i-s');
-        return Excel::download(new StudentsExportWithDiagnosis($students, $modules), "talabalar_$timestamp.xlsx");
-    }
-
-    public function exportPdf(Request $request, StudentPdfExportService $pdfExportService)
-    {
-        $students = $this->getFilteredStudents($request);
-        $timestamp = now()->format('Y-m-d_H-i-s');
-        $pdf = $pdfExportService->generatePdf($students);
-        return $pdf->download("talabalar_$timestamp.pdf");
-    }
-
-    public function exportStudentPassportPdf(Request $request, User $user, StudentPdfExportService $pdfExportService)
-    {
-        abort_unless($user->role === 'student', Response::HTTP_NOT_FOUND, 'Talaba topilmadi.');
-
-        $validated = $this->validateStudentPassport($request);
-        $passport = $this->saveStudentPassport($user, $validated);
-
-        $user->load(['group', 'speciality', 'usersCategory']);
-
-        $pdf = $pdfExportService->generateStudentPassportPdf($user, $this->passportPayload($passport));
-        $fileName = 'ijtimoiy-psixologik-passport_' . Str::slug($user->name ?: 'talaba') . '.pdf';
-
-        return $pdf->download($fileName);
-    }
-
-    public function downloadSavedStudentPassportPdf(User $user, StudentPdfExportService $pdfExportService)
-    {
-        abort_unless($user->role === 'student', Response::HTTP_NOT_FOUND, 'Talaba topilmadi.');
-
-        $user->load(['group', 'speciality', 'usersCategory', 'studentPassport']);
-
-        abort_if($user->studentPassport === null, Response::HTTP_NOT_FOUND, 'Passport ma\'lumoti topilmadi.');
-
-        $pdf = $pdfExportService->generateStudentPassportPdf(
-            $user,
-            $this->passportPayload($user->studentPassport)
-        );
-
-        $fileName = 'ijtimoiy-psixologik-passport_' . Str::slug($user->name ?: 'talaba') . '.pdf';
-
-        return $pdf->download($fileName);
-    }
-
-    public function destroyResult(User $student, $resultId)
-    {
-        DB::transaction(function () use ($student, $resultId) {
-            DB::table('solve_tests')->where('user_id', $student->id)->where('module_id', $resultId)->delete();
-            DB::table('users_tests_results')->where('user_id', $student->id)->where('module_id', $resultId)->delete();
-        });
-        return to_route('admin.students.show', $student->id)->with('success', 'Natija muvaffaqiyatli o\'chirildi');
-    }
-
-    private function validateStudentPassport(Request $request): array
-    {
-        return $request->validate([
-            'character_traits' => 'required|array|size:5',
-            'character_traits.*' => 'required|string|max:255',
-            'temperament_type' => 'required|string|max:255',
-            'student_conclusion' => 'required|string|max:5000',
-        ]);
-    }
-
-    private function saveStudentPassport(User $user, array $validated): StudentPassport
-    {
-        return StudentPassport::updateOrCreate(
-            ['student_id' => $user->id],
-            [
-                'character_traits' => array_map(
-                    static fn (string $trait) => trim($trait),
-                    $validated['character_traits']
-                ),
-                'temperament_type' => trim($validated['temperament_type']),
-                'student_conclusion' => trim($validated['student_conclusion']),
-            ]
-        );
-    }
-
-    private function passportPayload(StudentPassport $passport): array
-    {
-        return [
-            'character_traits' => $passport->character_traits ?? [],
-            'temperament_type' => $passport->temperament_type,
-            'student_conclusion' => $passport->student_conclusion,
-        ];
     }
 }

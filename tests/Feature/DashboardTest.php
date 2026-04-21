@@ -4,6 +4,7 @@ use App\Exports\ModuleScoreRangeExport;
 use App\Models\Faculity;
 use App\Models\Group;
 use App\Models\Module;
+use App\Models\ResultCategory;
 use App\Models\SolveTest;
 use App\Models\Speciality;
 use App\Models\Test;
@@ -219,4 +220,71 @@ test('dashboard can export filtered module score range report to excel', functio
     );
 
     Carbon::setTestNow();
+});
+
+test('dashboard shows aggregated result category stats', function () {
+    Cache::forget('dashboard:student-population-stats');
+    Http::fake([
+        'https://student.ttyesi.uz/rest/v1/public/stat-student' => Http::response([
+            'data' => [
+                'education_form' => [
+                    'Bakalavr' => [
+                        'Kunduzgi' => [
+                            'Jami' => 120,
+                        ],
+                    ],
+                ],
+            ],
+        ]),
+    ]);
+
+    $admin = createDashboardUser('admin');
+    [$module, $firstTest, $secondTest, $lowOptionOne, $highOptionOne, $lowOptionTwo, $highOptionTwo] = createModuleWithOptions('Kategoriya statistikasi testi');
+
+    $lowOptionTwo->update(['option_value' => 1]);
+    $highOptionTwo->update(['option_value' => 4]);
+
+    ResultCategory::create([
+        'name' => 'Past toifa',
+        'diagnostic' => 'Past',
+        'fake_diagnostic' => 'Past',
+        'value' => 1,
+        'module_id' => $module->id,
+    ]);
+
+    ResultCategory::create([
+        'name' => 'Yuqori toifa',
+        'diagnostic' => 'Yuqori',
+        'fake_diagnostic' => 'Yuqori',
+        'value' => 4,
+        'module_id' => $module->id,
+    ]);
+
+    $highStudent = createDashboardUser('student', [
+        'name' => 'Yuqori statistik talaba',
+        'login' => 404040,
+    ]);
+
+    $lowStudent = createDashboardUser('student', [
+        'name' => 'Past statistik talaba',
+        'login' => 505050,
+    ]);
+
+    submitModuleResult($highStudent, $module, $firstTest, $secondTest, $highOptionOne, $highOptionTwo->fresh());
+    submitModuleResult($lowStudent, $module, $firstTest, $secondTest, $lowOptionOne, $lowOptionTwo->fresh());
+
+    $response = $this
+        ->actingAs($admin)
+        ->get(route('dashboard'));
+
+    $response->assertOk();
+
+    $response->assertInertia(fn (Assert $page) => $page
+        ->component('Dashboard')
+        ->has('resultCategoryStats', 2)
+        ->where('resultCategoryStats.0.name', 'Past toifa')
+        ->where('resultCategoryStats.0.solvedCount', 1)
+        ->where('resultCategoryStats.1.name', 'Yuqori toifa')
+        ->where('resultCategoryStats.1.solvedCount', 1)
+    );
 });
