@@ -42,7 +42,6 @@ Route::get('/locale/{locale}', function (string $locale) {
     return back()->withCookie(cookie('locale', $locale, 60 * 24 * 365));
 })->name('locale.switch');
 Route::middleware(['auth', 'double'])->group(function () {
-    Route::delete('/students/{student}/results/{result}', [AdminStudentController::class, 'destroyResult'])->name('students.results.destroy');
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
     Route::post('/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
@@ -65,6 +64,7 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::post('/admin/students/{user}/results/{module}/diagnosis', [AdminStudentController::class , 'updateDiagnosis'])->name('admin.students.results.diagnosis');
     Route::post('/admin/students/{user}/results/{module}/ai-diagnosis', [AdminStudentController::class , 'generateAiDiagnosis'])->name('admin.students.results.ai-diagnosis');
     Route::post('/admin/students/{user}/results/{module}/ai-diagnosis-stream', [AdminStudentController::class , 'streamAiDiagnosis'])->name('admin.students.results.ai-diagnosis-stream');
+    Route::delete('/admin/students/{student}/results/{result}', [AdminStudentController::class, 'destroyResult'])->name('admin.students.results.destroy');
     Route::resource('result-categories', ResultCategoryController::class);
     Route::resource('categories', CategoryController::class);
     Route::post('/admin/students/{user}/sync-categories', [AdminStudentController::class, 'syncCategories'])->name('admin.students.sync-categories');

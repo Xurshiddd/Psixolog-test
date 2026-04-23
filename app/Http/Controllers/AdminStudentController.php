@@ -14,6 +14,7 @@ use App\Http\Requests\SyncStudentCategoriesRequest;
 use App\Http\Requests\UpdateStudentDiagnosisRequest;
 use App\Models\User;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
 
 class AdminStudentController extends Controller
@@ -139,6 +140,8 @@ class AdminStudentController extends Controller
 
     public function destroyResult(User $student, int $resultId)
     {
+        $this->ensureStudentManagementAccess();
+
         $this->adminStudentRecordService->destroyResult($student, $resultId);
 
         return to_route('admin.students.show', $student->id)->with('success', 'Natija muvaffaqiyatli o\'chirildi');
@@ -147,7 +150,15 @@ class AdminStudentController extends Controller
     private function ensureDiagnosisAccess(): void
     {
         abort_unless(
-            auth()->check() && in_array(auth()->user()->role, ['admin', 'psiholog'], true),
+            Auth::check() && in_array(Auth::user()?->role, ['admin', 'psiholog'], true),
+            Response::HTTP_FORBIDDEN
+        );
+    }
+
+    private function ensureStudentManagementAccess(): void
+    {
+        abort_unless(
+            Auth::check() && in_array(Auth::user()?->role, ['admin', 'psiholog'], true),
             Response::HTTP_FORBIDDEN
         );
     }
