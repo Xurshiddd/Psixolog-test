@@ -284,7 +284,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                     ← Orqaga
                 </Link>
             </div>
-            
+
             <div class="grid gap-6 md:grid-cols-2">
                 <div class="rounded-lg border bg-card p-6 shadow-sm">
                     <h2 class="text-lg font-semibold mb-4">Ma'lumotlar</h2>
@@ -332,10 +332,10 @@ const breadcrumbs: BreadcrumbItem[] = [
                         </DialogHeader>
                         <div class="grid gap-4 py-4">
                             <div v-for="category in allCategories" :key="category.id" class="flex items-center space-x-2">
-                                <input 
-                                    type="checkbox" 
-                                    :id="'cat-' + category.id" 
-                                    :value="category.id" 
+                                <input
+                                    type="checkbox"
+                                    :id="'cat-' + category.id"
+                                    :value="category.id"
                                     v-model="selectedCategoryIds"
                                     class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                                 />
@@ -437,15 +437,14 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     <td class="p-4 align-middle">{{ result.name }}</td>
                                     <td class="p-4 align-middle">{{ result.pivot.diagnosis ? 'Ha' : 'Yo\'q' }}</td>
                                     <td class="p-4 align-middle">
-                                        <Link 
-                                            :href="`/admin/students/${student.id}/results/${result.id}`" 
+                                        <Link
+                                            :href="`/admin/students/${student.id}/results/${result.id}`"
                                             class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4 py-2"
                                         >
                                             Natijani ko'rish
                                         </Link>
                                         <Button
                                             @click="deleteResult(result.id, student.id)"
-                                            v-if="user.role === 'admin'"
                                             class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-secondary text-secondary-foreground hover:bg-secondary/80 h-9 px-4 py-2 ml-2"
                                         >
                                             O'chirish
