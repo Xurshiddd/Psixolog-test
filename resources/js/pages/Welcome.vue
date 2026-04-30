@@ -305,18 +305,60 @@ onMounted(() => {
                         </a>
                     </div>
                     <div
-                        class="rounded-xl border border-indigo-100 bg-gradient-to-r from-blue-50 to-indigo-50 p-5 sm:p-6"
+                        class="rounded-xl border border-indigo-100 bg-white p-5 shadow-sm sm:p-6"
                     >
-                        <p
-                            class="text-center text-xs leading-relaxed text-gray-700 sm:text-sm"
+                        <h3
+                            class="text-center text-base font-bold text-gray-900 sm:text-lg"
                         >
-                            <span class="font-semibold text-indigo-600"
-                                >Muhim:</span
+                            Agar platformada muammo bo'lsa
+                        </h3>
+                        <div class="mt-4 grid gap-4 sm:grid-cols-2">
+                            <div
+                                class="rounded-lg border border-blue-100 bg-blue-50 p-4"
                             >
-                            Ro'yxatdan o'tish shart emas — tizim Hemis orqali
-                            yangi foydalanuvchilarni avtomatik ravishda
-                            aniqlaydi.
-                        </p>
+                                <p
+                                    class="text-sm leading-relaxed text-gray-700"
+                                >
+                                    <span
+                                        class="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white"
+                                        >1</span
+                                    >
+                                    Telegram profil:
+                                    <a
+                                        href="https://t.me/Muhammad_alayhissalom_ummati"
+                                        class="font-semibold text-blue-700 underline-offset-4 hover:underline"
+                                    >
+                                        @Muhammad_alayhissalom_ummati
+                                    </a>
+                                </p>
+                                <p>
+                                    ga murojaat qiling va muammoingizni batafsil tushuntiring. Yordam berish uchun qo'limizdan kelganicha harakat qilamiz.
+                                </p>
+                            </div>
+                            <div
+                                class="rounded-lg border border-amber-100 bg-amber-50 p-4"
+                            >
+                                <p
+                                    class="text-sm leading-relaxed text-gray-700"
+                                >
+                                    <span
+                                        class="mr-2 inline-flex h-6 w-6 items-center justify-center rounded-full bg-amber-500 text-xs font-bold text-white"
+                                        >2</span
+                                    >
+                                    Agar saytga kira olmasangiz
+                                    <a
+                                        href="https://student.ttyesi.uz"
+                                        class="font-semibold text-amber-700 underline-offset-4 hover:underline"
+                                    >
+                                        student.ttyesi.uz
+                                    </a>
+                                    ga kirib ko'ring. Login yoki parol xato deb
+                                    chiqsa, parolni tiklab qayta urinib ko'ring.
+                                    Agar boshqa xatolik chiqsa, registrator
+                                    ofisidan profilni ochib berishini so'rang.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div
