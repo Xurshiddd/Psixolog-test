@@ -73,15 +73,67 @@ class HemisStudentAuthenticator
         });
     }
 
+    public function syncFromAccountMe(array $accountData, string|int $login, ?string $password = null): User
+    {
+        return $this->syncFromResourceOwner($this->normalizeAccountMe($accountData, $login, $password));
+    }
+
+    private function normalizeAccountMe(array $accountData, string|int $login, ?string $password): array
+    {
+        $group = data_get($accountData, 'group');
+
+        return [
+            'login' => $login ?: data_get($accountData, 'student_id_number'),
+            'name' => data_get($accountData, 'full_name') ?: data_get($accountData, 'short_name'),
+            'email' => data_get($accountData, 'email'),
+            'phone' => data_get($accountData, 'phone'),
+            'picture' => data_get($accountData, 'image'),
+            'birth_date' => data_get($accountData, 'birth_date'),
+            'passport_number' => $password ?: data_get($accountData, 'passport_pin'),
+            'groups' => [
+                [
+                    'id' => $this->objectValue($group, ['id', 'code']),
+                    'name' => $this->objectValue($group, ['name']),
+                    'education_lang' => data_get($accountData, 'educationLang'),
+                    'education_form' => data_get($accountData, 'educationForm'),
+                    'education_type' => data_get($accountData, 'educationType'),
+                ],
+            ],
+            'data' => [
+                'faculty' => data_get($accountData, 'faculty'),
+                'specialty' => data_get($accountData, 'specialty'),
+                'level' => data_get($accountData, 'level'),
+                'educationType' => data_get($accountData, 'educationType'),
+                'educationForm' => data_get($accountData, 'educationForm'),
+                'studentStatus' => data_get($accountData, 'studentStatus'),
+            ],
+        ];
+    }
+
+    private function objectValue(mixed $value, array $keys): mixed
+    {
+        foreach ($keys as $key) {
+            $nested = data_get($value, $key);
+
+            if (filled($nested)) {
+                return $nested;
+            }
+        }
+
+        return is_string($value) && filled($value) ? $value : null;
+    }
+
     protected function ensureStudentCanAccess(array $userData): void
     {
-        if (data_get($userData, 'data.studentStatus.name') !== "O‘qimoqda") {
+        $studentStatus = str_replace(["'", '`', 'ʻ'], '‘', (string) data_get($userData, 'data.studentStatus.name'));
+
+        if ($studentStatus !== "O‘qimoqda") {
             throw new RuntimeException('Siz hozirda Institutda o‘qimayotganingiz uchun kira olmaysiz');
         }
 
         if (
-             data_get($userData, 'data.educationType.code') !== '11' ||
-            !in_array(data_get($userData, 'data.educationForm.code'), ['11', '20'], true)
+            (string) data_get($userData, 'data.educationType.code') !== '11' ||
+            ! in_array((string) data_get($userData, 'data.educationForm.code'), ['11', '20'], true)
         ) {
             Log::error('Bakalavr kunduzgi talabalar uchun platformaga kirish urinishlari', ['userData' => $userData]);
             throw new RuntimeException('Bu platforma hozirda Bakalavr kunduzgi talabalar uchun');

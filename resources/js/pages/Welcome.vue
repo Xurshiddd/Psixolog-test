@@ -2,12 +2,22 @@
 import ErrorNotification from '@/components/ErrorNotification.vue';
 import SelectLanguageDropdown from '@/components/SelectLanguageDropdown.vue';
 import { login } from '@/routes';
-import { Head, Link } from '@inertiajs/vue3';
+import { Head, Link, useForm } from '@inertiajs/vue3';
 import { trans } from 'laravel-vue-i18n';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const showVideoModal = ref(false);
 const videoRef = ref<HTMLVideoElement | null>(null);
+const hemisLoginForm = useForm({
+    login: '',
+    password: '',
+});
+
+function submitHemisLogin() {
+    hemisLoginForm.post('/hemis/login', {
+        preserveScroll: true,
+    });
+}
 
 function openVideoModal() {
     showVideoModal.value = true;
@@ -304,6 +314,67 @@ onMounted(() => {
                             {{ trans('hemis_login') }}
                         </a>
                     </div>
+                    <form
+                        class="mx-auto mb-8 grid max-w-2xl gap-4 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 shadow-sm sm:mb-10 sm:grid-cols-[1fr_1fr_auto] sm:items-start sm:p-5"
+                        @submit.prevent="submitHemisLogin"
+                    >
+                        <div>
+                            <label
+                                for="hemis-login"
+                                class="mb-1 block text-sm font-semibold text-gray-800"
+                            >
+                                HEMIS login
+                            </label>
+                            <input
+                                id="hemis-login"
+                                v-model="hemisLoginForm.login"
+                                type="text"
+                                inputmode="numeric"
+                                autocomplete="username"
+                                class="h-11 w-full rounded-lg border border-indigo-200 bg-white px-3 text-gray-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                                placeholder="999211100073"
+                            />
+                            <p
+                                v-if="hemisLoginForm.errors.login"
+                                class="mt-1 text-sm text-red-600"
+                            >
+                                {{ hemisLoginForm.errors.login }}
+                            </p>
+                        </div>
+                        <div>
+                            <label
+                                for="hemis-password"
+                                class="mb-1 block text-sm font-semibold text-gray-800"
+                            >
+                                Parol
+                            </label>
+                            <input
+                                id="hemis-password"
+                                v-model="hemisLoginForm.password"
+                                type="password"
+                                autocomplete="current-password"
+                                class="h-11 w-full rounded-lg border border-indigo-200 bg-white px-3 text-gray-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
+                                placeholder="DD7777777"
+                            />
+                            <p
+                                v-if="hemisLoginForm.errors.password"
+                                class="mt-1 text-sm text-red-600"
+                            >
+                                {{ hemisLoginForm.errors.password }}
+                            </p>
+                        </div>
+                        <button
+                            type="submit"
+                            :disabled="hemisLoginForm.processing"
+                            class="mt-1 inline-flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-5 text-sm font-bold text-white shadow-md transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-400 sm:mt-6"
+                        >
+                            {{
+                                hemisLoginForm.processing
+                                    ? 'Tekshirilmoqda...'
+                                    : 'Kirish'
+                            }}
+                        </button>
+                    </form>
                     <div
                         class="rounded-xl border border-indigo-100 bg-white p-5 shadow-sm sm:p-6"
                     >

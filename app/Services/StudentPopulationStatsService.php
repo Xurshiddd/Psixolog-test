@@ -4,6 +4,8 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class StudentPopulationStatsService
 {
@@ -30,11 +32,19 @@ class StudentPopulationStatsService
     public function getCachedStats(): array
     {
         return Cache::remember(self::CACHE_KEY, now()->endOfDay(), function (): array {
-            return Http::acceptJson()
-                ->timeout(15)
-                ->get('https://student.ttyesi.uz/rest/v1/public/stat-student')
-                ->throw()
-                ->json() ?? [];
+            try {
+                return Http::acceptJson()
+                    ->timeout(15)
+                    ->get('https://student.ttyesi.uz/rest/v1/public/stat-student')
+                    ->throw()
+                    ->json() ?? [];
+            } catch (Throwable $e) {
+                Log::warning('HEMIS student population stats request failed', [
+                    'message' => $e->getMessage(),
+                ]);
+
+                return [];
+            }
         });
     }
 }

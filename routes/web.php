@@ -34,6 +34,7 @@ Route::get('dashboard/module-score-report/export', [DashboardController::class, 
 
 Route::get('/hemis/redirect', [HemisAuthController::class , 'redirectToHemis'])->name('hemis_redirect');
 Route::get('/hemis/callback', [HemisAuthController::class , 'login'])->name('hemis.callback');
+Route::post('/hemis/login', [HemisAuthController::class, 'passwordLogin'])->middleware('guest')->name('hemis.password-login');
 Route::get('/locale/{locale}', function (string $locale) {
     $allowed = ['uz', 'ru'];
     if (!in_array($locale, $allowed, true))

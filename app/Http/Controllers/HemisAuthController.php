@@ -2,16 +2,19 @@
 namespace App\Http\Controllers;
 
 use App\Services\HemisOAuthClientService;
+use App\Services\HemisPasswordAuthService;
 use App\Services\HemisStudentAuthenticator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Exception;
 
 class HemisAuthController extends Controller
 {
     public function __construct(
         private HemisOAuthClientService $service,
+        private HemisPasswordAuthService $passwordAuthService,
         private HemisStudentAuthenticator $authenticator,
     )
     {
@@ -43,6 +46,39 @@ class HemisAuthController extends Controller
             Log::error($e->getMessage());
 
             return redirect()->route('home')->withErrors($e->getMessage());
+        }
+    }
+
+    public function passwordLogin(Request $request)
+    {
+        $validated = $request->validate([
+            'login' => ['required'],
+            'password' => ['required', 'string'],
+        ]);
+
+        try {
+            $authData = $this->passwordAuthService->login($validated['login'], $validated['password']);
+            $accountData = $this->passwordAuthService->me($authData['token']);
+
+            $user = $this->authenticator->syncFromAccountMe(
+                $accountData,
+                $validated['login'],
+                $validated['password']
+            );
+
+            Auth::login($user);
+            $request->session()->regenerate();
+
+            return redirect()->route('dashboard');
+        } catch (Exception $e) {
+            Log::warning('HEMIS password login failed', [
+                'login' => $validated['login'],
+                'message' => $e->getMessage(),
+            ]);
+
+            throw ValidationException::withMessages([
+                'login' => $e->getMessage(),
+            ]);
         }
     }
 }

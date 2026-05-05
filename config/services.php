@@ -41,6 +41,7 @@ return [
         'authorize_url' => env('HEMIS_AUTHORIZE_URL'),
         'token_url'     => env('HEMIS_TOKEN_URL'),
         'resource_url'  => env('HEMIS_RESOURCE_URL'),
+        'api_base_url' => env('HEMIS_API_BASE_URL', 'https://student.ttyesi.uz/rest/v1'),
         'token' => env('HEMIS_TOKEN')
     ],
 
