@@ -31,6 +31,9 @@ Route::get('dashboard', [DashboardController::class, 'index'])->middleware(['aut
 Route::get('dashboard/module-score-report/export', [DashboardController::class, 'exportModuleScoreReport'])
     ->middleware(['auth', 'verified'])
     ->name('dashboard.module-score-report.export');
+Route::post('dashboard/module-score-report/conclusions', [DashboardController::class, 'updateModuleScoreReportConclusions'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard.module-score-report.conclusions.update');
 
 Route::get('/hemis/redirect', [HemisAuthController::class , 'redirectToHemis'])->name('hemis_redirect');
 Route::get('/hemis/callback', [HemisAuthController::class , 'login'])->name('hemis.callback');

@@ -65,6 +65,37 @@ class ModuleScoreRangeReportService
         return collect($rows)->map(fn (array $row) => (object) $row);
     }
 
+    public function updateAutomaticConclusions(
+        int $moduleId,
+        int $minScore,
+        int $maxScore,
+        string $automaticConclusion,
+        bool $overwriteExisting,
+    ): int {
+        $query = DB::table('users_tests_results')
+            ->where('module_id', $moduleId)
+            ->whereIn('user_id', function ($query) use ($moduleId, $minScore, $maxScore): void {
+                $query
+                    ->fromSub($this->filteredQuery($moduleId, $minScore, $maxScore), 'filtered_students')
+                    ->select('id');
+            });
+
+        if (! $overwriteExisting) {
+            $query->where(function ($query): void {
+                $query
+                    ->whereNull('result_real')
+                    ->orWhere('result_real', '');
+            });
+        }
+
+        $updated = $query->update([
+            'result_real' => $automaticConclusion,
+            'updated_at' => now(),
+        ]);
+
+        return (int) $updated;
+    }
+
     public function flush(): void
     {
         Cache::forever($this->versionKey(), $this->cacheVersion() + 1);

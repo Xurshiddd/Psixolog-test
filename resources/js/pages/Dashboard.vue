@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue';
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import CategoryStudentChart from '@/components/CategoryStudentChart.vue';
 import FaculityStudentChart from '@/components/FaculityStudentChart.vue';
 import ModuleStatsChart from '@/components/ModuleStatsChart.vue';
 import ResultCategoryChart from '@/components/ResultCategoryChart.vue';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
 
@@ -139,9 +147,11 @@ const canSubmitReport = computed(() => {
     return normalizedMinScore.value >= 0 && normalizedMaxScore.value >= 0 && normalizedMinScore.value <= normalizedMaxScore.value;
 });
 
-const selectedModuleName = computed(
-    () => props.modules.find((module) => String(module.id) === selectedModuleId.value)?.name ?? '',
+const activeReportModuleName = computed(
+    () => props.modules.find((module) => module.id === props.reportFilters.module_id)?.name ?? '',
 );
+const reportStudentCount = computed(() => props.moduleScoreReport?.total ?? 0);
+const canUpdateReportConclusions = computed(() => props.reportFilters.is_ready === true && reportStudentCount.value > 0);
 
 const buildReportParams = () => ({
     report_module_id: selectedModuleId.value,
@@ -178,6 +188,41 @@ const downloadReportExcel = () => {
 
     const params = new URLSearchParams(buildReportParams());
     window.location.href = `/dashboard/module-score-report/export?${params.toString()}`;
+};
+
+const conclusionModalOpen = ref(false);
+const conclusionForm = useForm({
+    report_module_id: selectedModuleId.value,
+    min_score: minScore.value,
+    max_score: maxScore.value,
+    result_real: '',
+    overwrite_auto_conclusion: false,
+});
+
+const openConclusionModal = () => {
+    conclusionForm.reset();
+    conclusionForm.clearErrors();
+    conclusionForm.overwrite_auto_conclusion = false;
+    conclusionModalOpen.value = true;
+};
+
+const submitConclusionUpdate = () => {
+    if (!canUpdateReportConclusions.value || !conclusionForm.result_real.trim()) {
+        return;
+    }
+
+    conclusionForm.report_module_id = String(props.reportFilters.module_id ?? '');
+    conclusionForm.min_score = String(props.reportFilters.min_score ?? '');
+    conclusionForm.max_score = String(props.reportFilters.max_score ?? '');
+    conclusionForm.result_real = conclusionForm.result_real.trim();
+
+    conclusionForm.post('/dashboard/module-score-report/conclusions', {
+        preserveScroll: true,
+        onSuccess: () => {
+            conclusionModalOpen.value = false;
+            conclusionForm.reset();
+        },
+    });
 };
 </script>
 <template>
@@ -262,6 +307,15 @@ const downloadReportExcel = () => {
                         </div>
                         <div class="flex flex-wrap gap-2">
                             <button
+                                v-if="canUpdateReportConclusions"
+                                type="button"
+                                class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                :disabled="conclusionForm.processing"
+                                @click="openConclusionModal"
+                            >
+                                Avtomatik xulosa yozish
+                            </button>
+                            <button
                                 type="button"
                                 class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700/50"
                                 :disabled="!canSubmitReport"
@@ -278,6 +332,79 @@ const downloadReportExcel = () => {
                             </button>
                         </div>
                     </div>
+
+                    <Dialog v-model:open="conclusionModalOpen">
+                        <DialogContent class="sm:max-w-[560px]">
+                            <DialogHeader>
+                                <DialogTitle>Avtomatik xulosalarni yangilash</DialogTitle>
+                                <DialogDescription>
+                                    {{ activeReportModuleName }} moduli bo‘yicha {{ reportStudentCount }} ta talaba natijasi uchun avtomatik xulosa yoziladi.
+                                </DialogDescription>
+                            </DialogHeader>
+
+                            <form class="space-y-5" @submit.prevent="submitConclusionUpdate">
+                                <div class="rounded-lg border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/60">
+                                    <div class="flex items-center justify-between gap-4">
+                                        <label for="overwrite-auto-conclusion" class="text-sm font-medium text-slate-800 dark:text-slate-100">
+                                            Avvalgi Avtomatik xulosa ustidan yozish
+                                        </label>
+                                        <button
+                                            id="overwrite-auto-conclusion"
+                                            type="button"
+                                            role="switch"
+                                            :aria-checked="conclusionForm.overwrite_auto_conclusion"
+                                            class="relative inline-flex h-6 w-11 shrink-0 rounded-full border-2 border-transparent transition focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                                            :class="conclusionForm.overwrite_auto_conclusion ? 'bg-blue-600' : 'bg-slate-300 dark:bg-slate-600'"
+                                            @click="conclusionForm.overwrite_auto_conclusion = !conclusionForm.overwrite_auto_conclusion"
+                                        >
+                                            <span
+                                                class="pointer-events-none inline-block h-5 w-5 rounded-full bg-white shadow transition"
+                                                :class="conclusionForm.overwrite_auto_conclusion ? 'translate-x-5' : 'translate-x-0'"
+                                            />
+                                        </button>
+                                    </div>
+                                    <p class="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                        O‘chiq bo‘lsa faqat bo‘sh avtomatik xulosalar, yoniq bo‘lsa barcha avtomatik xulosalar yangilanadi.
+                                    </p>
+                                </div>
+
+                                <div>
+                                    <label for="module-score-auto-conclusion" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
+                                        Avtomatik xulosa
+                                    </label>
+                                    <textarea
+                                        id="module-score-auto-conclusion"
+                                        v-model="conclusionForm.result_real"
+                                        rows="7"
+                                        required
+                                        class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
+                                        placeholder="Avtomatik xulosani kiriting..."
+                                    />
+                                    <p v-if="conclusionForm.errors.result_real" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                        {{ conclusionForm.errors.result_real }}
+                                    </p>
+                                </div>
+
+                                <DialogFooter>
+                                    <button
+                                        type="button"
+                                        class="inline-flex items-center justify-center rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700/50"
+                                        :disabled="conclusionForm.processing"
+                                        @click="conclusionModalOpen = false"
+                                    >
+                                        Bekor qilish
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
+                                        :disabled="conclusionForm.processing || !conclusionForm.result_real.trim()"
+                                    >
+                                        {{ conclusionForm.processing ? 'Yangilanmoqda...' : 'Yangilash' }}
+                                    </button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
 
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-4">
                         <div>
@@ -343,7 +470,7 @@ const downloadReportExcel = () => {
                     <div v-if="props.reportFilters.is_ready" class="rounded-xl border border-slate-200 dark:border-slate-700">
                         <div class="flex flex-col gap-2 border-b border-slate-200 px-4 py-3 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300 sm:flex-row sm:items-center sm:justify-between">
                             <div>
-                                <span class="font-medium text-slate-900 dark:text-slate-100">{{ selectedModuleName }}</span>
+                                <span class="font-medium text-slate-900 dark:text-slate-100">{{ activeReportModuleName }}</span>
                                 uchun
                                 <span class="font-medium">{{ props.reportFilters.min_score }}</span>
                                 dan

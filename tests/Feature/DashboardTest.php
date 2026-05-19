@@ -222,6 +222,113 @@ test('dashboard can export filtered module score range report to excel', functio
     Carbon::setTestNow();
 });
 
+test('dashboard updates only empty automatic conclusions by default for filtered score report students', function () {
+    $admin = createDashboardUser('admin');
+    [$module, $firstTest, $secondTest, $lowOptionOne, $highOptionOne, $lowOptionTwo, $highOptionTwo] = createModuleWithOptions('Xulosa testi');
+
+    $emptyConclusionStudent = createDashboardUser('student', [
+        'name' => 'Bo‘sh xulosali talaba',
+        'login' => 606060,
+    ]);
+
+    $existingConclusionStudent = createDashboardUser('student', [
+        'name' => 'Xulosasi bor talaba',
+        'login' => 707070,
+    ]);
+
+    $outOfRangeStudent = createDashboardUser('student', [
+        'name' => 'Oraliqdan tashqari talaba',
+        'login' => 808080,
+    ]);
+
+    submitModuleResult($emptyConclusionStudent, $module, $firstTest, $secondTest, $highOptionOne, $highOptionTwo);
+    submitModuleResult($existingConclusionStudent, $module, $firstTest, $secondTest, $highOptionOne, $highOptionTwo);
+    submitModuleResult($outOfRangeStudent, $module, $firstTest, $secondTest, $lowOptionOne, $lowOptionTwo);
+
+    DB::table('users_tests_results')
+        ->where('user_id', $emptyConclusionStudent->id)
+        ->where('module_id', $module->id)
+        ->update(['result_real' => null]);
+
+    $this
+        ->actingAs($admin)
+        ->post(route('dashboard.module-score-report.conclusions.update'), [
+            'report_module_id' => $module->id,
+            'min_score' => 8,
+            'max_score' => 10,
+            'result_real' => 'Yangi avtomatik xulosa',
+            'overwrite_auto_conclusion' => false,
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('users_tests_results', [
+        'user_id' => $emptyConclusionStudent->id,
+        'module_id' => $module->id,
+        'result_real' => 'Yangi avtomatik xulosa',
+    ]);
+
+    $this->assertDatabaseHas('users_tests_results', [
+        'user_id' => $existingConclusionStudent->id,
+        'module_id' => $module->id,
+        'result_real' => 'Natija',
+    ]);
+
+    $this->assertDatabaseHas('users_tests_results', [
+        'user_id' => $outOfRangeStudent->id,
+        'module_id' => $module->id,
+        'result_real' => 'Natija',
+    ]);
+});
+
+test('dashboard can overwrite automatic conclusions for all filtered score report students', function () {
+    $admin = createDashboardUser('admin');
+    [$module, $firstTest, $secondTest, $lowOptionOne, $highOptionOne, $lowOptionTwo, $highOptionTwo] = createModuleWithOptions('Overwrite xulosa testi');
+
+    $firstStudent = createDashboardUser('student', [
+        'name' => 'Birinchi talaba',
+        'login' => 909090,
+    ]);
+
+    $secondStudent = createDashboardUser('student', [
+        'name' => 'Ikkinchi talaba',
+        'login' => 919191,
+    ]);
+
+    $outOfRangeStudent = createDashboardUser('student', [
+        'name' => 'Past ball talaba',
+        'login' => 929292,
+    ]);
+
+    submitModuleResult($firstStudent, $module, $firstTest, $secondTest, $highOptionOne, $highOptionTwo);
+    submitModuleResult($secondStudent, $module, $firstTest, $secondTest, $highOptionOne, $highOptionTwo);
+    submitModuleResult($outOfRangeStudent, $module, $firstTest, $secondTest, $lowOptionOne, $lowOptionTwo);
+
+    $this
+        ->actingAs($admin)
+        ->post(route('dashboard.module-score-report.conclusions.update'), [
+            'report_module_id' => $module->id,
+            'min_score' => 8,
+            'max_score' => 10,
+            'result_real' => 'Ustidan yozilgan avtomatik xulosa',
+            'overwrite_auto_conclusion' => true,
+        ])
+        ->assertRedirect();
+
+    foreach ([$firstStudent, $secondStudent] as $student) {
+        $this->assertDatabaseHas('users_tests_results', [
+            'user_id' => $student->id,
+            'module_id' => $module->id,
+            'result_real' => 'Ustidan yozilgan avtomatik xulosa',
+        ]);
+    }
+
+    $this->assertDatabaseHas('users_tests_results', [
+        'user_id' => $outOfRangeStudent->id,
+        'module_id' => $module->id,
+        'result_real' => 'Natija',
+    ]);
+});
+
 test('dashboard shows aggregated result category stats', function () {
     Cache::forget('dashboard:student-population-stats');
     Http::fake([
