@@ -295,7 +295,7 @@ const optionStats = computed(() => {
 
                     <form @submit.prevent="submit">
                         <div v-if="generatedDiagnosis" class="mb-4 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">
-                            <p class="font-medium mb-1">Avtomatik tizim xulosasi</p>
+                            <p class="font-medium mb-1">Avtomatik xulosasi</p>
                             <p class="whitespace-pre-wrap leading-relaxed">{{ generatedDiagnosis }}</p>
                         </div>
 
