@@ -435,7 +435,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                             <tbody class="[&_tr:last-child]:border-0">
                                 <tr v-for="result in results" :key="result.id" class="border-b">
                                     <td class="p-4 align-middle">{{ result.name }}</td>
-                                    <td class="p-4 align-middle">{{ result.pivot.diagnosis ? 'Ha' : 'Yo\'q' }}</td>
+                                    <td class="p-4 align-middle">{{ result.pivot.diagnosis || result.pivot.result_real ? 'Ha' : 'Yo\'q' }}</td>
                                     <td class="p-4 align-middle">
                                         <Link
                                             :href="`/admin/students/${student.id}/results/${result.id}`"
