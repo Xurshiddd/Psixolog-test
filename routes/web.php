@@ -95,6 +95,7 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::get('/admin/guests/export/excel', [AdminGuestController::class, 'exportExcel'])->name('admin.guests.export.excel');
     Route::get('/admin/guests/{user}', [AdminGuestController::class, 'show'])->name('admin.guests.show');
     Route::post('/admin/guests/{user}/sync-categories', [AdminGuestController::class, 'syncCategories'])->name('admin.guests.sync-categories');
+    Route::post('/admin/guests/{user}/employee-search', [AdminGuestController::class, 'employeeSearch'])->name('admin.guests.employee-search');
     Route::post('/admin/guests/{user}/status', [AdminGuestController::class, 'updateStatus'])->name('admin.guests.status');
     Route::get('/admin/guests/{user}/results/{module}', [AdminGuestController::class, 'showResult'])->name('admin.guests.results.show');
     Route::post('/admin/guests/{user}/results/{module}/diagnosis', [AdminGuestController::class, 'updateDiagnosis'])->name('admin.guests.results.diagnosis');

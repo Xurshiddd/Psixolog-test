@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import axios from 'axios';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -40,19 +41,78 @@ const syncCategories = () => {
 
 const statusUpdating = ref(false);
 
-const updateStatus = (status: 'accepted' | 'rejected') => {
-    const message =
-        status === 'accepted'
-            ? 'Nomzodni ishga qabul qilasizmi? U hodimlar ro\'yxatiga o\'tkaziladi.'
-            : 'Nomzod arizasini rad etasizmi?';
-
-    if (!confirm(message)) return;
+const rejectGuest = () => {
+    if (!confirm('Nomzod arizasini rad etasizmi?')) return;
 
     statusUpdating.value = true;
     router.post(
         `/admin/guests/${props.guest.id}/status`,
-        { status },
+        { status: 'rejected' },
         { onFinish: () => { statusUpdating.value = false; } },
+    );
+};
+
+// --- Ishga qabul qilish: HEMIS ID qidiruv modali ---
+const isAcceptModalOpen = ref(false);
+const hemisId = ref('');
+const searchLoading = ref(false);
+const searchError = ref('');
+const localMatch = ref<any>(null);
+const hemisMatch = ref<any>(null);
+
+const openAcceptModal = () => {
+    hemisId.value = '';
+    searchError.value = '';
+    localMatch.value = null;
+    hemisMatch.value = null;
+    isAcceptModalOpen.value = true;
+};
+
+const searchEmployee = async () => {
+    const id = hemisId.value.trim();
+    if (!id) {
+        searchError.value = 'HEMIS ID kiriting.';
+        return;
+    }
+
+    searchLoading.value = true;
+    searchError.value = '';
+    localMatch.value = null;
+    hemisMatch.value = null;
+
+    try {
+        const { data } = await axios.post(
+            `/admin/guests/${props.guest.id}/employee-search`,
+            { hemis_id: id },
+        );
+
+        if (data.source === 'local') {
+            localMatch.value = data.local;
+        } else if (data.source === 'hemis') {
+            hemisMatch.value = data.hemis;
+        } else {
+            searchError.value = data.message || 'Ma\'lumot topilmadi.';
+        }
+    } catch (e: any) {
+        searchError.value = e?.response?.data?.message || 'Qidiruvda xatolik yuz berdi.';
+    } finally {
+        searchLoading.value = false;
+    }
+};
+
+const goToProfile = (url: string) => {
+    router.visit(url);
+};
+
+const confirmAccept = () => {
+    statusUpdating.value = true;
+    router.post(
+        `/admin/guests/${props.guest.id}/status`,
+        { status: 'accepted', hemis_id: hemisId.value.trim() },
+        {
+            onSuccess: () => { isAcceptModalOpen.value = false; },
+            onFinish: () => { statusUpdating.value = false; },
+        },
     );
 };
 </script>
@@ -117,6 +177,76 @@ const updateStatus = (status: 'accepted' | 'rejected') => {
                 </DialogContent>
             </Dialog>
 
+            <!-- Ishga qabul qilish: HEMIS ID qidiruv modali -->
+            <Dialog v-model:open="isAcceptModalOpen">
+                <DialogContent class="sm:max-w-[480px]">
+                    <DialogHeader>
+                        <DialogTitle>Ishga qabul qilish — HEMIS ID</DialogTitle>
+                    </DialogHeader>
+                    <div class="grid gap-4 py-2">
+                        <div class="flex items-end gap-2">
+                            <div class="flex-1">
+                                <label class="text-sm font-medium text-muted-foreground">HEMIS ID</label>
+                                <input
+                                    v-model="hemisId"
+                                    type="text"
+                                    inputmode="numeric"
+                                    placeholder="masalan: 3312411057"
+                                    class="mt-1 w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                    @keyup.enter="searchEmployee"
+                                />
+                            </div>
+                            <Button :disabled="searchLoading" @click="searchEmployee">
+                                {{ searchLoading ? 'Qidirilmoqda...' : 'Qidirish' }}
+                            </Button>
+                        </div>
+
+                        <p v-if="searchError" class="text-sm text-red-600">{{ searchError }}</p>
+
+                        <!-- O'z bazamizda topildi -->
+                        <div v-if="localMatch" class="rounded-md border bg-amber-50 p-4">
+                            <p class="text-sm text-amber-800 mb-2">
+                                Bu HEMIS ID bo'yicha hodim allaqachon bazada mavjud:
+                            </p>
+                            <div class="flex items-center gap-3 mb-3">
+                                <div v-if="localMatch.picture" class="h-12 w-12 rounded-full overflow-hidden bg-gray-100">
+                                    <img :src="`/storage/${localMatch.picture}`" class="h-full w-full object-cover" />
+                                </div>
+                                <p class="font-medium">{{ localMatch.name }}</p>
+                            </div>
+                            <Button class="bg-indigo-600 text-white hover:bg-indigo-700" size="sm" @click="goToProfile(localMatch.profile_url)">
+                                Profilga o'tish
+                            </Button>
+                        </div>
+
+                        <!-- HEMIS'dan topildi -->
+                        <div v-if="hemisMatch" class="rounded-md border bg-green-50 p-4">
+                            <div class="flex items-start gap-3 mb-3">
+                                <div v-if="hemisMatch.image" class="h-16 w-16 rounded-full overflow-hidden bg-gray-100 flex-shrink-0">
+                                    <img :src="hemisMatch.image" class="h-full w-full object-cover" />
+                                </div>
+                                <div class="text-sm space-y-0.5">
+                                    <p class="font-semibold">{{ hemisMatch.name }}</p>
+                                    <p class="text-muted-foreground">HEMIS ID: {{ hemisMatch.employee_id_number }}</p>
+                                    <p v-if="hemisMatch.staff_position_name">Lavozim: {{ hemisMatch.staff_position_name }}</p>
+                                    <p v-if="hemisMatch.department_name">Bo'lim: {{ hemisMatch.department_name }}</p>
+                                    <p v-if="hemisMatch.employee_type_name">Turi: {{ hemisMatch.employee_type_name }}</p>
+                                    <p v-if="hemisMatch.employee_status_name">Holati: {{ hemisMatch.employee_status_name }}</p>
+                                </div>
+                            </div>
+                            <Button
+                                class="bg-green-600 text-white hover:bg-green-700"
+                                size="sm"
+                                :disabled="statusUpdating"
+                                @click="confirmAccept"
+                            >
+                                {{ statusUpdating ? 'Saqlanmoqda...' : 'Tasdiqlash va hodimga o\'tkazish' }}
+                            </Button>
+                        </div>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
             <!-- Application status -->
             <div class="rounded-md border bg-card text-card-foreground shadow-sm p-6">
                 <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -144,7 +274,7 @@ const updateStatus = (status: 'accepted' | 'rejected') => {
                             class="bg-green-600 text-white hover:bg-green-700"
                             size="sm"
                             :disabled="statusUpdating || guest.guest?.application_status === 'accepted'"
-                            @click="updateStatus('accepted')"
+                            @click="openAcceptModal"
                         >
                             Ishga qabul qilish
                         </Button>
@@ -153,7 +283,7 @@ const updateStatus = (status: 'accepted' | 'rejected') => {
                             size="sm"
                             class="border-red-300 text-red-700 hover:bg-red-50"
                             :disabled="statusUpdating || guest.guest?.application_status === 'rejected'"
-                            @click="updateStatus('rejected')"
+                            @click="rejectGuest"
                         >
                             Rad etish
                         </Button>

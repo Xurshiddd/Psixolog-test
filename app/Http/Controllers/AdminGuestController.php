@@ -13,6 +13,7 @@ use App\Http\Requests\SyncStudentCategoriesRequest;
 use App\Http\Requests\UpdateStudentDiagnosisRequest;
 use App\Models\Employee;
 use App\Models\User;
+use App\Services\HemisEmployeeDirectoryService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -26,6 +27,7 @@ class AdminGuestController extends Controller
         private AdminStudentRecordService $adminStudentRecordService,
         private BuildAdminStudentPages $buildAdminStudentPages,
         private AdminStudentDiagnosisService $adminStudentDiagnosisService,
+        private HemisEmployeeDirectoryService $hemisEmployeeDirectory,
     ) {}
 
     public function index(AdminGuestFilterRequest $request)
@@ -70,34 +72,110 @@ class AdminGuestController extends Controller
         return redirect()->back()->with('success', 'Kategoriyalar muvaffaqiyatli bog\'landi');
     }
 
+    /**
+     * Modal qidiruvi: HEMIS ID bo'yicha avval o'z bazamizdan, topilmasa
+     * HEMIS'dan qidiradi. JSON qaytaradi (Inertia emas).
+     */
+    public function employeeSearch(Request $request, User $user)
+    {
+        abort_unless($user->role === 'guest', 404);
+
+        $data = $request->validate([
+            'hemis_id' => ['required', 'string', 'max:50'],
+        ]);
+
+        $hemisId = trim($data['hemis_id']);
+
+        // 1) Avval o'z bazamiz: shu HEMIS ID'li hodim bormi?
+        $localEmployee = Employee::query()
+            ->with('user:id,name,picture')
+            ->where('employee_id_number', $hemisId)
+            ->orWhere('external_id', $hemisId)
+            ->first();
+
+        if ($localEmployee && $localEmployee->user) {
+            return response()->json([
+                'source' => 'local',
+                'local' => [
+                    'user_id' => $localEmployee->user->id,
+                    'name' => $localEmployee->user->name,
+                    'picture' => $localEmployee->user->picture,
+                    'profile_url' => route('admin.employees.show', $localEmployee->user->id),
+                ],
+                'hemis' => null,
+            ]);
+        }
+
+        // 2) HEMIS'dan qidirish.
+        $hemis = $this->hemisEmployeeDirectory->findByHemisId($hemisId);
+
+        if ($hemis === null) {
+            return response()->json([
+                'source' => 'none',
+                'local' => null,
+                'hemis' => null,
+                'message' => 'Bu HEMIS ID bo\'yicha ma\'lumot topilmadi.',
+            ]);
+        }
+
+        return response()->json([
+            'source' => 'hemis',
+            'local' => null,
+            'hemis' => $hemis,
+        ]);
+    }
+
     public function updateStatus(Request $request, User $user)
     {
         abort_unless($user->role === 'guest', 404);
 
         $data = $request->validate([
             'status' => ['required', 'in:pending,accepted,rejected'],
+            'hemis_id' => ['required_if:status,accepted', 'nullable', 'string', 'max:50'],
         ]);
 
-        DB::transaction(function () use ($user, $data): void {
+        // Rad etish yoki kutilmoqda — oddiy holat yangilanishi.
+        if ($data['status'] !== 'accepted') {
             $user->guest()->update(['application_status' => $data['status']]);
 
-            if ($data['status'] === 'accepted') {
-                $user->update(['role' => 'employee']);
-
-                Employee::firstOrCreate(
-                    ['user_id' => $user->id],
-                    ['synced_at' => now()]
-                );
-            }
-        });
-
-        if ($data['status'] === 'accepted') {
-            return redirect()
-                ->route('admin.employees.show', $user->id)
-                ->with('success', 'Nomzod ishga qabul qilindi va hodimlar ro\'yxatiga o\'tkazildi.');
+            return redirect()->back()->with('success', 'Ariza holati yangilandi.');
         }
 
-        return redirect()->back()->with('success', 'Ariza holati yangilandi.');
+        // Qabul qilish — HEMIS ID majburiy, HEMIS'dan ma'lumot olinadi.
+        $hemis = $this->hemisEmployeeDirectory->findByHemisId((string) $data['hemis_id']);
+
+        if ($hemis === null) {
+            return redirect()->back()->with('error', 'Bu HEMIS ID bo\'yicha ma\'lumot topilmadi. Hodimga o\'tkazib bo\'lmadi.');
+        }
+
+        DB::transaction(function () use ($user, $hemis): void {
+            $user->guest()->update(['application_status' => 'accepted']);
+
+            $user->update(array_filter([
+                'role' => 'employee',
+                'name' => $hemis['name'] ?: $user->name,
+                'login' => is_numeric($hemis['employee_id_number']) ? (int) $hemis['employee_id_number'] : $user->login,
+                'picture' => $hemis['image'] ?: $user->picture,
+                'birth_date' => $hemis['birth_date'] ?: $user->birth_date,
+            ], fn ($value) => $value !== null));
+
+            Employee::updateOrCreate(
+                ['user_id' => $user->id],
+                [
+                    'external_id' => $hemis['external_id'],
+                    'employee_id_number' => $hemis['employee_id_number'],
+                    'staff_position' => $hemis['staff_position'],
+                    'employee_type_name' => $hemis['employee_type_name'],
+                    'department_name' => $hemis['department_name'],
+                    'image' => $hemis['image'],
+                    'synced_at' => now(),
+                ]
+            );
+        });
+
+        return redirect()
+            ->route('admin.employees.show', $user->id)
+            ->with('success', 'Nomzod HEMIS ma\'lumotlari asosida ishga qabul qilindi va hodimlar ro\'yxatiga o\'tkazildi.');
     }
 
     public function showResult(User $user, int $moduleId)
