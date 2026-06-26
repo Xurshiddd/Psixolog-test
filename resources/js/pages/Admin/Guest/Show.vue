@@ -81,9 +81,11 @@ const searchEmployee = async () => {
     hemisMatch.value = null;
 
     try {
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') ?? '';
         const { data } = await axios.post(
             `/admin/guests/${props.guest.id}/employee-search`,
             { hemis_id: id },
+            { headers: { 'X-CSRF-TOKEN': csrf } },
         );
 
         if (data.source === 'local') {
