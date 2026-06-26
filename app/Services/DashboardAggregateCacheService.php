@@ -35,9 +35,9 @@ class DashboardAggregateCacheService
             function (): array {
                 $activeModulesCount = Module::query()->where('is_active', true)->count();
 
-                $studentStats = $this->roleSolveStats('student', $activeModulesCount);
-                $employeeStats = $this->roleSolveStats('employee', $activeModulesCount);
-                $guestStats = $this->roleSolveStats('guest', $activeModulesCount);
+                $studentStats = $this->roleSolveStats('student');
+                $employeeStats = $this->roleSolveStats('employee');
+                $guestStats = $this->roleSolveStats('guest');
 
                 return [
                     'tests_count' => Test::query()->count(),
@@ -63,21 +63,36 @@ class DashboardAggregateCacheService
      *
      * @return array{users_count: int, solved_at_least_one: int, solved_all: int}
      */
-    private function roleSolveStats(string $role, int $activeModulesCount): array
+    private function roleSolveStats(string $role): array
     {
+        // Shu auditoriyaga (rolga) tegishli aktiv modullar soni.
+        $roleActiveModulesCount = Module::query()
+            ->where('is_active', true)
+            ->forAudience($role)
+            ->count();
+
+        $audienceConstraint = fn ($query) => $query
+            ->where('modules.is_active', true)
+            ->where(function ($q) use ($role): void {
+                $q->whereJsonContains('modules.audiences', $role)
+                    ->orWhereNull('modules.audiences');
+            });
+
         $usersQuery = User::query()->where('role', $role);
         $usersCount = (clone $usersQuery)->count();
-        $solvedAtLeastOne = (clone $usersQuery)->whereHas('usersTestsResults')->count();
+        $solvedAtLeastOne = (clone $usersQuery)
+            ->whereHas('usersTestsResults', $audienceConstraint)
+            ->count();
 
-        $solvedAll = $activeModulesCount > 0
+        $solvedAll = $roleActiveModulesCount > 0
             ? DB::query()
                 ->fromSub(
                     (clone $usersQuery)->withCount([
-                        'usersTestsResults as active_modules_solved_count' => fn ($query) => $query->where('modules.is_active', true),
+                        'usersTestsResults as active_modules_solved_count' => $audienceConstraint,
                     ]),
                     'role_module_counts'
                 )
-                ->where('active_modules_solved_count', '>=', $activeModulesCount)
+                ->where('active_modules_solved_count', '>=', $roleActiveModulesCount)
                 ->count()
             : 0;
 

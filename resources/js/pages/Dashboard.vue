@@ -388,6 +388,9 @@ const submitConclusionUpdate = () => {
             <!-- Ishga qabul qilinmaganlar -->
             <div class="flex items-center gap-3">
                 <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Ishga qabul qilinmaganlar</h2>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    Jami: {{ props.guestPopulationStats.platformGuestsCount }}
+                </span>
             </div>
             <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
                 <div
