@@ -36,7 +36,7 @@ class EmployeePopulationStatsService
     private function fetchTotal(): int
     {
         $baseUrl = rtrim((string) config('services.hemis.api_base_url'), '/');
-        $token = config('services.hemis.token');
+        $token = (string) config('services.hemis.token');
 
         if (blank($token)) {
             Log::warning('HEMIS employee population total: HEMIS_TOKEN sozlanmagan.');
@@ -44,36 +44,54 @@ class EmployeePopulationStatsService
             return 0;
         }
 
-        try {
-            // HEMIS bu endpointni POST orqali qabul qiladi (Postman'da
-            // ham POST ishlaydi). `type` query parametr sifatida yuboriladi.
-            $response = Http::acceptJson()
-                ->withToken((string) $token)
-                ->timeout(20)
-                ->post($baseUrl.'/data/employee-list?type=all&page=1');
+        $endpoint = $baseUrl.'/data/employee-list';
+        $query = ['type' => 'all', 'page' => 1];
 
-            if ($response->failed()) {
-                Log::warning('HEMIS employee population total request failed', [
-                    'url' => $baseUrl.'/data/employee-list',
-                    'status' => $response->status(),
-                    'body' => $response->json('error') ?? \Illuminate\Support\Str::limit($response->body(), 200),
-                    'token_preview' => $this->maskToken((string) $token),
-                    'token_length' => strlen((string) $token),
-                ]);
+        // HEMIS qaysi auth usulini kutishini bilmaganimiz uchun bir nechtasini
+        // ketma-ket sinaymiz. Qaysi biri ishlasa, log'da ko'rinadi.
+        $strategies = [
+            'bearer' => fn () => Http::acceptJson()->withToken($token)->timeout(20)
+                ->post($endpoint.'?'.http_build_query($query)),
+            'raw_header' => fn () => Http::acceptJson()->withHeaders(['Authorization' => $token])->timeout(20)
+                ->post($endpoint.'?'.http_build_query($query)),
+            'access_token_query' => fn () => Http::acceptJson()->timeout(20)
+                ->post($endpoint.'?'.http_build_query($query + ['access-token' => $token])),
+        ];
 
-                return 0;
+        $lastStatus = null;
+        $lastBody = null;
+
+        foreach ($strategies as $name => $strategy) {
+            try {
+                $response = $strategy();
+
+                if ($response->successful()) {
+                    $total = (int) ($response->json('data.pagination.totalCount')
+                        ?? count($response->json('data.items', [])));
+
+                    if ($total > 0) {
+                        Log::info("HEMIS employee total OK via '{$name}': {$total}");
+
+                        return $total;
+                    }
+                }
+
+                $lastStatus = $response->status();
+                $lastBody = $response->json('error') ?? \Illuminate\Support\Str::limit($response->body(), 200);
+            } catch (Throwable $e) {
+                $lastBody = $e->getMessage();
             }
-
-            return (int) ($response->json('data.pagination.totalCount')
-                ?? count($response->json('data.items', [])));
-        } catch (Throwable $e) {
-            Log::warning('HEMIS employee population total request error', [
-                'url' => $baseUrl.'/data/employee-list',
-                'message' => $e->getMessage(),
-            ]);
-
-            return 0;
         }
+
+        Log::warning('HEMIS employee population total request failed (all strategies)', [
+            'url' => $endpoint,
+            'status' => $lastStatus,
+            'body' => $lastBody,
+            'token_preview' => $this->maskToken($token),
+            'token_length' => strlen($token),
+        ]);
+
+        return 0;
     }
 
     private function maskToken(string $token): string
