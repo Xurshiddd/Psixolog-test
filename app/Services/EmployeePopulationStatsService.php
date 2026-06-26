@@ -34,15 +34,23 @@ class EmployeePopulationStatsService
                     ->get($baseUrl.'/data/employee-list', [
                         'type' => 'all',
                         'page' => 1,
-                    ])
-                    ->throw();
+                    ]);
+
+                if ($response->failed()) {
+                    Log::warning('HEMIS employee population total request failed', [
+                        'url' => $baseUrl.'/data/employee-list',
+                        'status' => $response->status(),
+                        'body' => $response->json('error') ?? \Illuminate\Support\Str::limit($response->body(), 200),
+                    ]);
+
+                    return 0;
+                }
 
                 return (int) ($response->json('data.pagination.totalCount')
                     ?? count($response->json('data.items', [])));
             } catch (Throwable $e) {
-                Log::warning('HEMIS employee population total request failed', [
+                Log::warning('HEMIS employee population total request error', [
                     'url' => $baseUrl.'/data/employee-list',
-                    'status' => method_exists($e, 'response') ? optional($e->response)->status() : null,
                     'message' => $e->getMessage(),
                 ]);
 
