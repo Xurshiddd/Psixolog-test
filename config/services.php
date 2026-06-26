@@ -42,7 +42,17 @@ return [
         'token_url'     => env('HEMIS_TOKEN_URL'),
         'resource_url'  => env('HEMIS_RESOURCE_URL'),
         'api_base_url' => env('HEMIS_API_BASE_URL', 'https://student.ttyesi.uz/rest/v1'),
-        'token' => env('HEMIS_TOKEN')
+        'token' => env('HEMIS_TOKEN'),
+
+        // Hodim (employee) uchun alohida HEMIS OAuth mijozi.
+        'employee' => [
+            'client_id'     => env('HEMIS_EMP_CLIENT_ID'),
+            'client_secret' => env('HEMIS_EMP_CLIENT_SECRET'),
+            'redirect'      => env('HEMIS_EMP_REDIRECT_URI'),
+            'authorize_url' => env('HEMIS_EMP_AUTHORIZE_URL'),
+            'token_url'     => env('HEMIS_EMP_TOKEN_URL'),
+            'resource_url'  => env('HEMIS_EMP_RESOURCE_URL'),
+        ],
     ],
 
 ];

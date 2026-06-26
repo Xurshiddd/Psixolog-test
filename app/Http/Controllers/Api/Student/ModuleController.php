@@ -20,6 +20,7 @@ class ModuleController extends Controller
 
         $modules = Module::query()
             ->where('is_active', true)
+            ->forAudience($user->role)
             ->withCount('tests')
             ->with([
                 'usersTestsResults' => fn ($query) => $query->where('user_id', $user->id),
@@ -35,6 +36,7 @@ class ModuleController extends Controller
     public function show(Request $request, Module $module): JsonResponse
     {
         abort_unless($module->is_active, 404);
+        abort_unless($module->isForAudience($request->user()->role), 403, 'Bu test siz uchun mo‘ljallanmagan.');
 
         $module->load([
             'tests.options',
@@ -54,6 +56,8 @@ class ModuleController extends Controller
         abort_unless($module->is_active, 404);
 
         $user = $request->user();
+
+        abort_unless($module->isForAudience($user->role), 403, 'Bu test siz uchun mo‘ljallanmagan.');
 
         if ($user->usersTestsResults()->whereKey($module->id)->exists()) {
             return response()->json([

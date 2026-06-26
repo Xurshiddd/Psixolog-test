@@ -20,6 +20,7 @@ interface Notification {
     data: {
         student_id: number;
         student_name: string;
+        role?: string;
         module_id: number;
         module_title: string;
     };
@@ -28,6 +29,15 @@ interface Notification {
 }
 
 const notifications = ref<Notification[]>([]);
+
+const roleLabel = (role?: string) => {
+    const labels: Record<string, string> = {
+        student: 'Talaba',
+        employee: 'Hodim',
+        guest: 'Nomzod',
+    };
+    return role ? (labels[role] ?? '') : '';
+};
 
 const fetchNotifications = async () => {
     try {
@@ -89,10 +99,12 @@ onMounted(() => {
                         @click="markAsRead(notification.id)"
                     >
                         <div class="text-sm font-medium">
-                            {{ notification.data.student_name }} completed a module.
+                            {{ notification.data.student_name }}
+                            <span v-if="roleLabel(notification.data.role)" class="text-muted-foreground">({{ roleLabel(notification.data.role) }})</span>
+                            modul testini topshirdi.
                         </div>
                         <div class="text-xs text-muted-foreground">
-                            Module: {{ notification.data.module_title }}
+                            Modul: {{ notification.data.module_title }}
                         </div>
                     </DropdownMenuItem>
                 </template>

@@ -4,22 +4,30 @@ import { computed, ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 
-const props = defineProps<{
-    student: any;
-    module: any;
-    answers: Record<number, Array<any>>;
-    diagnosis: string | null;
-    generatedDiagnosis: string | null;
-}>();
+const props = withDefaults(
+    defineProps<{
+        student: any;
+        module: any;
+        answers: Record<number, Array<any>>;
+        diagnosis: string | null;
+        generatedDiagnosis: string | null;
+        basePath?: string;
+        backTitle?: string;
+    }>(),
+    {
+        basePath: '/admin/students',
+        backTitle: 'Talabalar',
+    },
+);
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
-        title: 'Talabalar',
-        href: '/admin/students',
+        title: props.backTitle,
+        href: props.basePath,
     },
     {
         title: props.student.name,
-        href: `/admin/students/${props.student.id}`,
+        href: `${props.basePath}/${props.student.id}`,
     },
     {
         title: props.module.name,
@@ -34,7 +42,7 @@ const form = useForm({
 const currentDiagnosis = ref<string | null>(props.diagnosis);
 
 const submit = (options: { clearAi?: boolean } = {}) => {
-    form.post(`/admin/students/${props.student.id}/results/${props.module.id}/diagnosis`, {
+    form.post(`${props.basePath}/${props.student.id}/results/${props.module.id}/diagnosis`, {
         preserveScroll: true,
         onSuccess: () => {
             currentDiagnosis.value = form.diagnosis || null;
@@ -78,7 +86,7 @@ const getAiDiagnosis = async () => {
 
     try {
         const response = await fetch(
-            `/admin/students/${props.student.id}/results/${props.module.id}/ai-diagnosis-stream`,
+            `${props.basePath}/${props.student.id}/results/${props.module.id}/ai-diagnosis-stream`,
             {
                 method: 'POST',
                 signal: aiAbortController.value.signal,
@@ -270,7 +278,7 @@ const optionStats = computed(() => {
                     </div>
 
                     <div v-if="test.type === 'text'" class="p-4 rounded-md border bg-slate-50 dark:bg-slate-900">
-                        <p class="font-medium text-sm text-muted-foreground mb-1">Talaba javobi:</p>
+                        <p class="font-medium text-sm text-muted-foreground mb-1">Foydalanuvchi javobi:</p>
                         <p class="text-base">{{ answers[test.id]?.[0]?.answer || 'Javob berilmagan' }}</p>
                     </div>
 
@@ -399,7 +407,7 @@ const optionStats = computed(() => {
                             </div>
 
                             <p v-if="!aiLoading && aiDiagnosis === null && !aiError" class="text-xs text-violet-500 dark:text-violet-400">
-                                Talabaning javoblari asosida AI qoralama xulosa tayyorlaydi.
+                                Foydalanuvchi javoblari asosida AI qoralama xulosa tayyorlaydi.
                             </p>
                         </div>
 

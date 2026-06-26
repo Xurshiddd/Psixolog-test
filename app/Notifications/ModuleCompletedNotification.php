@@ -53,6 +53,7 @@ class ModuleCompletedNotification extends Notification
         return [
             'student_id' => $this->student->id,
             'student_name' => $this->student->name,
+            'role' => $this->student->role,
             'module_id' => $this->module->id,
             'module_title' => $this->module->name,
         ];

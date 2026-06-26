@@ -34,34 +34,58 @@ class DashboardAggregateCacheService
             now()->addMinutes(self::CACHE_TTL_MINUTES),
             function (): array {
                 $activeModulesCount = Module::query()->where('is_active', true)->count();
-                $studentUsersQuery = User::query()->where('role', 'student');
-                $studentUsersCount = (clone $studentUsersQuery)->count();
-                $studentsSolvedAtLeastOneModule = (clone $studentUsersQuery)
-                    ->whereHas('usersTestsResults')
-                    ->count();
 
-                $studentsWithAllModulesSolved = $activeModulesCount > 0
-                    ? DB::query()
-                        ->fromSub(
-                            (clone $studentUsersQuery)->withCount([
-                                'usersTestsResults as active_modules_solved_count' => fn ($query) => $query->where('modules.is_active', true),
-                            ]),
-                            'student_module_counts'
-                        )
-                        ->where('active_modules_solved_count', '>=', $activeModulesCount)
-                        ->count()
-                    : 0;
+                $studentStats = $this->roleSolveStats('student', $activeModulesCount);
+                $employeeStats = $this->roleSolveStats('employee', $activeModulesCount);
+                $guestStats = $this->roleSolveStats('guest', $activeModulesCount);
 
                 return [
                     'tests_count' => Test::query()->count(),
                     'modules_count' => Module::query()->count(),
                     'active_modules_count' => $activeModulesCount,
-                    'student_users_count' => $studentUsersCount,
-                    'students_solved_at_least_one_module' => $studentsSolvedAtLeastOneModule,
-                    'students_with_all_modules_solved' => $studentsWithAllModulesSolved,
+                    'student_users_count' => $studentStats['users_count'],
+                    'students_solved_at_least_one_module' => $studentStats['solved_at_least_one'],
+                    'students_with_all_modules_solved' => $studentStats['solved_all'],
+                    'employee_users_count' => $employeeStats['users_count'],
+                    'employees_solved_at_least_one_module' => $employeeStats['solved_at_least_one'],
+                    'employees_with_all_modules_solved' => $employeeStats['solved_all'],
+                    'guest_users_count' => $guestStats['users_count'],
+                    'guests_solved_at_least_one_module' => $guestStats['solved_at_least_one'],
+                    'guests_with_all_modules_solved' => $guestStats['solved_all'],
                 ];
             }
         );
+    }
+
+    /**
+     * Berilgan rol uchun: foydalanuvchilar soni, kamida 1 modul yechganlar va
+     * barcha aktiv modullarni yechganlar soni.
+     *
+     * @return array{users_count: int, solved_at_least_one: int, solved_all: int}
+     */
+    private function roleSolveStats(string $role, int $activeModulesCount): array
+    {
+        $usersQuery = User::query()->where('role', $role);
+        $usersCount = (clone $usersQuery)->count();
+        $solvedAtLeastOne = (clone $usersQuery)->whereHas('usersTestsResults')->count();
+
+        $solvedAll = $activeModulesCount > 0
+            ? DB::query()
+                ->fromSub(
+                    (clone $usersQuery)->withCount([
+                        'usersTestsResults as active_modules_solved_count' => fn ($query) => $query->where('modules.is_active', true),
+                    ]),
+                    'role_module_counts'
+                )
+                ->where('active_modules_solved_count', '>=', $activeModulesCount)
+                ->count()
+            : 0;
+
+        return [
+            'users_count' => $usersCount,
+            'solved_at_least_one' => $solvedAtLeastOne,
+            'solved_all' => $solvedAll,
+        ];
     }
 
     public function moduleSummaries(): Collection

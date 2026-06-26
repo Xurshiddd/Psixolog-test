@@ -112,6 +112,7 @@ function sendMessage() {
         { body },
         {
             preserveScroll: true,
+            preserveState: true,
             onFinish: () => {
                 sending.value = false;
                 messageBody.value = '';
@@ -126,7 +127,7 @@ const canSend = computed(
         messageBody.value.trim().length > 0 &&
         !sending.value,
 );
-const typingName = computed(() => props.activeStudent?.name ?? 'Talaba');
+const typingName = computed(() => props.activeStudent?.name ?? 'Foydalanuvchi');
 
 // ======================
 // Realtime (Reverb/Echo)
@@ -255,7 +256,7 @@ function goBackToList() {
                                 v-model="search"
                                 @keydown.enter.prevent="doSearch"
                                 class="h-9 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none dark:border-gray-800 dark:bg-gray-950 dark:focus:ring-gray-700"
-                                placeholder="Talabani qidiring..."
+                                placeholder="Foydalanuvchini qidiring..."
                             />
                             <button
                                 class="h-9 rounded-xl border border-gray-200 px-3 text-sm font-semibold hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
@@ -302,7 +303,7 @@ function goBackToList() {
                             v-if="students.length === 0"
                             class="px-3 py-6 text-sm text-gray-500 dark:text-gray-400"
                         >
-                            Talabalar topilmadi.
+                            Foydalanuvchilar topilmadi.
                         </div>
                     </div>
                 </aside>
@@ -324,7 +325,7 @@ function goBackToList() {
                                 <template v-if="activeStudent">
                                     {{ activeStudent.name }} bilan suhbat
                                 </template>
-                                <template v-else> Talaba tanlang </template>
+                                <template v-else> Foydalanuvchi tanlang </template>
                             </div>
                             <div
                                 class="truncate text-xs text-gray-600 dark:text-gray-400"
@@ -333,7 +334,7 @@ function goBackToList() {
                                     activeStudent.email
                                 }}</template>
                                 <template v-else
-                                    >Chapdan talabani tanlang</template
+                                    >Chapdan foydalanuvchini tanlang</template
                                 >
                             </div>
                         </div>
@@ -386,7 +387,7 @@ function goBackToList() {
                                         {{
                                             m.sender_id === meId
                                                 ? 'Siz'
-                                                : (m.sender_name ?? 'Talaba')
+                                                : (m.sender_name ?? 'Foydalanuvchi')
                                         }}
                                     </div>
                                     <div class="whitespace-pre-wrap">
@@ -410,7 +411,7 @@ function goBackToList() {
                             <div
                                 class="flex h-full items-center justify-center text-gray-500 dark:text-gray-400"
                             >
-                                Talaba tanlanmagan
+                                Foydalanuvchi tanlanmagan
                             </div>
                         </template>
                     </div>
@@ -464,7 +465,7 @@ function goBackToList() {
                                 v-model="search"
                                 @keydown.enter.prevent="doSearch"
                                 class="h-9 w-full rounded-xl border border-gray-200 bg-white px-3 text-sm focus:ring-2 focus:ring-gray-300 focus:outline-none dark:border-gray-800 dark:bg-gray-950 dark:focus:ring-gray-700"
-                                placeholder="Talabani qidiring..."
+                                placeholder="Foydalanuvchini qidiring..."
                             />
                             <button
                                 class="h-9 rounded-xl border border-gray-200 px-3 text-sm font-semibold hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-900"
@@ -511,7 +512,7 @@ function goBackToList() {
                             v-if="students.length === 0"
                             class="px-3 py-6 text-sm text-gray-500 dark:text-gray-400"
                         >
-                            Talabalar topilmadi.
+                            Foydalanuvchilar topilmadi.
                         </div>
                     </div>
                 </aside>
@@ -542,7 +543,7 @@ function goBackToList() {
                                     <template v-if="activeStudent">
                                         {{ activeStudent.name }} bilan suhbat
                                     </template>
-                                    <template v-else> Talaba tanlang </template>
+                                    <template v-else> Foydalanuvchi tanlang </template>
                                 </div>
                                 <div
                                     class="truncate text-xs text-gray-600 dark:text-gray-400"
@@ -551,7 +552,7 @@ function goBackToList() {
                                         activeStudent.email
                                     }}</template>
                                     <template v-else
-                                        >Talaba tanlanmagan</template
+                                        >Foydalanuvchi tanlanmagan</template
                                     >
                                 </div>
                             </div>
@@ -596,7 +597,7 @@ function goBackToList() {
                                         {{
                                             m.sender_id === meId
                                                 ? 'Siz'
-                                                : (m.sender_name ?? 'Talaba')
+                                                : (m.sender_name ?? 'Foydalanuvchi')
                                         }}
                                     </div>
                                     <div class="whitespace-pre-wrap">
@@ -620,7 +621,7 @@ function goBackToList() {
                             <div
                                 class="flex h-full items-center justify-center text-gray-500 dark:text-gray-400"
                             >
-                                Talaba tanlanmagan
+                                Foydalanuvchi tanlanmagan
                             </div>
                         </template>
                     </div>

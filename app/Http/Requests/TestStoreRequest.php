@@ -25,6 +25,8 @@ class TestStoreRequest extends FormRequest
             'shuffle' => 'required|boolean',
             'module' => 'required|string|max:255',
             'module_description' => 'nullable|string|max:10000',
+            'audiences' => 'required|array|min:1',
+            'audiences.*' => 'required|string|in:student,employee,guest',
             'questions' => 'required|array|min:1',
             'questions.*.question' => 'required|string',
             'questions.*.question_image' => 'nullable|image|max:5048',

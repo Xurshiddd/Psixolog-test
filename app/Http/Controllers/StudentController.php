@@ -15,7 +15,10 @@ class StudentController extends Controller
         return inertia(
             'Student/Tests',
         [
-            'modules' => Module::with('tests.options')->where('is_active', true)->get(),
+            'modules' => Module::with('tests.options')
+                ->where('is_active', true)
+                ->forAudience(auth()->user()->role)
+                ->get(),
         ]
         );
     }
@@ -25,6 +28,8 @@ class StudentController extends Controller
         $module = Module::with([
             'tests.options'
         ])->findOrFail($moduleId);
+
+        abort_unless($module->isForAudience(auth()->user()->role), 403, 'Bu test siz uchun mo‘ljallanmagan.');
 
         // Check if user has already solved this module
         $existingResult = $module->usersTestsResults()
@@ -43,6 +48,10 @@ class StudentController extends Controller
     public function submitTest(SolveTestRequest $request)
     {
         $user = auth()->user();
+        $module = Module::findOrFail($request->module_id);
+
+        abort_unless($module->isForAudience($user->role), 403, 'Bu test siz uchun mo‘ljallanmagan.');
+
         if ($user->usersTestsResults()->where('module_id', $request->module_id)->exists()) {
             return redirect()->back()->with('error', 'You have already submitted this test.');
         }

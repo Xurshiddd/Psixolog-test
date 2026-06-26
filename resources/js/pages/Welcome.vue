@@ -2,26 +2,15 @@
 import ErrorNotification from '@/components/ErrorNotification.vue';
 import SelectLanguageDropdown from '@/components/SelectLanguageDropdown.vue';
 import { login } from '@/routes';
-import { Head, Link, useForm } from '@inertiajs/vue3';
+import { Head, Link } from '@inertiajs/vue3';
 import { trans } from 'laravel-vue-i18n';
 import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue';
 
 const showVideoModal = ref(false);
 const videoRef = ref<HTMLVideoElement | null>(null);
-const hemisLoginForm = useForm({
-    login: '',
-    password: '',
-});
-
-function submitHemisLogin() {
-    hemisLoginForm.post('/hemis/login', {
-        preserveScroll: true,
-    });
-}
 
 function openVideoModal() {
     showVideoModal.value = true;
-    // play after DOM updates
     nextTick(() => {
         videoRef.value?.play().catch(() => {});
     });
@@ -127,118 +116,6 @@ onMounted(() => {
                             Video qo'llanma
                         </button>
                     </div>
-                    <div
-                        class="relative isolate mb-8 overflow-hidden rounded-[2rem] bg-slate-950 px-6 py-6 text-white shadow-2xl sm:mb-10 sm:px-8 sm:py-7"
-                    >
-                        <div
-                            class="absolute top-1/2 -left-10 h-32 w-32 -translate-y-1/2 rounded-full bg-cyan-400/25 blur-3xl"
-                        ></div>
-                        <div
-                            class="absolute top-0 right-0 h-28 w-28 rounded-full bg-fuchsia-400/20 blur-3xl"
-                        ></div>
-                        <div
-                            class="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"
-                        ></div>
-
-                        <div
-                            class="relative grid items-center gap-6 md:grid-cols-[1.4fr_auto]"
-                        >
-                            <div>
-                                <p
-                                    class="mb-2 text-sm font-semibold tracking-[0.3em] text-cyan-300 uppercase"
-                                >
-                                    Android ilova
-                                </p>
-                                <h3
-                                    class="text-2xl leading-tight font-bold sm:text-3xl"
-                                >
-                                    Student mobil ilovasini tez yuklab oling
-                                </h3>
-                                <p
-                                    class="mt-3 max-w-2xl text-sm leading-6 text-slate-300 sm:text-base"
-                                >
-                                    Telefon orqali foydalanish uchun tayyor
-                                    Android ilova havolasi qo'shildi. Yuklab
-                                    olib, qurilmangizga o'rnatishingiz mumkin.
-                                </p>
-                            </div>
-
-                            <a
-                                href="/app-release.apk"
-                                download="app-release.apk"
-                                class="apk-float apk-shimmer group inline-flex items-center justify-center gap-3 rounded-full border border-white/20 bg-white px-6 py-4 font-bold text-slate-900 shadow-[0_20px_60px_rgba(34,211,238,0.28)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_25px_80px_rgba(34,211,238,0.38)]"
-                            >
-                                <span
-                                    class="flex h-12 w-12 items-center justify-center rounded-full bg-slate-900 text-cyan-300 transition duration-300 group-hover:scale-110"
-                                >
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        class="h-6 w-6"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            stroke-width="1.8"
-                                            d="M12 3v11m0 0 4-4m-4 4-4-4m-5 8h18"
-                                        />
-                                    </svg>
-                                </span>
-                                <span class="text-left">
-                                    <span class="block text-base"
-                                        >APK yuklab olish</span
-                                    >
-                                    <span
-                                        class="block text-xs font-medium text-slate-500"
-                                    >
-                                        <span class="font-mono"
-                                            >/app-release.apk</span
-                                        >
-                                    </span>
-                                </span>
-                            </a>
-                        </div>
-
-                        <div
-                            class="relative mt-6 grid gap-3 rounded-2xl border border-cyan-300/30 bg-white/10 p-4 shadow-lg backdrop-blur-sm sm:grid-cols-2 sm:p-5"
-                        >
-                            <div
-                                class="rounded-2xl border border-white/10 bg-slate-900/70 p-4"
-                            >
-                                <p
-                                    class="text-xs font-semibold tracking-[0.25em] text-cyan-300 uppercase"
-                                >
-                                    Login
-                                </p>
-                                <p class="mt-2 text-lg font-bold text-white">
-                                    HEMIS logini
-                                </p>
-                            </div>
-                            <div
-                                class="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4"
-                            >
-                                <p
-                                    class="text-xs font-semibold tracking-[0.25em] text-amber-200 uppercase"
-                                >
-                                    Parol
-                                </p>
-                                <p class="mt-2 text-lg font-bold text-white">
-                                    Passport seria ID
-                                </p>
-                                <p class="mt-2 text-sm text-amber-100">
-                                    Masalan:
-                                    <span
-                                        class="rounded-full bg-white/10 px-3 py-1 font-mono text-white"
-                                    >
-                                        AB4567898
-                                    </span>
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Video modal -->
                     <teleport to="body">
                         <div
@@ -292,14 +169,24 @@ onMounted(() => {
                             </div>
                         </div>
                     </teleport>
-                    <div class="mb-8 flex justify-center sm:mb-10">
+
+                    <!--
+                        Kirish turlari. Talaba uchun HEMIS OAuth ishlaydi.
+                        Hodim va mehmon (ishga qabul qilinmaganlar) uchun
+                        backend ulanishi keyin qo'shiladi.
+                        HEMIS login/parolni qo'lda yozish formasi hozircha
+                        o'chirib qo'yildi.
+                    -->
+                    <div
+                        class="mx-auto mb-8 grid max-w-3xl gap-4 sm:mb-10 sm:grid-cols-3"
+                    >
                         <a
                             href="/hemis/redirect"
-                            class="inline-flex transform items-center gap-3 rounded-full bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-3 text-base font-bold text-white shadow-xl transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95 sm:px-8 sm:py-4 sm:text-lg md:px-10"
+                            class="group flex flex-col items-center justify-center gap-3 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 px-6 py-6 text-center font-bold text-white shadow-xl transition-all duration-300 hover:scale-105 hover:shadow-2xl active:scale-95"
                         >
                             <svg
                                 xmlns="http://www.w3.org/2000/svg"
-                                class="h-5 w-5 sm:h-6 sm:w-6"
+                                class="h-8 w-8"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -307,74 +194,55 @@ onMounted(() => {
                                 <path
                                     stroke-linecap="round"
                                     stroke-linejoin="round"
-                                    stroke-width="2"
+                                    stroke-width="1.8"
+                                    d="M12 14l9-5-9-5-9 5 9 5zm0 0v7m0-7L5 9m7 5l7-5"
+                                />
+                            </svg>
+                            <span class="text-base sm:text-lg">Talaba sifatida kirish</span>
+                        </a>
+
+                        <a
+                            href="/hemis/employee/redirect"
+                            class="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-indigo-200 bg-white px-6 py-6 text-center font-bold text-gray-800 shadow-sm transition-all duration-300 hover:scale-105 hover:border-indigo-400 hover:shadow-lg active:scale-95"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-8 w-8 text-indigo-600"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
+                                    d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                                />
+                            </svg>
+                            <span class="text-base sm:text-lg">Hodim sifatida kirish</span>
+                        </a>
+
+                        <Link
+                            :href="'/guest/register'"
+                            class="group flex flex-col items-center justify-center gap-3 rounded-2xl border border-indigo-200 bg-white px-6 py-6 text-center font-bold text-gray-800 shadow-sm transition-all duration-300 hover:scale-105 hover:border-indigo-400 hover:shadow-lg active:scale-95"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                class="h-8 w-8 text-indigo-600"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    stroke-width="1.8"
                                     d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
                                 />
                             </svg>
-                            {{ trans('hemis_login') }}
-                        </a>
+                            <span class="text-base sm:text-lg">Ishga qabul qilinmaganlar uchun</span>
+                        </Link>
                     </div>
-                    <form
-                        class="mx-auto mb-8 grid max-w-2xl gap-4 rounded-2xl border border-indigo-100 bg-indigo-50/70 p-4 shadow-sm sm:mb-10 sm:grid-cols-[1fr_1fr_auto] sm:items-start sm:p-5"
-                        @submit.prevent="submitHemisLogin"
-                    >
-                        <div>
-                            <label
-                                for="hemis-login"
-                                class="mb-1 block text-sm font-semibold text-gray-800"
-                            >
-                                HEMIS login
-                            </label>
-                            <input
-                                id="hemis-login"
-                                v-model="hemisLoginForm.login"
-                                type="text"
-                                inputmode="numeric"
-                                autocomplete="username"
-                                class="h-11 w-full rounded-lg border border-indigo-200 bg-white px-3 text-gray-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                                placeholder="999211100073"
-                            />
-                            <p
-                                v-if="hemisLoginForm.errors.login"
-                                class="mt-1 text-sm text-red-600"
-                            >
-                                {{ hemisLoginForm.errors.login }}
-                            </p>
-                        </div>
-                        <div>
-                            <label
-                                for="hemis-password"
-                                class="mb-1 block text-sm font-semibold text-gray-800"
-                            >
-                                Parol
-                            </label>
-                            <input
-                                id="hemis-password"
-                                v-model="hemisLoginForm.password"
-                                type="password"
-                                autocomplete="current-password"
-                                class="h-11 w-full rounded-lg border border-indigo-200 bg-white px-3 text-gray-900 shadow-sm outline-none transition focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200"
-                                placeholder="DD7777777"
-                            />
-                            <p
-                                v-if="hemisLoginForm.errors.password"
-                                class="mt-1 text-sm text-red-600"
-                            >
-                                {{ hemisLoginForm.errors.password }}
-                            </p>
-                        </div>
-                        <button
-                            type="submit"
-                            :disabled="hemisLoginForm.processing"
-                            class="mt-1 inline-flex h-11 items-center justify-center rounded-lg bg-indigo-600 px-5 text-sm font-bold text-white shadow-md transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-indigo-400 sm:mt-6"
-                        >
-                            {{
-                                hemisLoginForm.processing
-                                    ? 'Tekshirilmoqda...'
-                                    : 'Kirish'
-                            }}
-                        </button>
-                    </form>
                     <div
                         class="rounded-xl border border-indigo-100 bg-white p-5 shadow-sm sm:p-6"
                     >

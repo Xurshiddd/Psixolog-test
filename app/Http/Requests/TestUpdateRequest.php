@@ -26,6 +26,8 @@ class TestUpdateRequest extends FormRequest
             'shuffle' => 'required|boolean',
             'module' => 'required|string|max:255',
             'module_description' => 'nullable|string',
+            'audiences' => 'required|array|min:1',
+            'audiences.*' => 'required|string|in:student,employee,guest',
             'questions' => 'required|array|min:1',
             'questions.*.id' => 'nullable|exists:tests,id',
             'questions.*.question' => 'required|string',

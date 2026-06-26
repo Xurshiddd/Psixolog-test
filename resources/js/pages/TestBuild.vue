@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
 import { router } from '@inertiajs/vue3'
@@ -27,10 +27,29 @@ interface Question {
   imageFile?: File | null;
   imagePreview?: string | null;
 }
+type Audience = 'student' | 'employee' | 'guest';
+
+const audienceOptions: Array<{ value: Audience; label: string }> = [
+    { value: 'student', label: 'Talaba' },
+    { value: 'employee', label: 'Hodim' },
+    { value: 'guest', label: 'Ishga qabul qilinmaganlar' },
+];
+
 const shuffle = ref<boolean>(false)
 const moduleName = ref<string>('');
 const moduleDescription = ref<string>('');
+const audiences = ref<Audience[]>([]);
 const questions = ref<Question[]>([]);
+
+const allAudiencesSelected = computed(
+    () => audiences.value.length === audienceOptions.length,
+);
+
+const toggleAllAudiences = () => {
+    audiences.value = allAudiencesSelected.value
+        ? []
+        : audienceOptions.map((o) => o.value);
+};
 let questionIdCounter = 1;
 let optionIdCounter = 1;
 
@@ -116,6 +135,7 @@ const saveTest = async () => {
         shuffle: shuffle.value,
         module: moduleName.value,
         module_description: moduleDescription.value,
+        audiences: audiences.value,
         questions: questions.value.map(q => ({
             question: q.text,
             question_image: q.imageFile,
@@ -133,6 +153,7 @@ const saveTest = async () => {
         questions.value = [];
         moduleName.value = '';
         moduleDescription.value = '';
+        audiences.value = [];
         shuffle.value = false;
       },
       onError: (errors) => {
@@ -199,6 +220,38 @@ const saveTest = async () => {
                 placeholder="Test haqida qisqacha ma'lumot"
                 class="mt-2 block w-full resize-none rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 shadow-sm outline-none transition focus:border-blue-500 dark:focus:border-blue-400 focus:ring-4 focus:ring-blue-500/10"
               ></textarea>
+            </div>
+
+            <!-- Audiences (type) -->
+            <div>
+              <div class="flex items-center justify-between">
+                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">
+                  Kimlar uchun (type) <span class="text-rose-600">*</span>
+                </label>
+                <button
+                  type="button"
+                  @click="toggleAllAudiences"
+                  class="text-sm font-medium text-blue-600 hover:text-blue-700 transition"
+                >
+                  {{ allAudiencesSelected ? 'Bekor qilish' : 'Hammaga' }}
+                </button>
+              </div>
+              <div class="mt-2 flex flex-wrap gap-3">
+                <label
+                  v-for="opt in audienceOptions"
+                  :key="opt.value"
+                  class="flex cursor-pointer items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-2.5 text-sm text-slate-700 dark:text-slate-300 transition hover:border-blue-400"
+                  :class="audiences.includes(opt.value) ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10' : ''"
+                >
+                  <input
+                    type="checkbox"
+                    :value="opt.value"
+                    v-model="audiences"
+                    class="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/20"
+                  />
+                  <span>{{ opt.label }}</span>
+                </label>
+              </div>
             </div>
 
             <!-- Time + Shuffle -->

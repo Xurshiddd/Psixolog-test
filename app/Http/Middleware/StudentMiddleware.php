@@ -15,8 +15,8 @@ class StudentMiddleware
      */
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check() && auth()->user()->role !== 'student') {
-            return redirect()->route('home')->with('error', 'Access denied. Students only area.');
+        if (auth()->check() && ! in_array(auth()->user()->role, ['student', 'employee', 'guest'], true)) {
+            return redirect()->route('home')->with('error', 'Access denied. Test takers only area.');
         }
         return $next($request);
     }

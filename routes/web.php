@@ -6,9 +6,13 @@ use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 use Laravel\Fortify\Features;
 use App\Http\Controllers\HemisAuthController;
+use App\Http\Controllers\GuestRegisterController;
+use App\Http\Controllers\CaptchaController;
 use App\Models\Module;
 use App\Models\Test;
 use App\Http\Controllers\AdminStudentController;
+use App\Http\Controllers\AdminEmployeeController;
+use App\Http\Controllers\AdminGuestController;
 use App\Http\Controllers\Student\ConversationController;
 use App\Http\Controllers\Student\MessageController;
 use App\Http\Controllers\Staff\RequestsController;
@@ -38,6 +42,15 @@ Route::post('dashboard/module-score-report/conclusions', [DashboardController::c
 Route::get('/hemis/redirect', [HemisAuthController::class , 'redirectToHemis'])->name('hemis_redirect');
 Route::get('/hemis/callback', [HemisAuthController::class , 'login'])->name('hemis.callback');
 Route::post('/hemis/login', [HemisAuthController::class, 'passwordLogin'])->middleware('guest')->name('hemis.password-login');
+
+Route::get('/hemis/employee/redirect', [HemisAuthController::class, 'redirectToHemisEmployee'])->name('hemis.employee.redirect');
+Route::get('/hemis/employee/callback', [HemisAuthController::class, 'employeeLogin'])->name('hemis.employee.callback');
+
+Route::middleware('guest')->group(function () {
+    Route::get('/guest/register', [GuestRegisterController::class, 'create'])->name('guest.register');
+    Route::post('/guest/register', [GuestRegisterController::class, 'store'])->name('guest.register.store');
+    Route::get('/guest/captcha', [CaptchaController::class, 'show'])->name('guest.captcha');
+});
 Route::get('/locale/{locale}', function (string $locale) {
     $allowed = ['uz', 'ru'];
     if (!in_array($locale, $allowed, true))
@@ -69,6 +82,25 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::post('/admin/students/{user}/results/{module}/ai-diagnosis', [AdminStudentController::class , 'generateAiDiagnosis'])->name('admin.students.results.ai-diagnosis');
     Route::post('/admin/students/{user}/results/{module}/ai-diagnosis-stream', [AdminStudentController::class , 'streamAiDiagnosis'])->name('admin.students.results.ai-diagnosis-stream');
     Route::delete('/admin/students/{student}/results/{result}', [AdminStudentController::class, 'destroyResult'])->name('admin.students.results.destroy');
+    Route::get('/admin/employees', [AdminEmployeeController::class, 'index'])->name('admin.employees.index');
+    Route::get('/admin/employees/export/excel', [AdminEmployeeController::class, 'exportExcel'])->name('admin.employees.export.excel');
+    Route::get('/admin/employees/{user}', [AdminEmployeeController::class, 'show'])->name('admin.employees.show');
+    Route::post('/admin/employees/{user}/sync-categories', [AdminEmployeeController::class, 'syncCategories'])->name('admin.employees.sync-categories');
+    Route::get('/admin/employees/{user}/results/{module}', [AdminEmployeeController::class, 'showResult'])->name('admin.employees.results.show');
+    Route::post('/admin/employees/{user}/results/{module}/diagnosis', [AdminEmployeeController::class, 'updateDiagnosis'])->name('admin.employees.results.diagnosis');
+    Route::post('/admin/employees/{user}/results/{module}/ai-diagnosis', [AdminEmployeeController::class, 'generateAiDiagnosis'])->name('admin.employees.results.ai-diagnosis');
+    Route::post('/admin/employees/{user}/results/{module}/ai-diagnosis-stream', [AdminEmployeeController::class, 'streamAiDiagnosis'])->name('admin.employees.results.ai-diagnosis-stream');
+
+    Route::get('/admin/guests', [AdminGuestController::class, 'index'])->name('admin.guests.index');
+    Route::get('/admin/guests/export/excel', [AdminGuestController::class, 'exportExcel'])->name('admin.guests.export.excel');
+    Route::get('/admin/guests/{user}', [AdminGuestController::class, 'show'])->name('admin.guests.show');
+    Route::post('/admin/guests/{user}/sync-categories', [AdminGuestController::class, 'syncCategories'])->name('admin.guests.sync-categories');
+    Route::post('/admin/guests/{user}/status', [AdminGuestController::class, 'updateStatus'])->name('admin.guests.status');
+    Route::get('/admin/guests/{user}/results/{module}', [AdminGuestController::class, 'showResult'])->name('admin.guests.results.show');
+    Route::post('/admin/guests/{user}/results/{module}/diagnosis', [AdminGuestController::class, 'updateDiagnosis'])->name('admin.guests.results.diagnosis');
+    Route::post('/admin/guests/{user}/results/{module}/ai-diagnosis', [AdminGuestController::class, 'generateAiDiagnosis'])->name('admin.guests.results.ai-diagnosis');
+    Route::post('/admin/guests/{user}/results/{module}/ai-diagnosis-stream', [AdminGuestController::class, 'streamAiDiagnosis'])->name('admin.guests.results.ai-diagnosis-stream');
+
     Route::resource('result-categories', ResultCategoryController::class);
     Route::resource('categories', CategoryController::class);
     Route::post('/admin/students/{user}/sync-categories', [AdminStudentController::class, 'syncCategories'])->name('admin.students.sync-categories');

@@ -16,6 +16,7 @@ class TestBuildServices
             $module = Module::create([
                 'name' => $data['module'],
                 'description' => $data['module_description'] ?? null,
+                'audiences' => $data['audiences'],
                 'shuffle' => $data['shuffle']
             ]);
             foreach ($data['questions'] as $questionData) {
@@ -54,6 +55,7 @@ class TestBuildServices
             $module->update([
                 'name' => $data['module'],
                 'description' => $data['module_description'] ?? null,
+                'audiences' => $data['audiences'],
                 'shuffle' => $data['shuffle']
             ]);
             $updatedQuestionIds = [];

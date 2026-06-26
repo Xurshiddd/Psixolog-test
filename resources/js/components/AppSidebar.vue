@@ -14,7 +14,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, LayoutGrid, MessageSquare, Users, Activity } from 'lucide-vue-next';
+import { BookOpen, LayoutGrid, MessageSquare, Users, Activity, Briefcase, UserPlus } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -45,6 +45,16 @@ const mainNavItems = computed<NavItem[]>(() => [
         title: 'Talabalar',
         href: '/admin/students',
         icon: Users,
+    },
+    {
+        title: 'Xodimlar',
+        href: '/admin/employees',
+        icon: Briefcase,
+    },
+    {
+        title: 'Ishga qabul qilinmaganlar',
+        href: '/admin/guests',
+        icon: UserPlus,
     },
     {
         title: 'Kategoriyalar',

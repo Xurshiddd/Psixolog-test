@@ -2,8 +2,12 @@
 import AppStudentLayout from '@/layouts/AppStudentLayout.vue';
 import { dashboard } from '@/routes';
 import { type BreadcrumbItem } from '@/types';
-import { Head } from '@inertiajs/vue3';
+import { Head, usePage } from '@inertiajs/vue3';
+import { computed } from 'vue';
 const props = defineProps<{ solvedTestsCount: number; modulesCount: number }>();
+
+const page = usePage();
+const isStudent = computed(() => (page.props.auth as any)?.user?.role === 'student');
 
 const breadcrumbs: BreadcrumbItem[] = [
     {
@@ -100,6 +104,45 @@ const breadcrumbs: BreadcrumbItem[] = [
             </div>
 
             <div
+                v-if="isStudent"
+                class="relative isolate overflow-hidden rounded-[2rem] bg-slate-950 px-6 py-6 text-white shadow-2xl sm:px-8 sm:py-7"
+            >
+                <div
+                    class="absolute top-1/2 -left-10 h-32 w-32 -translate-y-1/2 rounded-full bg-cyan-400/25 blur-3xl"
+                ></div>
+                <div
+                    class="absolute top-0 right-0 h-28 w-28 rounded-full bg-fuchsia-400/20 blur-3xl"
+                ></div>
+                <div
+                    class="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-white/50 to-transparent"
+                ></div>
+
+                <div
+                    class="relative grid gap-3 rounded-2xl border border-cyan-300/30 bg-white/10 p-4 shadow-lg backdrop-blur-sm sm:grid-cols-2 sm:p-5"
+                >
+                    <div class="rounded-2xl border border-white/10 bg-slate-900/70 p-4">
+                        <p class="text-xs font-semibold tracking-[0.25em] text-cyan-300 uppercase">
+                            Login
+                        </p>
+                        <p class="mt-2 text-lg font-bold text-white">HEMIS logini</p>
+                    </div>
+                    <div class="rounded-2xl border border-amber-300/20 bg-amber-400/10 p-4">
+                        <p class="text-xs font-semibold tracking-[0.25em] text-amber-200 uppercase">
+                            Parol
+                        </p>
+                        <p class="mt-2 text-lg font-bold text-white">Passport seria ID</p>
+                        <p class="mt-2 text-sm text-amber-100">
+                            Masalan:
+                            <span class="rounded-full bg-white/10 px-3 py-1 font-mono text-white">
+                                AB4567898
+                            </span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div
+                v-if="isStudent"
                 class="relative overflow-hidden rounded-3xl border border-cyan-200 bg-gradient-to-r from-slate-950 via-sky-950 to-cyan-900 p-6 text-white shadow-xl"
             >
                 <div

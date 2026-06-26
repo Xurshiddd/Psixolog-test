@@ -17,7 +17,7 @@ class UnreadRequestsCountService
             return 0;
         }
 
-        if ($user->role === 'student') {
+        if (in_array($user->role, ['student', 'employee', 'guest'], true)) {
             return (int) Cache::remember(
                 $this->studentCacheKey($user->id),
                 now()->addSeconds(self::CACHE_TTL_SECONDS),

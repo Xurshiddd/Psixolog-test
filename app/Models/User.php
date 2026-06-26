@@ -141,4 +141,14 @@ class User extends Authenticatable
     {
         return $this->hasOne(StudentPassport::class, 'student_id');
     }
+
+    public function employee()
+    {
+        return $this->hasOne(Employee::class);
+    }
+
+    public function guest()
+    {
+        return $this->hasOne(Guest::class);
+    }
 }

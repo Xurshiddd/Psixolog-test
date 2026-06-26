@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Services\HemisEmployeeAuthenticator;
 use App\Services\HemisOAuthClientService;
 use App\Services\HemisPasswordAuthService;
 use App\Services\HemisStudentAuthenticator;
@@ -16,6 +17,7 @@ class HemisAuthController extends Controller
         private HemisOAuthClientService $service,
         private HemisPasswordAuthService $passwordAuthService,
         private HemisStudentAuthenticator $authenticator,
+        private HemisEmployeeAuthenticator $employeeAuthenticator,
     )
     {
     }
@@ -38,6 +40,37 @@ class HemisAuthController extends Controller
 
             $resourceOwner = $this->service->provider()->getResourceOwner($accessToken);
             $user = $this->authenticator->syncFromResourceOwner($resourceOwner->toArray());
+
+            Auth::login($user);
+
+            return redirect()->route('dashboard');
+        } catch (Exception $e) {
+            Log::error($e->getMessage());
+
+            return redirect()->route('home')->withErrors($e->getMessage());
+        }
+    }
+
+    public function redirectToHemisEmployee()
+    {
+        $authorizationUrl = $this->service->employeeProvider()->getAuthorizationUrl();
+        session(['oauth2state_employee' => $this->service->employeeProvider()->getState()]);
+        return redirect()->away($authorizationUrl);
+    }
+
+    public function employeeLogin(Request $request)
+    {
+        try {
+            if ($request->state !== session('oauth2state_employee')) {
+                return abort(403, 'Invalid state');
+            }
+
+            $accessToken = $this->service->employeeProvider()->getAccessToken('authorization_code', [
+                'code' => $request->code,
+            ]);
+
+            $resourceOwner = $this->service->employeeProvider()->getResourceOwner($accessToken);
+            $user = $this->employeeAuthenticator->syncFromResourceOwner($resourceOwner->toArray());
 
             Auth::login($user);
 

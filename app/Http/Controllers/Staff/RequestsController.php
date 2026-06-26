@@ -30,7 +30,7 @@ class RequestsController extends Controller
 
         $students = User::query()
             ->select('id', 'name', 'email')
-            ->students()
+            ->whereIn('role', ['student', 'employee', 'guest'])
             ->when($q !== '', function ($qq) use ($q) {
                 $qq->where(fn ($w) => $w->where('name', 'like', "%{$q}%")->orWhere('email', 'like', "%{$q}%"));
             })
@@ -52,7 +52,7 @@ class RequestsController extends Controller
         $messages = collect();
 
         if ($activeStudentId) {
-            $activeStudent = User::query()->students()->whereKey($activeStudentId)->first(['id', 'name', 'email']);
+            $activeStudent = User::query()->whereIn('role', ['student', 'employee', 'guest'])->whereKey($activeStudentId)->first(['id', 'name', 'email']);
 
             if ($activeStudent) {
                 $activeConversation = Conversation::query()

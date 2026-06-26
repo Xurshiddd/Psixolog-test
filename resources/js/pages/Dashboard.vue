@@ -48,6 +48,26 @@ interface StudentPopulationStats {
     solvedAllModulesPercentage: number;
 }
 
+interface EmployeePopulationStats {
+    totalEmployees: number;
+    platformEmployeesCount: number;
+    loggedInEmployeesCount: number;
+    solvedAtLeastOneCount: number;
+    solvedAllModulesCount: number;
+    loginPercentage: number;
+    solvedAtLeastOnePercentage: number;
+    solvedAllModulesPercentage: number;
+}
+
+interface GuestPopulationStats {
+    platformGuestsCount: number;
+    loggedInGuestsCount: number;
+    solvedAtLeastOneCount: number;
+    solvedAllModulesCount: number;
+    solvedAtLeastOnePercentage: number;
+    solvedAllModulesPercentage: number;
+}
+
 interface DashboardModule {
     id: number;
     name: string;
@@ -86,6 +106,8 @@ const props = defineProps<{
     categoryStudentStats?: CategoryStudentStatItem[];
     faculityStudentStats?: FaculityStudentStatItem[];
     studentPopulationStats: StudentPopulationStats;
+    employeePopulationStats: EmployeePopulationStats;
+    guestPopulationStats: GuestPopulationStats;
     reportFilters: {
         module_id?: number | null;
         min_score?: number | null;
@@ -122,6 +144,50 @@ const completionStats = [
         tone: 'from-amber-500 to-orange-500',
     },
 ];
+
+const employeeCompletionStats = computed(() => [
+    {
+        title: 'Platformaga kirgan hodimlar',
+        count: props.employeePopulationStats.platformEmployeesCount,
+        percentage: props.employeePopulationStats.loginPercentage,
+        tone: 'from-blue-500 to-cyan-500',
+    },
+    {
+        title: 'Kamida 1 modul yechgan hodimlar',
+        count: props.employeePopulationStats.solvedAtLeastOneCount,
+        percentage: props.employeePopulationStats.solvedAtLeastOnePercentage,
+        tone: 'from-emerald-500 to-teal-500',
+    },
+    {
+        title: 'Barcha modullarni yechgan hodimlar',
+        count: props.employeePopulationStats.solvedAllModulesCount,
+        percentage: props.employeePopulationStats.solvedAllModulesPercentage,
+        tone: 'from-amber-500 to-orange-500',
+    },
+]);
+
+const guestSummaryStats = computed(() => [
+    {
+        title: 'Ro\'yxatdan o\'tgan nomzodlar',
+        count: props.guestPopulationStats.platformGuestsCount,
+        tone: 'from-violet-500 to-purple-500',
+    },
+    {
+        title: 'Platformaga kirgan nomzodlar',
+        count: props.guestPopulationStats.loggedInGuestsCount,
+        tone: 'from-blue-500 to-cyan-500',
+    },
+    {
+        title: 'Kamida 1 modul yechganlar',
+        count: props.guestPopulationStats.solvedAtLeastOneCount,
+        tone: 'from-emerald-500 to-teal-500',
+    },
+    {
+        title: 'Barcha modullarni yechganlar',
+        count: props.guestPopulationStats.solvedAllModulesCount,
+        tone: 'from-amber-500 to-orange-500',
+    },
+]);
 
 const selectedModuleId = ref(props.reportFilters.module_id ? String(props.reportFilters.module_id) : '');
 const minScore = ref(
@@ -291,6 +357,47 @@ const submitConclusionUpdate = () => {
                             </p>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- Xodimlar -->
+            <div class="flex items-center gap-3">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Xodimlar</h2>
+                <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-medium text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                    HEMIS jami: {{ props.employeePopulationStats.totalEmployees }}
+                </span>
+            </div>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+                <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">Platformadagi hodimlar</p>
+                    <h3 class="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{{ props.employeePopulationStats.platformEmployeesCount }}</h3>
+                    <p class="mt-1 text-xs text-slate-400">Kirganlar: {{ props.employeePopulationStats.loggedInEmployeesCount }}</p>
+                </div>
+                <div
+                    v-for="item in employeeCompletionStats"
+                    :key="item.title"
+                    class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+                >
+                    <div :class="`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${item.tone}`" />
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ item.title }}</p>
+                    <h3 class="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{{ item.percentage }}%</h3>
+                    <p class="mt-1 text-xs text-slate-400">{{ item.count }} ta hodim</p>
+                </div>
+            </div>
+
+            <!-- Ishga qabul qilinmaganlar -->
+            <div class="flex items-center gap-3">
+                <h2 class="text-lg font-semibold text-slate-900 dark:text-slate-100">Ishga qabul qilinmaganlar</h2>
+            </div>
+            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
+                <div
+                    v-for="item in guestSummaryStats"
+                    :key="item.title"
+                    class="relative overflow-hidden rounded-2xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800"
+                >
+                    <div :class="`absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r ${item.tone}`" />
+                    <p class="text-sm font-medium text-slate-500 dark:text-slate-400">{{ item.title }}</p>
+                    <h3 class="mt-2 text-2xl font-bold text-slate-900 dark:text-slate-100">{{ item.count }}</h3>
                 </div>
             </div>
 
