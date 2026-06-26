@@ -15,6 +15,7 @@ import {
 const props = defineProps<{
     employee: any;
     results: any[];
+    guestResults?: any[];
     allCategories: any[];
     filters: Record<string, any>;
     page: number;
@@ -126,6 +127,38 @@ const syncCategories = () => {
                             </tr>
                             <tr v-if="results.length === 0">
                                 <td colspan="4" class="p-4 align-middle text-center text-muted-foreground">Test natijalari yo'q.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Ishga qabul qilinmagan vaqtdagi test natijalari -->
+            <div v-if="guestResults && guestResults.length" class="rounded-md border bg-card text-card-foreground shadow-sm">
+                <div class="px-6 py-4 border-b">
+                    <h2 class="text-lg font-semibold">Ishga qabul qilinmagan vaqtdagi test natijalari</h2>
+                    <p class="text-sm text-muted-foreground mt-0.5">Bu natijalar foydalanuvchi nomzod (guest) bo'lgan davrda topshirilgan.</p>
+                </div>
+                <div class="relative w-full overflow-auto">
+                    <table class="w-full caption-bottom text-sm">
+                        <thead class="[&_tr]:border-b">
+                            <tr class="border-b">
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Modul</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Psixolog xulosasi</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Avtomatik xulosa</th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Amallar</th>
+                            </tr>
+                        </thead>
+                        <tbody class="[&_tr:last-child]:border-0">
+                            <tr v-for="result in guestResults" :key="`g-${result.guest_user_id}-${result.id}`" class="border-b">
+                                <td class="p-4 align-middle font-medium">{{ result.name }}</td>
+                                <td class="p-4 align-middle whitespace-pre-wrap break-words max-w-xs">{{ result.diagnosis || '-' }}</td>
+                                <td class="p-4 align-middle whitespace-pre-wrap break-words max-w-xs">{{ result.result_real || '-' }}</td>
+                                <td class="p-4 align-middle">
+                                    <Link :href="result.detail_url">
+                                        <Button variant="outline" size="sm">Batafsil / Xulosa</Button>
+                                    </Link>
+                                </td>
                             </tr>
                         </tbody>
                     </table>

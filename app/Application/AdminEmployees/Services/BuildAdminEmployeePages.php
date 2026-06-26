@@ -40,15 +40,42 @@ class BuildAdminEmployeePages
      */
     public function showProps(User $user, AdminEmployeeFilters $filters): array
     {
-        $user->load(['employee', 'usersTestsResults', 'usersCategory']);
+        $user->load([
+            'employee',
+            'usersTestsResults',
+            'usersCategory',
+            'mergedGuests.usersTestsResults',
+        ]);
 
         return [
             'employee' => $user,
             'results' => $user->usersTestsResults,
+            'guestResults' => $this->buildGuestResults($user),
             'allCategories' => $this->lookupCacheService->categories(),
             'filters' => $filters->toArray(),
             'page' => $filters->page,
         ];
+    }
+
+    /**
+     * Birlashtirilgan guest(lar)ning "ishga qabul qilinmagan vaqtdagi"
+     * test natijalari — alohida bo'lim uchun tekis ro'yxat.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private function buildGuestResults(User $user): array
+    {
+        return $user->mergedGuests
+            ->flatMap(fn (User $guest) => $guest->usersTestsResults->map(fn ($module): array => [
+                'id' => (int) $module->id,
+                'name' => (string) $module->name,
+                'diagnosis' => $module->pivot->diagnosis,
+                'result_real' => $module->pivot->result_real,
+                'guest_user_id' => (int) $guest->id,
+                'detail_url' => "/admin/guests/{$guest->id}/results/{$module->id}",
+            ]))
+            ->values()
+            ->all();
     }
 
     /**

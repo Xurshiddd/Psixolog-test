@@ -125,6 +125,32 @@ class AdminGuestController extends Controller
         ]);
     }
 
+    /**
+     * Guest'ni allaqachon bazada mavjud xodim profiliga birlashtiradi:
+     * guest yozuvi ro'yxatdan yo'qoladi, test natijalari esa o'sha xodim
+     * profilida "ishga qabul qilinmagan vaqtdagi natijalar" sifatida ko'rinadi.
+     */
+    public function mergeIntoEmployee(Request $request, User $user)
+    {
+        abort_unless($user->role === 'guest', 404);
+
+        $data = $request->validate([
+            'target_user_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        $target = User::query()->findOrFail($data['target_user_id']);
+        abort_unless($target->role === 'employee', 422, 'Tanlangan foydalanuvchi hodim emas.');
+
+        DB::transaction(function () use ($user, $target): void {
+            $user->guest()->update(['application_status' => 'accepted']);
+            $user->update(['merged_into_user_id' => $target->id]);
+        });
+
+        return redirect()
+            ->route('admin.employees.show', $target->id)
+            ->with('success', 'Guest mavjud hodim profiliga birlashtirildi. Test natijalari o\'sha profilda ko\'rinadi.');
+    }
+
     public function updateStatus(Request $request, User $user)
     {
         abort_unless($user->role === 'guest', 404);

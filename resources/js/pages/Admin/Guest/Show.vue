@@ -102,8 +102,17 @@ const searchEmployee = async () => {
     }
 };
 
-const goToProfile = (url: string) => {
-    router.visit(url);
+const mergeIntoEmployee = () => {
+    if (!localMatch.value) return;
+    statusUpdating.value = true;
+    router.post(
+        `/admin/guests/${props.guest.id}/merge`,
+        { target_user_id: localMatch.value.user_id },
+        {
+            onSuccess: () => { isAcceptModalOpen.value = false; },
+            onFinish: () => { statusUpdating.value = false; },
+        },
+    );
 };
 
 const confirmAccept = () => {
@@ -208,7 +217,8 @@ const confirmAccept = () => {
                         <!-- O'z bazamizda topildi -->
                         <div v-if="localMatch" class="rounded-md border bg-amber-50 p-4">
                             <p class="text-sm text-amber-800 mb-2">
-                                Bu HEMIS ID bo'yicha hodim allaqachon bazada mavjud:
+                                Bu HEMIS ID bo'yicha hodim allaqachon bazada mavjud. Birlashtirilsa, bu nomzod
+                                ro'yxatdan o'chiriladi va test natijalari o'sha hodim profilida ko'rinadi.
                             </p>
                             <div class="flex items-center gap-3 mb-3">
                                 <div v-if="localMatch.picture" class="h-12 w-12 rounded-full overflow-hidden bg-gray-100">
@@ -216,9 +226,19 @@ const confirmAccept = () => {
                                 </div>
                                 <p class="font-medium">{{ localMatch.name }}</p>
                             </div>
-                            <Button class="bg-indigo-600 text-white hover:bg-indigo-700" size="sm" @click="goToProfile(localMatch.profile_url)">
-                                Profilga o'tish
-                            </Button>
+                            <div class="flex flex-wrap gap-2">
+                                <Button
+                                    class="bg-indigo-600 text-white hover:bg-indigo-700"
+                                    size="sm"
+                                    :disabled="statusUpdating"
+                                    @click="mergeIntoEmployee"
+                                >
+                                    {{ statusUpdating ? 'Birlashtirilmoqda...' : 'Mavjud profilga birlashtirish' }}
+                                </Button>
+                                <a :href="localMatch.profile_url">
+                                    <Button variant="outline" size="sm">Profilni ko'rish</Button>
+                                </a>
+                            </div>
                         </div>
 
                         <!-- HEMIS'dan topildi -->

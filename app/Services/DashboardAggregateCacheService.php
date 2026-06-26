@@ -78,7 +78,9 @@ class DashboardAggregateCacheService
                     ->orWhereNull('modules.audiences');
             });
 
-        $usersQuery = User::query()->where('role', $role);
+        $usersQuery = User::query()
+            ->where('role', $role)
+            ->whereNull('merged_into_user_id');
         $usersCount = (clone $usersQuery)->count();
         $solvedAtLeastOne = (clone $usersQuery)
             ->whereHas('usersTestsResults', $audienceConstraint)

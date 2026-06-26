@@ -12,6 +12,7 @@ class AdminGuestQueryFactory
     {
         $query = User::query()
             ->where('role', 'guest')
+            ->whereNull('merged_into_user_id')
             ->select([
                 'id',
                 'name',
@@ -36,6 +37,7 @@ class AdminGuestQueryFactory
     {
         $query = User::query()
             ->where('role', 'guest')
+            ->whereNull('merged_into_user_id')
             ->select([
                 'id',
                 'name',

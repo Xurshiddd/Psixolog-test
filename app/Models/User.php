@@ -25,6 +25,7 @@ class User extends Authenticatable
         'name',
         'login',
         'role',
+        'merged_into_user_id',
         'email',
         'phone',
         'picture',
@@ -125,6 +126,20 @@ class User extends Authenticatable
     public function usersCategory()
     {
         return $this->belongsToMany(Category::class, 'users_category', 'user_id', 'category_id');
+    }
+
+    /**
+     * Ushbu foydalanuvchiga (xodimga) birlashtirilgan guest yozuvlari.
+     * Ishga qabul qilinmagan vaqtdagi test natijalari shular orqali ko'rinadi.
+     */
+    public function mergedGuests()
+    {
+        return $this->hasMany(User::class, 'merged_into_user_id');
+    }
+
+    public function mergedInto()
+    {
+        return $this->belongsTo(User::class, 'merged_into_user_id');
     }
     public function conversations()
     {
