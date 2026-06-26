@@ -28,16 +28,12 @@ class EmployeePopulationStatsService
             }
 
             try {
-                // Token'ni ham Bearer header, ham `access-token` query (Yii2)
-                // sifatida yuboramiz — qaysi auth ishlasa, o'sha qabul qilinadi.
+                // HEMIS bu endpointni POST orqali qabul qiladi (Postman'da
+                // ham POST ishlaydi). `type` query parametr sifatida yuboriladi.
                 $response = Http::acceptJson()
                     ->withToken((string) $token)
                     ->timeout(20)
-                    ->get($baseUrl.'/data/employee-list', [
-                        'type' => 'all',
-                        'page' => 1,
-                        'access-token' => $token,
-                    ]);
+                    ->post($baseUrl.'/data/employee-list?type=all&page=1');
 
                 if ($response->failed()) {
                     Log::warning('HEMIS employee population total request failed', [
