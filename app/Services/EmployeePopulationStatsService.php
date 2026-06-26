@@ -18,23 +18,31 @@ class EmployeePopulationStatsService
     public function getTotalEmployees(): int
     {
         return Cache::remember(self::CACHE_KEY, now()->endOfDay(), function (): int {
-            try {
-                $baseUrl = rtrim((string) config('services.hemis.api_base_url'), '/');
-                $token = config('services.hemis.token');
+            $baseUrl = rtrim((string) config('services.hemis.api_base_url'), '/');
+            $token = config('services.hemis.token');
 
+            if (blank($token)) {
+                Log::warning('HEMIS employee population total: HEMIS_TOKEN sozlanmagan.');
+
+                return 0;
+            }
+
+            try {
                 $response = Http::acceptJson()
-                    ->when($token, fn ($request) => $request->withToken((string) $token))
+                    ->withToken((string) $token)
                     ->timeout(20)
                     ->get($baseUrl.'/data/employee-list', [
                         'type' => 'all',
                         'page' => 1,
-                        'limit' => 1,
                     ])
                     ->throw();
 
-                return (int) $response->json('data.pagination.totalCount', 0);
+                return (int) ($response->json('data.pagination.totalCount')
+                    ?? count($response->json('data.items', [])));
             } catch (Throwable $e) {
                 Log::warning('HEMIS employee population total request failed', [
+                    'url' => $baseUrl.'/data/employee-list',
+                    'status' => method_exists($e, 'response') ? optional($e->response)->status() : null,
                     'message' => $e->getMessage(),
                 ]);
 
