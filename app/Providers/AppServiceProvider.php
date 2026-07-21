@@ -19,10 +19,13 @@ use App\Services\ModuleScoreRangeReportService;
 use App\Services\ResultCategoryStatsService;
 use App\Services\UnreadRequestsCountService;
 use Carbon\CarbonImmutable;
+use Illuminate\Auth\Events\Failed;
+use Illuminate\Auth\Events\Lockout;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Validation\Rules\Password;
@@ -78,6 +81,34 @@ class AppServiceProvider extends ServiceProvider
                     'role' => $event->user->role,
                 ])
                 ->log('User logged in');
+
+            Log::info('Auth: login muvaffaqiyatli', [
+                'user_id' => $event->user->getAuthIdentifier(),
+                'role' => $event->user->role,
+                'session_id' => session()->getId(),
+                'ip' => request()->ip(),
+            ]);
+        });
+
+        // Muvaffaqiyatsiz login Laravel tomonidan loglanmaydi: AuthenticationException
+        // va ValidationException Handler'ning $internalDontReport ro'yxatida.
+        // Shu sababli quyidagi hodisalarni o'zimiz yozamiz.
+        Event::listen(Failed::class, function (Failed $event): void {
+            Log::warning('Auth: login muvaffaqiyatsiz', [
+                'guard' => $event->guard,
+                // Foydalanuvchi topildi-yu, parol mos kelmadi -> user_id to'ladi.
+                // null bo'lsa - bunday email umuman topilmadi.
+                'user_id' => $event->user?->getAuthIdentifier(),
+                'email' => $event->credentials['email'] ?? null,
+                'ip' => request()->ip(),
+            ]);
+        });
+
+        Event::listen(Lockout::class, function (Lockout $event): void {
+            Log::warning('Auth: throttle (juda ko\'p urinish)', [
+                'email' => $event->request->input('email'),
+                'ip' => $event->request->ip(),
+            ]);
         });
     }
 
