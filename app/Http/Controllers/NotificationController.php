@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Models\User;
 
 class NotificationController extends Controller
 {
@@ -10,6 +10,7 @@ class NotificationController extends Controller
     {
         /** @var \App\Models\User $user */
         $user = auth()->user();
+
         return response()->json([
             'notifications' => $user->unreadNotifications,
         ]);
@@ -21,22 +22,36 @@ class NotificationController extends Controller
         $notification = $user->notifications()->findOrFail($id);
         $notification->markAsRead();
 
-        $studentId = $notification->data['student_id'] ?? null;
+        $targetId = $notification->data['student_id'] ?? null;
         $moduleId = $notification->data['module_id'] ?? null;
 
-        if ($studentId && $moduleId) {
-            return redirect()->route('admin.students.results.show', ['user' => $studentId, 'module' => $moduleId]);
-        } elseif ($studentId) {
-            return redirect()->route('admin.students.show', ['user' => $studentId]);
+        if (! $targetId) {
+            return redirect()->back();
         }
 
-        return redirect()->back();
+        // Foydalanuvchi roliga qarab to'g'ri bo'limga yo'naltiramiz.
+        // Rolni bazadan olamiz — eski bildirishnomalarda `role` bo'lmasligi mumkin.
+        $role = User::query()->whereKey($targetId)->value('role')
+            ?? ($notification->data['role'] ?? 'student');
+
+        $prefix = match ($role) {
+            'employee' => 'admin.employees',
+            'guest' => 'admin.guests',
+            default => 'admin.students',
+        };
+
+        if ($moduleId) {
+            return redirect()->route("{$prefix}.results.show", ['user' => $targetId, 'module' => $moduleId]);
+        }
+
+        return redirect()->route("{$prefix}.show", ['user' => $targetId]);
     }
 
     public function markAllAsRead()
     {
         $user = auth()->user();
         $user->unreadNotifications->markAsRead();
+
         return redirect()->back();
     }
 }

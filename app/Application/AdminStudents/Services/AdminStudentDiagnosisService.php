@@ -182,17 +182,32 @@ class AdminStudentDiagnosisService
         return 'AI xulosa olishda xatolik: '.Str::limit($e->getMessage(), 250);
     }
 
+    /**
+     * Foydalanuvchi roliga mos atama: Talaba / Xodim / Nomzod.
+     */
+    private function subjectLabel(User $user): string
+    {
+        return match ($user->role) {
+            'employee' => 'Xodim',
+            'guest' => 'Nomzod',
+            default => 'Talaba',
+        };
+    }
+
     private function buildPrompt(User $user, Module $module, Collection $answers, Module $result): string
     {
+        $subject = $this->subjectLabel($user);
+
         $lines = [
             'AI uchun diagnostika konteksti:',
-            "Talaba: {$user->name}",
+            "{$subject}: {$user->name}",
             "Modul nomi: {$module->name}",
             'Modul tavsifi: '.($module->description ?: 'Mavjud emas'),
             'Tizimdagi avtomatik xulosa: '.($result->pivot->result_real ?: 'Mavjud emas'),
             'Psixologning oldingi xulosasi: '.($result->pivot->diagnosis ?: 'Mavjud emas'),
             '',
             'Muhim eslatma:',
+            "- Bu shaxs — {$subject}. Xulosada uni faqat \"{$subject}\" deb atang, boshqa atama ishlatmang.",
             '- Har bir savolni modul tavsifi bilan birga tahlil qiling.',
             '- Tanlangan va tanlanmagan javoblarning ikkalasini ham hisobga oling.',
             "- Faqat berilgan ma'lumotga tayangan holda xulosa yozing.",
@@ -212,7 +227,7 @@ class AdminStudentDiagnosisService
 
             if ($test->type === 'text') {
                 $answer = trim((string) ($testAnswers->first()?->answer ?? 'Javob berilmagan'));
-                $lines[] = "Talabaning yozma javobi: {$answer}";
+                $lines[] = "{$subject}ning yozma javobi: {$answer}";
                 $lines[] = '';
 
                 continue;
@@ -266,7 +281,7 @@ class AdminStudentDiagnosisService
         }
 
         $lines[] = 'Vazifa:';
-        $lines[] = 'Talabaning psixologik holati haqida professional, ehtiyotkor va amaliy xulosa yozing.';
+        $lines[] = "{$subject}ning psixologik holati haqida professional, ehtiyotkor va amaliy xulosa yozing.";
         $lines[] = 'Xulosani yozishda modul nomi, modul tavsifi, har bir savol va tanlangan/tanlanmagan barcha javoblardan foydalaning.';
         $lines[] = "Natijani faqat quyidagi 2 bo'limda yozing:";
         $lines[] = "1. E'tibor talab qiladigan jihatlar.";
