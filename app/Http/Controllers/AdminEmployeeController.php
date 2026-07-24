@@ -12,8 +12,10 @@ use App\Http\Requests\AdminEmployeeFilterRequest;
 use App\Http\Requests\SyncStudentCategoriesRequest;
 use App\Http\Requests\UpdateStudentDiagnosisRequest;
 use App\Models\User;
+use App\Services\HemisEmployeeSyncService;
 use Illuminate\Http\Response;
 use Inertia\Inertia;
+use Throwable;
 
 class AdminEmployeeController extends Controller
 {
@@ -24,6 +26,24 @@ class AdminEmployeeController extends Controller
         private BuildAdminStudentPages $buildAdminStudentPages,
         private AdminStudentDiagnosisService $adminStudentDiagnosisService,
     ) {}
+
+    /**
+     * HEMIS'dagi barcha hodimlarni platformaga sinxronlaydi. Bu HEMIS orqali
+     * kira olmaydigan hodimlarga F.I.SH bo'yicha qidirib kirish imkonini beradi.
+     */
+    public function sync(HemisEmployeeSyncService $syncService)
+    {
+        try {
+            $result = $syncService->syncAll();
+        } catch (Throwable $e) {
+            return redirect()->back()->with('error', 'Sinxronlash xatosi: '.$e->getMessage());
+        }
+
+        return redirect()->back()->with(
+            'success',
+            "Sinxronlash yakunlandi: {$result['total']} ta hodim ({$result['created']} ta yangi, {$result['updated']} ta yangilandi)."
+        );
+    }
 
     public function index(AdminEmployeeFilterRequest $request)
     {

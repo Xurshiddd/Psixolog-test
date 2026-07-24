@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Head, Link, router } from '@inertiajs/vue3';
+import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 import {
     Dialog,
     DialogContent,
@@ -45,7 +45,13 @@ const employeeTypeFilter = ref<string | null>(props.filters.employee_type || nul
 const testStatusFilter = ref<string | null>(props.filters.test_status || null);
 const categoryFilter = ref<string | null>(props.filters.category_id || null);
 
-const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString();
+const formatDate = (dateString: string) => {
+    const d = new Date(dateString);
+    if (isNaN(d.getTime())) return dateString;
+    const dd = String(d.getDate()).padStart(2, '0');
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    return `${dd}/${mm}/${d.getFullYear()}`;
+};
 
 const getFilterParams = () => ({
     search: searchQuery.value,
@@ -93,14 +99,54 @@ const getEmployeeLink = (employeeId: number) => {
     const queryString = params.toString();
     return `/admin/employees/${employeeId}${queryString ? '?' + queryString : ''}`;
 };
+
+const page = usePage<any>();
+const isAdmin = computed(() => page.props.auth?.user?.role === 'admin');
+const flash = computed(() => page.props.flash ?? {});
+
+const syncing = ref(false);
+
+const syncEmployees = () => {
+    if (syncing.value) return;
+    if (!window.confirm("HEMIS'dagi barcha xodimlar sinxronlanadi. Bu bir necha daqiqa olishi mumkin. Davom etilsinmi?")) {
+        return;
+    }
+    router.post('/admin/employees/sync', {}, {
+        preserveScroll: true,
+        onStart: () => (syncing.value = true),
+        onFinish: () => (syncing.value = false),
+    });
+};
 </script>
 
 <template>
     <Head title="Xodimlar" />
     <AppLayout :breadcrumbs="breadcrumbs">
         <div class="flex h-full flex-1 flex-col gap-4 rounded-xl p-2 sm:p-4">
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <h1 class="text-xl sm:text-2xl font-bold tracking-tight">Xodimlar</h1>
+                <Button
+                    v-if="isAdmin"
+                    @click="syncEmployees"
+                    :disabled="syncing"
+                    class="w-full sm:w-auto"
+                >
+                    <span v-if="syncing">⏳ Sinxronlanmoqda...</span>
+                    <span v-else>🔄 HEMISdan sinxronlash</span>
+                </Button>
+            </div>
+
+            <div
+                v-if="flash.success"
+                class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+            >
+                {{ flash.success }}
+            </div>
+            <div
+                v-if="flash.error"
+                class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            >
+                {{ flash.error }}
             </div>
 
             <!-- Filter Section -->

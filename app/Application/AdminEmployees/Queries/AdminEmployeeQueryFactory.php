@@ -58,7 +58,7 @@ class AdminEmployeeQueryFactory
         if ($filters->search !== null) {
             $search = $filters->search;
             $query->where(function (Builder $builder) use ($search): void {
-                $builder->where('name', 'like', "%{$search}%")
+                $builder->whereRaw('LOWER(name) LIKE ?', ['%'.mb_strtolower($search).'%'])
                     ->orWhere('login', 'like', "%{$search}%")
                     ->orWhereHas('employee', function (Builder $sub) use ($search): void {
                         $sub->where('employee_id_number', 'like', "%{$search}%");

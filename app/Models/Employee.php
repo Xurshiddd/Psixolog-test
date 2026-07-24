@@ -16,6 +16,7 @@ class Employee extends Model
         'department_name',
         'image',
         'synced_at',
+        'login_activated_at',
     ];
 
     protected function casts(): array
@@ -23,6 +24,7 @@ class Employee extends Model
         return [
             'staff_position' => 'array',
             'synced_at' => 'datetime',
+            'login_activated_at' => 'datetime',
         ];
     }
 
