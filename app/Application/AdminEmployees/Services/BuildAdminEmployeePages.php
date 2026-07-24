@@ -4,9 +4,11 @@ namespace App\Application\AdminEmployees\Services;
 
 use App\Application\AdminEmployees\Data\AdminEmployeeFilters;
 use App\Application\AdminEmployees\Queries\AdminEmployeeQueryFactory;
+use App\Jobs\SyncHemisEmployeesJob;
 use App\Models\Employee;
 use App\Models\User;
 use App\Services\LookupCacheService;
+use Illuminate\Support\Facades\Cache;
 
 class BuildAdminEmployeePages
 {
@@ -32,6 +34,7 @@ class BuildAdminEmployeePages
             'employeeTypes' => $this->distinctValues('employee_type_name'),
             'categories' => $this->lookupCacheService->categories(),
             'filters' => $filters->toArray(),
+            'employeeSync' => Cache::get(SyncHemisEmployeesJob::CACHE_KEY) ?? ['status' => 'idle'],
         ];
     }
 

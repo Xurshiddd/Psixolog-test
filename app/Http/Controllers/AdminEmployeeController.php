@@ -11,11 +11,12 @@ use App\Application\AdminStudents\Services\BuildAdminStudentPages;
 use App\Http\Requests\AdminEmployeeFilterRequest;
 use App\Http\Requests\SyncStudentCategoriesRequest;
 use App\Http\Requests\UpdateStudentDiagnosisRequest;
+use App\Jobs\SyncHemisEmployeesJob;
 use App\Models\User;
-use App\Services\HemisEmployeeSyncService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
-use Throwable;
 
 class AdminEmployeeController extends Controller
 {
@@ -30,19 +31,37 @@ class AdminEmployeeController extends Controller
     /**
      * HEMIS'dagi barcha hodimlarni platformaga sinxronlaydi. Bu HEMIS orqali
      * kira olmaydigan hodimlarga F.I.SH bo'yicha qidirib kirish imkonini beradi.
+     *
+     * Ko'p vaqt olishi mumkinligi uchun javob yuborilgandan keyin (fon rejimida)
+     * ishlaydi — so'rov timeout bo'lmaydi. Muqobil: `php artisan hemis:sync-employees`.
      */
-    public function sync(HemisEmployeeSyncService $syncService)
+    public function sync()
     {
-        try {
-            $result = $syncService->syncAll();
-        } catch (Throwable $e) {
-            return redirect()->back()->with('error', 'Sinxronlash xatosi: '.$e->getMessage());
+        $current = Cache::get(SyncHemisEmployeesJob::CACHE_KEY);
+
+        if (is_array($current) && ($current['status'] ?? null) === 'running') {
+            return redirect()->back()->with('error', 'Sinxronlash allaqachon ishlamoqda. Iltimos, tugashini kuting.');
         }
+
+        Cache::put(SyncHemisEmployeesJob::CACHE_KEY, [
+            'status' => 'running',
+            'started_at' => now()->toDateTimeString(),
+        ], now()->addHours(2));
+
+        SyncHemisEmployeesJob::dispatchAfterResponse();
 
         return redirect()->back()->with(
             'success',
-            "Sinxronlash yakunlandi: {$result['total']} ta hodim ({$result['created']} ta yangi, {$result['updated']} ta yangilandi)."
+            'Sinxronlash boshlandi. U fon rejimida davom etadi — holati shu sahifada ko\'rinadi.'
         );
+    }
+
+    /**
+     * Sinxronlash holatini JSON qaytaradi (UI polling uchun).
+     */
+    public function syncStatus(): JsonResponse
+    {
+        return response()->json(Cache::get(SyncHemisEmployeesJob::CACHE_KEY) ?? ['status' => 'idle']);
     }
 
     public function index(AdminEmployeeFilterRequest $request)

@@ -94,6 +94,7 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::delete('/admin/students/{student}/results/{result}', [AdminStudentController::class, 'destroyResult'])->name('admin.students.results.destroy');
     Route::get('/admin/employees', [AdminEmployeeController::class, 'index'])->name('admin.employees.index');
     Route::post('/admin/employees/sync', [AdminEmployeeController::class, 'sync'])->middleware('admin')->name('admin.employees.sync');
+    Route::get('/admin/employees/sync/status', [AdminEmployeeController::class, 'syncStatus'])->middleware('admin')->name('admin.employees.sync-status');
     Route::get('/admin/employees/export/excel', [AdminEmployeeController::class, 'exportExcel'])->name('admin.employees.export.excel');
     Route::get('/admin/employees/{user}', [AdminEmployeeController::class, 'show'])->name('admin.employees.show');
     Route::post('/admin/employees/{user}/sync-categories', [AdminEmployeeController::class, 'syncCategories'])->name('admin.employees.sync-categories');

@@ -2,7 +2,7 @@
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import { type BreadcrumbItem } from '@/types';
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import {
     Dialog,
     DialogContent,
@@ -33,6 +33,15 @@ const props = defineProps<{
         employee_type?: string | null;
         test_status?: string | null;
         category_id?: string | null;
+    };
+    employeeSync?: {
+        status: string;
+        started_at?: string;
+        finished_at?: string;
+        total?: number;
+        created?: number;
+        updated?: number;
+        message?: string;
     };
 }>();
 
@@ -104,19 +113,66 @@ const page = usePage<any>();
 const isAdmin = computed(() => page.props.auth?.user?.role === 'admin');
 const flash = computed(() => page.props.flash ?? {});
 
-const syncing = ref(false);
+const syncState = ref(props.employeeSync ?? { status: 'idle' });
+const syncing = computed(() => syncState.value?.status === 'running');
+let syncPoll: ReturnType<typeof setInterval> | null = null;
+
+const stopPolling = () => {
+    if (syncPoll !== null) {
+        clearInterval(syncPoll);
+        syncPoll = null;
+    }
+};
+
+const pollSyncStatus = async () => {
+    try {
+        const res = await fetch('/admin/employees/sync/status', {
+            headers: { Accept: 'application/json' },
+        });
+        const data = await res.json();
+        const wasRunning = syncState.value?.status === 'running';
+        syncState.value = data;
+
+        if (data.status !== 'running') {
+            stopPolling();
+            // Tugagach ro'yxatni yangilaymiz.
+            if (wasRunning) {
+                router.reload({
+                    only: ['employees', 'departments', 'employeeTypes', 'employeeSync'],
+                });
+            }
+        }
+    } catch (e) {
+        // tarmoq xatosi — keyingi urinishda qayta tekshiramiz
+    }
+};
+
+const startPolling = () => {
+    stopPolling();
+    syncPoll = setInterval(pollSyncStatus, 4000);
+};
 
 const syncEmployees = () => {
     if (syncing.value) return;
-    if (!window.confirm("HEMIS'dagi barcha xodimlar sinxronlanadi. Bu bir necha daqiqa olishi mumkin. Davom etilsinmi?")) {
+    if (!window.confirm("HEMIS'dagi barcha xodimlar sinxronlanadi. Bu fon rejimida ishlaydi va bir necha daqiqa olishi mumkin. Davom etilsinmi?")) {
         return;
     }
     router.post('/admin/employees/sync', {}, {
         preserveScroll: true,
-        onStart: () => (syncing.value = true),
-        onFinish: () => (syncing.value = false),
+        onSuccess: () => {
+            syncState.value = { status: 'running', started_at: new Date().toISOString() };
+            startPolling();
+        },
     });
 };
+
+onMounted(() => {
+    if (syncState.value?.status === 'running') {
+        startPolling();
+    }
+});
+
+onBeforeUnmount(stopPolling);
 </script>
 
 <template>
@@ -147,6 +203,29 @@ const syncEmployees = () => {
                 class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
             >
                 {{ flash.error }}
+            </div>
+
+            <!-- Sinxronlash holati -->
+            <div
+                v-if="syncState.status === 'running'"
+                class="flex items-center gap-2 rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+            >
+                <span class="animate-spin">⏳</span>
+                Sinxronlash fon rejimida davom etmoqda... Bu bir necha daqiqa olishi mumkin, sahifa avtomatik yangilanadi.
+            </div>
+            <div
+                v-else-if="syncState.status === 'done'"
+                class="rounded-md border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-800"
+            >
+                ✅ Oxirgi sinxron: jami {{ syncState.total }} ta hodim
+                (yangi {{ syncState.created }}, yangilangan {{ syncState.updated }})
+                <span v-if="syncState.finished_at" class="text-green-600">— {{ syncState.finished_at }}</span>
+            </div>
+            <div
+                v-else-if="syncState.status === 'failed'"
+                class="rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"
+            >
+                ❌ Sinxronlash xatosi: {{ syncState.message }}
             </div>
 
             <!-- Filter Section -->

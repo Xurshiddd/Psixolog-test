@@ -23,9 +23,10 @@ class HemisEmployeeSyncService
      * Mavjud hodimning paroli va `login_activated_at` qiymatiga tegilmaydi —
      * faqat HEMIS'dagi ma'lumot (ism, rasm, bo'lim, ...) yangilanadi.
      *
+     * @param  (callable(int $page, int $seen, int $created, int $updated): void)|null  $onProgress
      * @return array{total:int, created:int, updated:int, pages:int}
      */
-    public function syncAll(int $perPage = 200, int $maxPages = 500): array
+    public function syncAll(int $perPage = 200, int $maxPages = 500, ?callable $onProgress = null): array
     {
         $baseUrl = rtrim((string) config('services.hemis.api_base_url'), '/');
         $token = (string) config('services.hemis.token');
@@ -61,6 +62,10 @@ class HemisEmployeeSyncService
                 $result = $this->upsert($normalized);
                 $result === 'created' ? $created++ : $updated++;
                 $seen++;
+            }
+
+            if ($onProgress !== null) {
+                $onProgress($page, $seen, $created, $updated);
             }
 
             // Oxirgi sahifa: to'liq bo'lmasa, tugadi.
