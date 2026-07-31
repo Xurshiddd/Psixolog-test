@@ -749,7 +749,7 @@ onMounted(() => {
                                         href="https://t.me/xurshid_28"
                                         class="font-semibold text-blue-700 underline-offset-4 hover:underline"
                                     >
-                                        Dasturchi bilan bog'lanish
+                                        Dasturchi
                                     </a>
                                 </p>
                                 <p>
