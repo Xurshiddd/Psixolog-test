@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('student_id')->unique()->constrained('users')->cascadeOnDelete();
             $table->json('character_traits');
-            $table->string('temperament_type');
+            $table->text('temperament_type');
             $table->text('student_conclusion');
             $table->timestamps();
         });

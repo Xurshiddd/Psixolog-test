@@ -746,10 +746,10 @@ onMounted(() => {
                                     >
                                     Telegram profil:
                                     <a
-                                        href="https://t.me/Muhammad_alayhissalom_ummati"
+                                        href="https://t.me/xurshid_28"
                                         class="font-semibold text-blue-700 underline-offset-4 hover:underline"
                                     >
-                                        @Muhammad_alayhissalom_ummati
+                                        Dasturchi bilan bog'lanish
                                     </a>
                                 </p>
                                 <p>
