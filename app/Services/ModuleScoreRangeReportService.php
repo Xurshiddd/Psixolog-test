@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Application\Dashboard\Data\ReportAudience;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Collection;
@@ -65,35 +66,80 @@ class ModuleScoreRangeReportService
         return collect($rows)->map(fn (array $row) => (object) $row);
     }
 
+    /**
+     * Tanlangan ball oralig'idagi foydalanuvchilarni rollar bo'yicha sanaydi.
+     *
+     * @return array<string, int>
+     */
+    public function roleCounts(int $moduleId, int $minScore, int $maxScore): array
+    {
+        $counts = Cache::remember(
+            $this->makeCacheKey($moduleId, $minScore, $maxScore, 'role-counts'),
+            now()->addMinutes(self::CACHE_TTL_MINUTES),
+            fn (): array => DB::query()
+                ->fromSub($this->filteredQuery($moduleId, $minScore, $maxScore), 'module_score_report')
+                ->select('role')
+                ->selectRaw('COUNT(*) as total')
+                ->groupBy('role')
+                ->pluck('total', 'role')
+                ->all()
+        );
+
+        $roleCounts = [];
+
+        foreach (ReportAudience::roles() as $role) {
+            $roleCounts[$role] = (int) ($counts[$role] ?? 0);
+        }
+
+        return $roleCounts;
+    }
+
+    /**
+     * Har bir toifa (talaba / xodim / ishga qabul qilinmagan) uchun alohida
+     * avtomatik xulosa yozadi. Bo'sh qoldirilgan toifa o'tkazib yuboriladi.
+     *
+     * @param  array<string, string|null>  $conclusionsByRole
+     * @return array<string, int>
+     */
     public function updateAutomaticConclusions(
         int $moduleId,
         int $minScore,
         int $maxScore,
-        string $automaticConclusion,
+        array $conclusionsByRole,
         bool $overwriteExisting,
-    ): int {
-        $query = DB::table('users_tests_results')
-            ->where('module_id', $moduleId)
-            ->whereIn('user_id', function ($query) use ($moduleId, $minScore, $maxScore): void {
-                $query
-                    ->fromSub($this->filteredQuery($moduleId, $minScore, $maxScore), 'filtered_students')
-                    ->select('id');
-            });
+    ): array {
+        $updatedByRole = [];
 
-        if (! $overwriteExisting) {
-            $query->where(function ($query): void {
-                $query
-                    ->whereNull('result_real')
-                    ->orWhere('result_real', '');
-            });
+        foreach (ReportAudience::roles() as $role) {
+            $automaticConclusion = trim((string) ($conclusionsByRole[$role] ?? ''));
+
+            if ($automaticConclusion === '') {
+                continue;
+            }
+
+            $query = DB::table('users_tests_results')
+                ->where('module_id', $moduleId)
+                ->whereIn('user_id', function ($query) use ($moduleId, $minScore, $maxScore, $role): void {
+                    $query
+                        ->fromSub($this->filteredQuery($moduleId, $minScore, $maxScore, [$role]), 'filtered_users')
+                        ->select('id');
+                });
+
+            if (! $overwriteExisting) {
+                $query->where(function ($query): void {
+                    $query
+                        ->whereNull('result_real')
+                        ->orWhere('result_real', '');
+                });
+            }
+
+            $updatedByRole[$role] = (int) $query->update([
+                'result_real' => $automaticConclusion,
+                'updated_at' => now(),
+            ]);
         }
 
-        $updated = $query->update([
-            'result_real' => $automaticConclusion,
-            'updated_at' => now(),
-        ]);
-
-        return (int) $updated;
+        return $updatedByRole;
     }
 
     public function flush(): void
@@ -101,14 +147,17 @@ class ModuleScoreRangeReportService
         Cache::forever($this->versionKey(), $this->cacheVersion() + 1);
     }
 
-    private function filteredQuery(int $moduleId, int $minScore, int $maxScore)
+    /**
+     * @param  list<string>|null  $roles  null bo'lsa — modulni yecha oladigan barcha toifalar.
+     */
+    private function filteredQuery(int $moduleId, int $minScore, int $maxScore, ?array $roles = null)
     {
         return DB::query()
             ->fromSub($this->scoreTotalsQuery($moduleId), 'module_scores')
             ->join('users', 'users.id', '=', 'module_scores.user_id')
             ->leftJoin('faculities', 'faculities.id', '=', 'users.faculity_id')
             ->leftJoin('groups', 'groups.id', '=', 'users.group_id')
-            ->where('users.role', 'student')
+            ->whereIn('users.role', ReportAudience::normalize($roles))
             ->whereBetween('module_scores.score', [$minScore, $maxScore])
             ->whereExists(function ($query) use ($moduleId) {
                 $query->selectRaw('1')
@@ -122,6 +171,7 @@ class ModuleScoreRangeReportService
                 users.id,
                 users.login,
                 users.name,
+                users.role,
                 COALESCE(faculities.name, '-') as faculity_name,
                 COALESCE(groups.name, '-') as group_name,
                 COALESCE(users.level, '-') as level,

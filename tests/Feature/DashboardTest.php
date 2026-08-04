@@ -256,7 +256,7 @@ test('dashboard updates only empty automatic conclusions by default for filtered
             'report_module_id' => $module->id,
             'min_score' => 8,
             'max_score' => 10,
-            'result_real' => 'Yangi avtomatik xulosa',
+            'conclusions' => ['student' => 'Yangi avtomatik xulosa'],
             'overwrite_auto_conclusion' => false,
         ])
         ->assertRedirect();
@@ -309,7 +309,7 @@ test('dashboard can overwrite automatic conclusions for all filtered score repor
             'report_module_id' => $module->id,
             'min_score' => 8,
             'max_score' => 10,
-            'result_real' => 'Ustidan yozilgan avtomatik xulosa',
+            'conclusions' => ['student' => 'Ustidan yozilgan avtomatik xulosa'],
             'overwrite_auto_conclusion' => true,
         ])
         ->assertRedirect();
@@ -327,6 +327,152 @@ test('dashboard can overwrite automatic conclusions for all filtered score repor
         'module_id' => $module->id,
         'result_real' => 'Natija',
     ]);
+});
+
+test('dashboard score range report lists every audience that solved the module', function () {
+    Cache::forget('dashboard:student-population-stats');
+    Http::fake([
+        'https://student.ttyesi.uz/rest/v1/public/stat-student' => Http::response([
+            'data' => [
+                'education_form' => [
+                    'Bakalavr' => [
+                        'Kunduzgi' => [
+                            'Jami' => 120,
+                        ],
+                    ],
+                ],
+            ],
+        ]),
+    ]);
+
+    $admin = createDashboardUser('admin');
+    [$module, $firstTest, $secondTest, , $highOptionOne, , $highOptionTwo] = createModuleWithOptions('Auditoriya testi');
+
+    $student = createDashboardUser('student', ['name' => 'Talaba', 'login' => 111111]);
+    $employee = createDashboardUser('employee', ['name' => 'Xodim', 'login' => 222222]);
+    $guest = createDashboardUser('guest', ['name' => 'Nomzod', 'login' => null]);
+
+    foreach ([$student, $employee, $guest] as $participant) {
+        submitModuleResult($participant, $module, $firstTest, $secondTest, $highOptionOne, $highOptionTwo);
+    }
+
+    $this
+        ->actingAs($admin)
+        ->get(route('dashboard', [
+            'report_module_id' => $module->id,
+            'min_score' => 8,
+            'max_score' => 10,
+        ]))
+        ->assertOk()
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Dashboard')
+            ->has('moduleScoreReport.data', 3)
+            ->where('reportAudienceStats', [
+                ['role' => 'student', 'label' => 'Talaba', 'count' => 1],
+                ['role' => 'employee', 'label' => 'Xodim', 'count' => 1],
+                ['role' => 'guest', 'label' => 'Ishga qabul qilinmagan', 'count' => 1],
+            ])
+        );
+});
+
+test('dashboard writes a separate automatic conclusion for each audience', function () {
+    $admin = createDashboardUser('admin');
+    [$module, $firstTest, $secondTest, $lowOptionOne, $highOptionOne, $lowOptionTwo, $highOptionTwo] = createModuleWithOptions('Toifali xulosa testi');
+
+    $student = createDashboardUser('student', ['name' => 'Talaba', 'login' => 121212]);
+    $employee = createDashboardUser('employee', ['name' => 'Xodim', 'login' => 131313]);
+    $guest = createDashboardUser('guest', ['name' => 'Nomzod', 'login' => null]);
+    $outOfRangeEmployee = createDashboardUser('employee', ['name' => 'Past ballli xodim', 'login' => 141414]);
+
+    foreach ([$student, $employee, $guest] as $participant) {
+        submitModuleResult($participant, $module, $firstTest, $secondTest, $highOptionOne, $highOptionTwo);
+    }
+
+    submitModuleResult($outOfRangeEmployee, $module, $firstTest, $secondTest, $lowOptionOne, $lowOptionTwo);
+
+    $this
+        ->actingAs($admin)
+        ->post(route('dashboard.module-score-report.conclusions.update'), [
+            'report_module_id' => $module->id,
+            'min_score' => 8,
+            'max_score' => 10,
+            'conclusions' => [
+                'student' => 'Talabalar uchun xulosa',
+                'employee' => 'Xodimlar uchun xulosa',
+                'guest' => 'Nomzodlar uchun xulosa',
+            ],
+            'overwrite_auto_conclusion' => true,
+        ])
+        ->assertRedirect();
+
+    $expected = [
+        [$student, 'Talabalar uchun xulosa'],
+        [$employee, 'Xodimlar uchun xulosa'],
+        [$guest, 'Nomzodlar uchun xulosa'],
+        [$outOfRangeEmployee, 'Natija'],
+    ];
+
+    foreach ($expected as [$participant, $conclusion]) {
+        $this->assertDatabaseHas('users_tests_results', [
+            'user_id' => $participant->id,
+            'module_id' => $module->id,
+            'result_real' => $conclusion,
+        ]);
+    }
+});
+
+test('dashboard leaves audiences without a conclusion untouched', function () {
+    $admin = createDashboardUser('admin');
+    [$module, $firstTest, $secondTest, , $highOptionOne, , $highOptionTwo] = createModuleWithOptions('Bo‘sh toifa testi');
+
+    $student = createDashboardUser('student', ['name' => 'Talaba', 'login' => 151515]);
+    $employee = createDashboardUser('employee', ['name' => 'Xodim', 'login' => 161616]);
+
+    foreach ([$student, $employee] as $participant) {
+        submitModuleResult($participant, $module, $firstTest, $secondTest, $highOptionOne, $highOptionTwo);
+    }
+
+    $this
+        ->actingAs($admin)
+        ->post(route('dashboard.module-score-report.conclusions.update'), [
+            'report_module_id' => $module->id,
+            'min_score' => 8,
+            'max_score' => 10,
+            'conclusions' => [
+                'student' => '',
+                'employee' => 'Faqat xodimlar uchun xulosa',
+            ],
+            'overwrite_auto_conclusion' => true,
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('users_tests_results', [
+        'user_id' => $employee->id,
+        'module_id' => $module->id,
+        'result_real' => 'Faqat xodimlar uchun xulosa',
+    ]);
+
+    $this->assertDatabaseHas('users_tests_results', [
+        'user_id' => $student->id,
+        'module_id' => $module->id,
+        'result_real' => 'Natija',
+    ]);
+});
+
+test('dashboard rejects an automatic conclusion update without any conclusion text', function () {
+    $admin = createDashboardUser('admin');
+    [$module] = createModuleWithOptions('Validatsiya testi');
+
+    $this
+        ->actingAs($admin)
+        ->post(route('dashboard.module-score-report.conclusions.update'), [
+            'report_module_id' => $module->id,
+            'min_score' => 8,
+            'max_score' => 10,
+            'conclusions' => ['student' => '', 'employee' => '', 'guest' => ''],
+            'overwrite_auto_conclusion' => true,
+        ])
+        ->assertSessionHasErrors('conclusions');
 });
 
 test('dashboard shows aggregated result category stats', function () {

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Application\Dashboard\Data\ModuleScoreReportFilters;
+use App\Application\Dashboard\Data\ReportAudience;
 use App\Application\Dashboard\Services\BuildDashboardPage;
 use App\Application\Dashboard\Services\ExportModuleScoreReport;
 use App\Http\Requests\DashboardIndexRequest;
@@ -49,14 +50,23 @@ class DashboardController extends Controller
             'Ball oralig\'i noto\'g\'ri.'
         );
 
-        $updated = $this->moduleScoreRangeReportService->updateAutomaticConclusions(
+        $updatedByRole = $this->moduleScoreRangeReportService->updateAutomaticConclusions(
             $filters->moduleId,
             $filters->minScore,
             $filters->maxScore,
-            $validated['result_real'],
+            $request->filledConclusions(),
             (bool) $validated['overwrite_auto_conclusion'],
         );
 
-        return back()->with('success', "Avtomatik xulosa {$updated} ta talaba uchun yangilandi.");
+        $summary = collect($updatedByRole)
+            ->map(fn (int $count, string $role): string => ReportAudience::label($role).' — '.$count.' ta')
+            ->implode(', ');
+
+        return back()->with(
+            'success',
+            $summary === ''
+                ? 'Avtomatik xulosa yangilanmadi.'
+                : "Avtomatik xulosa yangilandi: {$summary}."
+        );
     }
 }

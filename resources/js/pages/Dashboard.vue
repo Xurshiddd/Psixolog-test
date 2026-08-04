@@ -73,14 +73,22 @@ interface DashboardModule {
     name: string;
 }
 
-interface ModuleScoreReportStudent {
+interface ModuleScoreReportUser {
     id: number;
     login: string;
     name: string;
+    role: string;
+    role_label: string;
     faculity_name: string;
     group_name: string;
     level: string;
     score: number;
+}
+
+interface ReportAudienceStat {
+    role: string;
+    label: string;
+    count: number;
 }
 
 interface PaginatedData<T> {
@@ -114,7 +122,8 @@ const props = defineProps<{
         max_score?: number | null;
         is_ready?: boolean;
     };
-    moduleScoreReport?: PaginatedData<ModuleScoreReportStudent> | null;
+    moduleScoreReport?: PaginatedData<ModuleScoreReportUser> | null;
+    reportAudienceStats?: ReportAudienceStat[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -216,8 +225,11 @@ const canSubmitReport = computed(() => {
 const activeReportModuleName = computed(
     () => props.modules.find((module) => module.id === props.reportFilters.module_id)?.name ?? '',
 );
-const reportStudentCount = computed(() => props.moduleScoreReport?.total ?? 0);
-const canUpdateReportConclusions = computed(() => props.reportFilters.is_ready === true && reportStudentCount.value > 0);
+const reportUserCount = computed(() => props.moduleScoreReport?.total ?? 0);
+const canUpdateReportConclusions = computed(() => props.reportFilters.is_ready === true && reportUserCount.value > 0);
+
+const audienceStats = computed(() => props.reportAudienceStats ?? []);
+const presentAudienceStats = computed(() => audienceStats.value.filter((audience) => audience.count > 0));
 
 const buildReportParams = () => ({
     report_module_id: selectedModuleId.value,
@@ -257,30 +269,46 @@ const downloadReportExcel = () => {
 };
 
 const conclusionModalOpen = ref(false);
-const conclusionForm = useForm({
+const conclusionForm = useForm<{
+    report_module_id: string;
+    min_score: string;
+    max_score: string;
+    conclusions: Record<string, string>;
+    overwrite_auto_conclusion: boolean;
+}>({
     report_module_id: selectedModuleId.value,
     min_score: minScore.value,
     max_score: maxScore.value,
-    result_real: '',
+    conclusions: {},
     overwrite_auto_conclusion: false,
 });
 
+const conclusionError = (role: string) => conclusionForm.errors[`conclusions.${role}` as keyof typeof conclusionForm.errors];
+
+const hasAnyConclusion = computed(() =>
+    presentAudienceStats.value.some((audience) => (conclusionForm.conclusions[audience.role] ?? '').trim() !== ''),
+);
+
 const openConclusionModal = () => {
-    conclusionForm.reset();
     conclusionForm.clearErrors();
+    conclusionForm.conclusions = Object.fromEntries(
+        presentAudienceStats.value.map((audience) => [audience.role, '']),
+    );
     conclusionForm.overwrite_auto_conclusion = false;
     conclusionModalOpen.value = true;
 };
 
 const submitConclusionUpdate = () => {
-    if (!canUpdateReportConclusions.value || !conclusionForm.result_real.trim()) {
+    if (!canUpdateReportConclusions.value || !hasAnyConclusion.value) {
         return;
     }
 
     conclusionForm.report_module_id = String(props.reportFilters.module_id ?? '');
     conclusionForm.min_score = String(props.reportFilters.min_score ?? '');
     conclusionForm.max_score = String(props.reportFilters.max_score ?? '');
-    conclusionForm.result_real = conclusionForm.result_real.trim();
+    conclusionForm.conclusions = Object.fromEntries(
+        Object.entries(conclusionForm.conclusions).map(([role, text]) => [role, text.trim()]),
+    );
 
     conclusionForm.post('/dashboard/module-score-report/conclusions', {
         preserveScroll: true,
@@ -444,11 +472,12 @@ const submitConclusionUpdate = () => {
                     </div>
 
                     <Dialog v-model:open="conclusionModalOpen">
-                        <DialogContent class="sm:max-w-[560px]">
+                        <DialogContent class="max-h-[85vh] overflow-y-auto sm:max-w-[560px]">
                             <DialogHeader>
                                 <DialogTitle>Avtomatik xulosalarni yangilash</DialogTitle>
                                 <DialogDescription>
-                                    {{ activeReportModuleName }} moduli bo‘yicha {{ reportStudentCount }} ta talaba natijasi uchun avtomatik xulosa yoziladi.
+                                    {{ activeReportModuleName }} moduli bo‘yicha {{ reportUserCount }} ta natija uchun avtomatik xulosa yoziladi.
+                                    Har bir toifa uchun alohida xulosa yozing — bo‘sh qoldirilgan toifa o‘zgarmaydi.
                                 </DialogDescription>
                             </DialogHeader>
 
@@ -478,22 +507,35 @@ const submitConclusionUpdate = () => {
                                     </p>
                                 </div>
 
-                                <div>
-                                    <label for="module-score-auto-conclusion" class="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-200">
-                                        Avtomatik xulosa
+                                <div v-for="audience in presentAudienceStats" :key="audience.role">
+                                    <label
+                                        :for="`module-score-auto-conclusion-${audience.role}`"
+                                        class="mb-2 flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-200"
+                                    >
+                                        {{ audience.label }}
+                                        <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-600 dark:bg-slate-700 dark:text-slate-300">
+                                            {{ audience.count }} ta
+                                        </span>
                                     </label>
                                     <textarea
-                                        id="module-score-auto-conclusion"
-                                        v-model="conclusionForm.result_real"
-                                        rows="7"
-                                        required
+                                        :id="`module-score-auto-conclusion-${audience.role}`"
+                                        v-model="conclusionForm.conclusions[audience.role]"
+                                        rows="5"
                                         class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:border-slate-600 dark:bg-slate-900 dark:text-slate-100"
-                                        placeholder="Avtomatik xulosani kiriting..."
+                                        :placeholder="`${audience.label} uchun avtomatik xulosani kiriting...`"
                                     />
-                                    <p v-if="conclusionForm.errors.result_real" class="mt-1 text-sm text-red-600 dark:text-red-400">
-                                        {{ conclusionForm.errors.result_real }}
+                                    <p v-if="conclusionError(audience.role)" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                        {{ conclusionError(audience.role) }}
                                     </p>
                                 </div>
+
+                                <p v-if="presentAudienceStats.length === 0" class="text-sm text-amber-600 dark:text-amber-400">
+                                    Bu oraliqda hech kim topilmadi.
+                                </p>
+
+                                <p v-if="conclusionForm.errors.conclusions" class="text-sm text-red-600 dark:text-red-400">
+                                    {{ conclusionForm.errors.conclusions }}
+                                </p>
 
                                 <DialogFooter>
                                     <button
@@ -507,7 +549,7 @@ const submitConclusionUpdate = () => {
                                     <button
                                         type="submit"
                                         class="inline-flex items-center justify-center rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-50"
-                                        :disabled="conclusionForm.processing || !conclusionForm.result_real.trim()"
+                                        :disabled="conclusionForm.processing || !hasAnyConclusion"
                                     >
                                         {{ conclusionForm.processing ? 'Yangilanmoqda...' : 'Yangilash' }}
                                     </button>
@@ -587,8 +629,17 @@ const submitConclusionUpdate = () => {
                                 <span class="font-medium">{{ props.reportFilters.max_score }}</span>
                                 gacha bo‘lgan natijalar
                             </div>
-                            <div>
-                                Jami: <span class="font-semibold text-slate-900 dark:text-slate-100">{{ props.moduleScoreReport?.total ?? 0 }}</span> ta talaba
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span>
+                                    Jami: <span class="font-semibold text-slate-900 dark:text-slate-100">{{ reportUserCount }}</span> ta
+                                </span>
+                                <span
+                                    v-for="audience in presentAudienceStats"
+                                    :key="audience.role"
+                                    class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-700 dark:bg-slate-700 dark:text-slate-200"
+                                >
+                                    {{ audience.label }}: {{ audience.count }}
+                                </span>
                             </div>
                         </div>
 
@@ -598,6 +649,7 @@ const submitConclusionUpdate = () => {
                                     <tr>
                                         <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Login</th>
                                         <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Ism Familiya</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Toifa</th>
                                         <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Fakultet</th>
                                         <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Guruh</th>
                                         <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Kurs</th>
@@ -606,17 +658,18 @@ const submitConclusionUpdate = () => {
                                 </thead>
                                 <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-700 dark:bg-slate-800">
                                     <tr v-if="!props.moduleScoreReport || props.moduleScoreReport.data.length === 0">
-                                        <td colspan="6" class="px-4 py-6 text-center text-slate-500 dark:text-slate-400">
-                                            Berilgan parametr bo‘yicha talaba topilmadi.
+                                        <td colspan="7" class="px-4 py-6 text-center text-slate-500 dark:text-slate-400">
+                                            Berilgan parametr bo‘yicha foydalanuvchi topilmadi.
                                         </td>
                                     </tr>
-                                    <tr v-for="student in props.moduleScoreReport?.data ?? []" :key="student.id">
-                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ student.login }}</td>
-                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ student.name }}</td>
-                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ student.faculity_name }}</td>
-                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ student.group_name }}</td>
-                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ student.level }}</td>
-                                        <td class="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{{ student.score }}</td>
+                                    <tr v-for="reportUser in props.moduleScoreReport?.data ?? []" :key="reportUser.id">
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ reportUser.login }}</td>
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ reportUser.name }}</td>
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ reportUser.role_label }}</td>
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ reportUser.faculity_name }}</td>
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ reportUser.group_name }}</td>
+                                        <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ reportUser.level }}</td>
+                                        <td class="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{{ reportUser.score }}</td>
                                     </tr>
                                 </tbody>
                             </table>

@@ -3,6 +3,7 @@
 namespace App\Application\Dashboard\Services;
 
 use App\Application\Dashboard\Data\ModuleScoreReportFilters;
+use App\Application\Dashboard\Data\ReportAudience;
 use App\Application\Dashboard\Queries\CountStudentLoginsQuery;
 use App\Models\Module;
 use App\Models\User;
@@ -101,6 +102,7 @@ class BuildDashboardPage
                     'module_id' => $selectedModule?->id,
                 ],
                 'moduleScoreReport' => $moduleScoreReport,
+                'reportAudienceStats' => $this->moduleScoreReportAudienceStats($selectedModule, $filters),
                 'resultCategoryStats' => $this->resultCategoryStatsService->getStats(),
                 'categoryStudentStats' => $this->dashboardAggregateCacheService->categoryStudentStats(),
                 'faculityStudentStats' => $this->dashboardAggregateCacheService->faculityStudentStats(),
@@ -118,13 +120,46 @@ class BuildDashboardPage
             ->paginate($selectedModule->id, $filters->minScore, $filters->maxScore, 15)
             ->through(fn ($row): array => [
                 'id' => (int) $row->id,
-                'login' => (string) $row->login,
+                'login' => blank($row->login) ? '-' : (string) $row->login,
                 'name' => $row->name,
+                'role' => (string) $row->role,
+                'role_label' => ReportAudience::label($row->role),
                 'faculity_name' => $row->faculity_name,
                 'group_name' => $row->group_name,
                 'level' => $row->level,
                 'score' => (int) $row->score,
             ]);
+    }
+
+    /**
+     * Tanlangan oraliqdagi natijalarni toifalar bo'yicha sanaydi — avtomatik
+     * xulosa har bir toifa uchun alohida yoziladi.
+     *
+     * @return list<array{role: string, label: string, count: int}>
+     */
+    private function moduleScoreReportAudienceStats(?object $selectedModule, ModuleScoreReportFilters $filters): array
+    {
+        if ($selectedModule === null || ! $filters->isReady()) {
+            return [];
+        }
+
+        $counts = $this->moduleScoreRangeReportService->roleCounts(
+            $selectedModule->id,
+            $filters->minScore,
+            $filters->maxScore,
+        );
+
+        $stats = [];
+
+        foreach ($counts as $role => $count) {
+            $stats[] = [
+                'role' => $role,
+                'label' => ReportAudience::label($role),
+                'count' => $count,
+            ];
+        }
+
+        return $stats;
     }
 
     private function calculatePercentage(int $count, int $total): float

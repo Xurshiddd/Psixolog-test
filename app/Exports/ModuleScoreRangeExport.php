@@ -2,6 +2,7 @@
 
 namespace App\Exports;
 
+use App\Application\Dashboard\Data\ReportAudience;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -26,6 +27,7 @@ class ModuleScoreRangeExport implements FromCollection, ShouldAutoSize, WithEven
         return [
             'Login',
             'Ism Familiya',
+            'Toifa',
             'Fakultet',
             'Guruh',
             'Kurs',
@@ -38,6 +40,7 @@ class ModuleScoreRangeExport implements FromCollection, ShouldAutoSize, WithEven
         return [
             $row->login,
             $row->name,
+            ReportAudience::label($row->role),
             $row->faculity_name,
             $row->group_name,
             $row->level,
@@ -49,7 +52,7 @@ class ModuleScoreRangeExport implements FromCollection, ShouldAutoSize, WithEven
     {
         return [
             AfterSheet::class => function (AfterSheet $event): void {
-                $event->sheet->getStyle('A1:F1')->applyFromArray([
+                $event->sheet->getStyle('A1:G1')->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
                         'startColor' => ['rgb' => '1D4ED8'],
