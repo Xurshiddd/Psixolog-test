@@ -5,14 +5,14 @@ namespace App\Http\Controllers;
 use App\Application\AdminStudents\Data\AdminStudentFilters;
 use App\Application\AdminStudents\Services\AdminStudentDiagnosisService;
 use App\Application\AdminStudents\Services\AdminStudentExportService;
-use App\Application\AdminStudents\Services\AdminStudentPassportService;
 use App\Application\AdminStudents\Services\AdminStudentRecordService;
 use App\Application\AdminStudents\Services\BuildAdminStudentPages;
 use App\Http\Requests\AdminStudentFilterRequest;
-use App\Http\Requests\StoreStudentPassportRequest;
+use App\Http\Requests\StoreUserPassportRequest;
 use App\Http\Requests\SyncStudentCategoriesRequest;
 use App\Http\Requests\UpdateStudentDiagnosisRequest;
 use App\Models\User;
+use App\Services\UserPassportService;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Auth;
 use Inertia\Inertia;
@@ -23,7 +23,7 @@ class AdminStudentController extends Controller
         private BuildAdminStudentPages $buildAdminStudentPages,
         private AdminStudentDiagnosisService $adminStudentDiagnosisService,
         private AdminStudentExportService $adminStudentExportService,
-        private AdminStudentPassportService $adminStudentPassportService,
+        private UserPassportService $userPassportService,
         private AdminStudentRecordService $adminStudentRecordService,
     ) {}
 
@@ -125,9 +125,11 @@ class AdminStudentController extends Controller
         );
     }
 
-    public function exportStudentPassportPdf(StoreStudentPassportRequest $request, User $user)
+    public function exportStudentPassportPdf(StoreUserPassportRequest $request, User $user)
     {
-        return $this->adminStudentPassportService->downloadGeneratedPassport(
+        abort_unless($user->role === 'student', Response::HTTP_NOT_FOUND, 'Talaba topilmadi.');
+
+        return $this->userPassportService->downloadGeneratedPassport(
             $user,
             $request->validated()
         );
@@ -135,7 +137,9 @@ class AdminStudentController extends Controller
 
     public function downloadSavedStudentPassportPdf(User $user)
     {
-        return $this->adminStudentPassportService->downloadSavedPassport($user);
+        abort_unless($user->role === 'student', Response::HTTP_NOT_FOUND, 'Talaba topilmadi.');
+
+        return $this->userPassportService->downloadSavedPassport($user);
     }
 
     public function destroyResult(User $student, int $resultId)

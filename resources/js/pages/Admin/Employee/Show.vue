@@ -11,6 +11,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from '@/components/ui/dialog';
+import PassportDialog from '@/components/PassportDialog.vue';
 
 const props = defineProps<{
     employee: any;
@@ -30,6 +31,9 @@ const resultDetailLink = (moduleId: number) => `/admin/employees/${props.employe
 
 const isSyncModalOpen = ref(false);
 const selectedCategoryIds = ref<number[]>(props.employee.users_category?.map((c: any) => c.id) || []);
+
+const isPassportModalOpen = ref(false);
+const savedPassport = ref(props.employee.passport || null);
 
 const syncCategories = () => {
     router.post(
@@ -71,9 +75,23 @@ const syncCategories = () => {
                         </span>
                         <span v-if="!employee.users_category?.length" class="text-muted-foreground text-sm">-</span>
                     </div>
-                    <Button variant="outline" size="sm" @click="isSyncModalOpen = true">Kategoriya biriktirish</Button>
+                    <div class="flex flex-wrap gap-2">
+                        <Button variant="outline" size="sm" @click="isSyncModalOpen = true">Kategoriya biriktirish</Button>
+                        <Button variant="outline" size="sm" @click="isPassportModalOpen = true">
+                            Ijtimoiy-psixologik passport
+                        </Button>
+                    </div>
                 </div>
             </div>
+
+            <PassportDialog
+                v-model:open="isPassportModalOpen"
+                :person-name="employee.name"
+                :endpoint="`/admin/employees/${employee.id}/passport/pdf`"
+                :passport="savedPassport"
+                subject-label="Xodim"
+                @saved="(passport) => (savedPassport = passport)"
+            />
 
             <Dialog v-model:open="isSyncModalOpen">
                 <DialogContent class="sm:max-w-[425px]">

@@ -26,7 +26,7 @@ class AdminStudentQueryFactory
             ->with([
                 'group:id,name',
                 'speciality:id,name',
-                'studentPassport:id,student_id',
+                'passport:id,user_id',
                 'usersTestsResults' => fn ($query) => $query
                     ->select('modules.id', 'modules.name')
                     ->orderBy('modules.name'),
@@ -144,9 +144,9 @@ class AdminStudentQueryFactory
         }
 
         if ($filters->passportStatus === 'exists') {
-            $query->whereHas('studentPassport');
+            $query->whereHas('passport');
         } elseif ($filters->passportStatus === 'not_exists') {
-            $query->whereDoesntHave('studentPassport');
+            $query->whereDoesntHave('passport');
         }
     }
 }

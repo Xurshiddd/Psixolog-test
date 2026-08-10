@@ -6,8 +6,8 @@ use App\Models\Faculity;
 use App\Models\Group;
 use App\Models\Module;
 use App\Models\Speciality;
-use App\Models\StudentPassport;
 use App\Models\User;
+use App\Models\UserPassport;
 use Carbon\Carbon;
 use Inertia\Testing\AssertableInertia as Assert;
 use Maatwebsite\Excel\Facades\Excel;
@@ -63,11 +63,11 @@ test('admin student index preserves the expected inertia contract', function () 
         'diagnosis' => 'Psixolog xulosasi',
     ]);
 
-    StudentPassport::create([
-        'student_id' => $student->id,
+    UserPassport::create([
+        'user_id' => $student->id,
         'character_traits' => ['A', 'B', 'C', 'D', 'E'],
         'temperament_type' => 'Sangvinik',
-        'student_conclusion' => 'Xulosa',
+        'conclusion' => 'Xulosa',
     ]);
 
     $response = $this->actingAs($admin)->get(route('admin.students.index'));
@@ -83,7 +83,7 @@ test('admin student index preserves the expected inertia contract', function () 
         ->where('students.data.0.picture', 'https://example.com/avatar.jpg')
         ->where('students.data.0.group.name', $student->group->name)
         ->where('students.data.0.speciality.name', $student->speciality->name)
-        ->where('students.data.0.student_passport.student_id', $student->id)
+        ->where('students.data.0.passport.user_id', $student->id)
         ->has('students.data.0.users_tests_results', 1)
         ->where('students.data.0.users_tests_results.0.name', 'Stress testi')
         ->where('students.data.0.users_tests_results.0.pivot.diagnosis', 'Psixolog xulosasi')

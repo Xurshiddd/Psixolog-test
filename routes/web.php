@@ -98,6 +98,8 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::get('/admin/employees/export/excel', [AdminEmployeeController::class, 'exportExcel'])->name('admin.employees.export.excel');
     Route::get('/admin/employees/{user}', [AdminEmployeeController::class, 'show'])->name('admin.employees.show');
     Route::post('/admin/employees/{user}/sync-categories', [AdminEmployeeController::class, 'syncCategories'])->name('admin.employees.sync-categories');
+    Route::get('/admin/employees/{user}/passport/pdf', [AdminEmployeeController::class, 'downloadSavedPassportPdf'])->name('admin.employees.passport.download');
+    Route::post('/admin/employees/{user}/passport/pdf', [AdminEmployeeController::class, 'exportPassportPdf'])->name('admin.employees.passport.pdf');
     Route::get('/admin/employees/{user}/results/{module}', [AdminEmployeeController::class, 'showResult'])->name('admin.employees.results.show');
     Route::post('/admin/employees/{user}/results/{module}/diagnosis', [AdminEmployeeController::class, 'updateDiagnosis'])->name('admin.employees.results.diagnosis');
     Route::post('/admin/employees/{user}/results/{module}/ai-diagnosis', [AdminEmployeeController::class, 'generateAiDiagnosis'])->name('admin.employees.results.ai-diagnosis');
@@ -107,6 +109,8 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::get('/admin/guests/export/excel', [AdminGuestController::class, 'exportExcel'])->name('admin.guests.export.excel');
     Route::get('/admin/guests/{user}', [AdminGuestController::class, 'show'])->name('admin.guests.show');
     Route::post('/admin/guests/{user}/sync-categories', [AdminGuestController::class, 'syncCategories'])->name('admin.guests.sync-categories');
+    Route::get('/admin/guests/{user}/passport/pdf', [AdminGuestController::class, 'downloadSavedPassportPdf'])->name('admin.guests.passport.download');
+    Route::post('/admin/guests/{user}/passport/pdf', [AdminGuestController::class, 'exportPassportPdf'])->name('admin.guests.passport.pdf');
     Route::post('/admin/guests/{user}/employee-search', [AdminGuestController::class, 'employeeSearch'])->name('admin.guests.employee-search');
     Route::post('/admin/guests/{user}/merge', [AdminGuestController::class, 'mergeIntoEmployee'])->name('admin.guests.merge');
     Route::post('/admin/guests/{user}/status', [AdminGuestController::class, 'updateStatus'])->name('admin.guests.status');

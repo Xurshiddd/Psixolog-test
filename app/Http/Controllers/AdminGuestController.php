@@ -9,11 +9,13 @@ use App\Application\AdminStudents\Services\AdminStudentDiagnosisService;
 use App\Application\AdminStudents\Services\AdminStudentRecordService;
 use App\Application\AdminStudents\Services\BuildAdminStudentPages;
 use App\Http\Requests\AdminGuestFilterRequest;
+use App\Http\Requests\StoreUserPassportRequest;
 use App\Http\Requests\SyncStudentCategoriesRequest;
 use App\Http\Requests\UpdateStudentDiagnosisRequest;
 use App\Models\Employee;
 use App\Models\User;
 use App\Services\HemisEmployeeDirectoryService;
+use App\Services\UserPassportService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\DB;
@@ -28,6 +30,7 @@ class AdminGuestController extends Controller
         private BuildAdminStudentPages $buildAdminStudentPages,
         private AdminStudentDiagnosisService $adminStudentDiagnosisService,
         private HemisEmployeeDirectoryService $hemisEmployeeDirectory,
+        private UserPassportService $userPassportService,
     ) {}
 
     public function index(AdminGuestFilterRequest $request)
@@ -202,6 +205,20 @@ class AdminGuestController extends Controller
         return redirect()
             ->route('admin.employees.show', $user->id)
             ->with('success', 'Nomzod HEMIS ma\'lumotlari asosida ishga qabul qilindi va hodimlar ro\'yxatiga o\'tkazildi.');
+    }
+
+    public function exportPassportPdf(StoreUserPassportRequest $request, User $user)
+    {
+        abort_unless($user->role === 'guest', 404);
+
+        return $this->userPassportService->downloadGeneratedPassport($user, $request->validated());
+    }
+
+    public function downloadSavedPassportPdf(User $user)
+    {
+        abort_unless($user->role === 'guest', 404);
+
+        return $this->userPassportService->downloadSavedPassport($user);
     }
 
     public function showResult(User $user, int $moduleId)

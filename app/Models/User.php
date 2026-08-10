@@ -152,9 +152,9 @@ class User extends Authenticatable
         return $this->belongsTo(Faculity::class);
     }
 
-    public function studentPassport()
+    public function passport()
     {
-        return $this->hasOne(StudentPassport::class, 'student_id');
+        return $this->hasOne(UserPassport::class);
     }
 
     public function employee()

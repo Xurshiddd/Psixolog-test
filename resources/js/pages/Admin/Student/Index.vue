@@ -101,7 +101,7 @@ const resetFilters = () => {
     router.get('/admin/students');
 };
 
-const hasPassport = (student: any) => Boolean(student.student_passport);
+const hasPassport = (student: any) => Boolean(student.passport);
 
 const downloadPassport = (studentId: number) => {
     window.location.href = `/admin/students/${studentId}/passport/pdf`;

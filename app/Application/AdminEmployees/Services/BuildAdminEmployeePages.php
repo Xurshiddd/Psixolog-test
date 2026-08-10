@@ -47,6 +47,7 @@ class BuildAdminEmployeePages
             'employee',
             'usersTestsResults',
             'usersCategory',
+            'passport',
             'mergedGuests.usersTestsResults',
         ]);
 

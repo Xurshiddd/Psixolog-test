@@ -40,7 +40,7 @@ class BuildAdminGuestPages
      */
     public function showProps(User $user, AdminGuestFilters $filters): array
     {
-        $user->load(['guest', 'usersTestsResults', 'usersCategory']);
+        $user->load(['guest', 'usersTestsResults', 'usersCategory', 'passport']);
 
         return [
             'guest' => $user,

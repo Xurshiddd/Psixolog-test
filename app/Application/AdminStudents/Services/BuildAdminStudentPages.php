@@ -42,7 +42,7 @@ class BuildAdminStudentPages
      */
     public function showProps(User $user, AdminStudentFilters $filters): array
     {
-        $user->load(['group', 'speciality', 'faculity', 'usersTestsResults', 'studentPassport', 'usersCategory']);
+        $user->load(['group', 'speciality', 'faculity', 'usersTestsResults', 'passport', 'usersCategory']);
 
         return [
             'student' => $user,

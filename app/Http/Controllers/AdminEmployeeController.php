@@ -9,10 +9,12 @@ use App\Application\AdminStudents\Services\AdminStudentDiagnosisService;
 use App\Application\AdminStudents\Services\AdminStudentRecordService;
 use App\Application\AdminStudents\Services\BuildAdminStudentPages;
 use App\Http\Requests\AdminEmployeeFilterRequest;
+use App\Http\Requests\StoreUserPassportRequest;
 use App\Http\Requests\SyncStudentCategoriesRequest;
 use App\Http\Requests\UpdateStudentDiagnosisRequest;
 use App\Jobs\SyncHemisEmployeesJob;
 use App\Models\User;
+use App\Services\UserPassportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
@@ -26,6 +28,7 @@ class AdminEmployeeController extends Controller
         private AdminStudentRecordService $adminStudentRecordService,
         private BuildAdminStudentPages $buildAdminStudentPages,
         private AdminStudentDiagnosisService $adminStudentDiagnosisService,
+        private UserPassportService $userPassportService,
     ) {}
 
     /**
@@ -104,6 +107,20 @@ class AdminEmployeeController extends Controller
         );
 
         return redirect()->back()->with('success', 'Kategoriyalar muvaffaqiyatli bog\'landi');
+    }
+
+    public function exportPassportPdf(StoreUserPassportRequest $request, User $user)
+    {
+        abort_unless($user->role === 'employee', 404);
+
+        return $this->userPassportService->downloadGeneratedPassport($user, $request->validated());
+    }
+
+    public function downloadSavedPassportPdf(User $user)
+    {
+        abort_unless($user->role === 'employee', 404);
+
+        return $this->userPassportService->downloadSavedPassport($user);
     }
 
     public function showResult(User $user, int $moduleId)
