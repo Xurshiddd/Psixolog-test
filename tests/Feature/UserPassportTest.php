@@ -47,7 +47,7 @@ test('admin xodim uchun passport PDF tayyorlaydi va saqlaydi', function () {
     ]);
 });
 
-test('admin nomzod uchun passport PDF tayyorlaydi', function () {
+test('admin nomzod uchun faqat xulosadan iborat passport PDF tayyorlaydi', function () {
     $admin = makePassportUser('admin');
     $guest = makePassportUser('guest', [
         'name' => 'Nomzod Test',
@@ -63,10 +63,31 @@ test('admin nomzod uchun passport PDF tayyorlaydi', function () {
     ]);
 
     $response = $this->actingAs($admin)
-        ->post(route('admin.guests.passport.pdf', $guest), passportPayload());
+        ->post(route('admin.guests.passport.pdf', $guest), [
+            'conclusion' => 'Nomzod lavozimga mos deb topildi.',
+        ]);
 
     $response->assertOk();
-    $this->assertDatabaseHas('user_passports', ['user_id' => $guest->id]);
+    expect($response->headers->get('content-type'))->toContain('application/pdf');
+
+    $this->assertDatabaseHas('user_passports', [
+        'user_id' => $guest->id,
+        'character_traits' => null,
+        'temperament_type' => null,
+        'conclusion' => 'Nomzod lavozimga mos deb topildi.',
+    ]);
+});
+
+test('nomzod passportida faqat xulosa talab qilinadi', function () {
+    $admin = makePassportUser('admin');
+    $guest = makePassportUser('guest');
+
+    Guest::create(['user_id' => $guest->id]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.guests.passport.pdf', $guest), ['conclusion' => ''])
+        ->assertSessionHasErrors('conclusion')
+        ->assertSessionDoesntHaveErrors(['character_traits', 'temperament_type']);
 });
 
 test('saqlangan passport qayta yuklab olinadi', function () {

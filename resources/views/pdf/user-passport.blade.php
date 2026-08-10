@@ -315,6 +315,21 @@
             padding-left: 10px;
             text-align: justify;
         }
+
+        /*
+         * Nomzod passportida o'ng ustunda faqat xulosa qoladi. Chap ustun
+         * balandligi rasm bloki (132px) va ma'lumot qatorlari bilan
+         * belgilanadi — xulosa kartasi shu balandlikka moslanadi, aks holda
+         * hujjatning o'ng tomoni bo'sh qolib ketadi.
+         */
+        .conclusion-only {
+            min-height: 392px;
+        }
+
+        .conclusion-only .conclusion-text {
+            font-size: 13px;
+            line-height: 1.6;
+        }
     </style>
 </head>
 <body>
@@ -400,24 +415,26 @@
                 </td>
 
                 <td class="right-column">
-                    <div class="section-card">
-                        <div class="card-caption">1-bo‘lim</div>
-                        <h2 class="card-heading">Xarakterdagi qobiliyatlar ketma-ketligi</h2>
-                        <ol class="traits-list">
-                            @foreach($passportData['character_traits'] as $trait)
-                                <li>{{ $trait }}</li>
-                            @endforeach
-                        </ol>
-                    </div>
+                    @if($profile['show_traits'])
+                        <div class="section-card">
+                            <div class="card-caption">1-bo‘lim</div>
+                            <h2 class="card-heading">Xarakterdagi qobiliyatlar ketma-ketligi</h2>
+                            <ol class="traits-list">
+                                @foreach($passportData['character_traits'] as $trait)
+                                    <li>{{ $trait }}</li>
+                                @endforeach
+                            </ol>
+                        </div>
 
-                    <div class="accent-card">
-                        <div class="card-caption">2-bo‘lim</div>
-                        <h2 class="card-heading">Temperament tavsifi</h2>
-                        <p class="temperament-text">{{ $passportData['temperament_type'] }}</p>
-                    </div>
+                        <div class="accent-card">
+                            <div class="card-caption">2-bo‘lim</div>
+                            <h2 class="card-heading">Temperament tavsifi</h2>
+                            <p class="temperament-text">{{ $passportData['temperament_type'] }}</p>
+                        </div>
+                    @endif
 
-                    <div class="section-card">
-                        <div class="card-caption">3-bo‘lim</div>
+                    <div class="section-card @unless($profile['show_traits']) conclusion-only @endunless">
+                        <div class="card-caption">{{ $profile['show_traits'] ? '3' : '1' }}-bo‘lim</div>
                         <h2 class="card-heading">{{ $profile['conclusion_title'] }}</h2>
                         <p class="conclusion-text">{{ $passportData['conclusion'] }}</p>
                     </div>

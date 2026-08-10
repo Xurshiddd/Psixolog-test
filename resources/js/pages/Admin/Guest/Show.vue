@@ -179,6 +179,7 @@ const confirmAccept = () => {
                 :endpoint="`/admin/guests/${guest.id}/passport/pdf`"
                 :passport="savedPassport"
                 subject-label="Nomzod"
+                conclusion-only
                 @saved="(passport) => (savedPassport = passport)"
             />
 

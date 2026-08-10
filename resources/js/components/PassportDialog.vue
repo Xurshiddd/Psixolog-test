@@ -23,11 +23,16 @@ const props = defineProps<{
     passport?: any | null;
     /** Xulosa maydoni sarlavhasi uchun: "Talaba", "Xodim", "Nomzod". */
     subjectLabel: string;
+    /**
+     * Nomzodlar uchun `true`: passportda faqat xulosa bo'ladi, qobiliyatlar
+     * ketma-ketligi va temperament tipi so'ralmaydi.
+     */
+    conclusionOnly?: boolean;
 }>();
 
 const emit = defineEmits<{
     'update:open': [value: boolean];
-    saved: [passport: { character_traits: string[]; temperament_type: string; conclusion: string }];
+    saved: [passport: { character_traits?: string[]; temperament_type?: string; conclusion: string }];
 }>();
 
 const isDownloading = ref(false);
@@ -99,14 +104,16 @@ const slugify = (value: string) =>
 const validate = () => {
     const found: Record<string, string> = {};
 
-    form.value.characterTraits.forEach((trait, index) => {
-        if (!trait.trim()) {
-            found[`characterTraits.${index}`] = `${index + 1}-qobiliyatni kiriting.`;
-        }
-    });
+    if (!props.conclusionOnly) {
+        form.value.characterTraits.forEach((trait, index) => {
+            if (!trait.trim()) {
+                found[`characterTraits.${index}`] = `${index + 1}-qobiliyatni kiriting.`;
+            }
+        });
 
-    if (!form.value.temperamentType.trim()) {
-        found.temperamentType = 'Temperament tipini kiriting.';
+        if (!form.value.temperamentType.trim()) {
+            found.temperamentType = 'Temperament tipini kiriting.';
+        }
     }
 
     if (!form.value.conclusion.trim()) {
@@ -130,11 +137,14 @@ const downloadPdf = async () => {
     try {
         const formData = new FormData();
 
-        form.value.characterTraits.forEach((trait, index) => {
-            formData.append(`character_traits[${index}]`, trait.trim());
-        });
+        if (!props.conclusionOnly) {
+            form.value.characterTraits.forEach((trait, index) => {
+                formData.append(`character_traits[${index}]`, trait.trim());
+            });
 
-        formData.append('temperament_type', form.value.temperamentType.trim());
+            formData.append('temperament_type', form.value.temperamentType.trim());
+        }
+
         formData.append('conclusion', form.value.conclusion.trim());
 
         const response = await fetch(props.endpoint, {
@@ -189,11 +199,13 @@ const downloadPdf = async () => {
         downloadLink.remove();
         URL.revokeObjectURL(downloadUrl);
 
-        const stored = {
-            character_traits: form.value.characterTraits.map((trait) => trait.trim()),
-            temperament_type: form.value.temperamentType.trim(),
-            conclusion: form.value.conclusion.trim(),
-        };
+        const stored = props.conclusionOnly
+            ? { conclusion: form.value.conclusion.trim() }
+            : {
+                  character_traits: form.value.characterTraits.map((trait) => trait.trim()),
+                  temperament_type: form.value.temperamentType.trim(),
+                  conclusion: form.value.conclusion.trim(),
+              };
 
         savedPassport.value = { ...(savedPassport.value || {}), ...stored };
         emit('saved', stored);
@@ -222,7 +234,7 @@ const downloadPdf = async () => {
                     </p>
                 </div>
 
-                <div class="grid gap-3">
+                <div v-if="!conclusionOnly" class="grid gap-3">
                     <label class="text-sm font-medium">Xarakterdagi qobiliyatlar ketma-ketligi</label>
                     <div class="grid gap-3 sm:grid-cols-2">
                         <div v-for="(_, index) in form.characterTraits" :key="index" class="space-y-1">
@@ -239,7 +251,7 @@ const downloadPdf = async () => {
                     </div>
                 </div>
 
-                <div class="space-y-1">
+                <div v-if="!conclusionOnly" class="space-y-1">
                     <label class="text-sm font-medium" for="passport-temperament-type">Temperament tipi</label>
                     <input
                         id="passport-temperament-type"

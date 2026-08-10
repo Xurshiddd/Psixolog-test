@@ -21,9 +21,12 @@ class UserPassportService
     ) {}
 
     /**
+     * Nomzodda `character_traits` va `temperament_type` kelmaydi — u yerda
+     * passport faqat xulosadan iborat bo'ladi.
+     *
      * @param  array{
-     *     character_traits: array<int, string>,
-     *     temperament_type: string,
+     *     character_traits?: array<int, string>,
+     *     temperament_type?: string,
      *     conclusion: string
      * }  $validated
      */
@@ -34,11 +37,15 @@ class UserPassportService
         $passport = UserPassport::updateOrCreate(
             ['user_id' => $user->id],
             [
-                'character_traits' => array_map(
-                    static fn (string $trait): string => trim($trait),
-                    $validated['character_traits']
-                ),
-                'temperament_type' => trim($validated['temperament_type']),
+                'character_traits' => isset($validated['character_traits'])
+                    ? array_map(
+                        static fn (string $trait): string => trim($trait),
+                        $validated['character_traits']
+                    )
+                    : null,
+                'temperament_type' => isset($validated['temperament_type'])
+                    ? trim($validated['temperament_type'])
+                    : null,
                 'conclusion' => trim($validated['conclusion']),
             ]
         );
@@ -75,7 +82,7 @@ class UserPassportService
     }
 
     /**
-     * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, rows: list<array{label: string, value: string}>}
+     * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, show_traits: bool, rows: list<array{label: string, value: string}>}
      */
     private function profile(User $user): array
     {
@@ -87,7 +94,7 @@ class UserPassportService
     }
 
     /**
-     * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, rows: list<array{label: string, value: string}>}
+     * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, show_traits: bool, rows: list<array{label: string, value: string}>}
      */
     private function studentProfile(User $user): array
     {
@@ -99,6 +106,7 @@ class UserPassportService
                 .'rasmiy ko‘rinishda aks ettirish uchun tayyorlandi.',
             'conclusion_title' => 'Talaba bo‘yicha xulosa',
             'show_photo' => true,
+            'show_traits' => true,
             'rows' => [
                 ['label' => 'Login', 'value' => $this->value($user->login)],
                 ['label' => 'Telefon', 'value' => $this->value($user->phone)],
@@ -110,7 +118,7 @@ class UserPassportService
     }
 
     /**
-     * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, rows: list<array{label: string, value: string}>}
+     * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, show_traits: bool, rows: list<array{label: string, value: string}>}
      */
     private function employeeProfile(User $user): array
     {
@@ -122,6 +130,7 @@ class UserPassportService
                 .'rasmiy ko‘rinishda aks ettirish uchun tayyorlandi.',
             'conclusion_title' => 'Xodim bo‘yicha xulosa',
             'show_photo' => true,
+            'show_traits' => true,
             'rows' => [
                 ['label' => 'Hodim ID', 'value' => $this->value($user->employee?->employee_id_number)],
                 ['label' => 'Telefon', 'value' => $this->value($user->phone)],
@@ -133,7 +142,7 @@ class UserPassportService
     }
 
     /**
-     * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, rows: list<array{label: string, value: string}>}
+     * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, show_traits: bool, rows: list<array{label: string, value: string}>}
      */
     private function guestProfile(User $user): array
     {
@@ -146,6 +155,9 @@ class UserPassportService
             'conclusion_title' => 'Nomzod bo‘yicha xulosa',
             // Nomzodlarda profil rasmi passportga olinmaydi — har doim person icon.
             'show_photo' => false,
+            // Nomzod passportida faqat xulosa bo'ladi: qobiliyatlar ketma-ketligi
+            // va temperament tavsifi hujjatga chiqmaydi.
+            'show_traits' => false,
             'rows' => [
                 ['label' => 'Otasining ismi', 'value' => $this->value($user->guest?->father_name)],
                 ['label' => 'Telefon', 'value' => $this->value($user->phone)],
