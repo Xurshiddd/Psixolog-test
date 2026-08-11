@@ -130,7 +130,9 @@ class UserPassportService
                 .'rasmiy ko‘rinishda aks ettirish uchun tayyorlandi.',
             'conclusion_title' => 'Xodim bo‘yicha xulosa',
             'show_photo' => true,
-            'show_traits' => true,
+            // Xodim passportida ham faqat xulosa qoladi — qobiliyatlar
+            // ketma-ketligi va temperament tavsifi hujjatga chiqmaydi.
+            'show_traits' => false,
             'rows' => [
                 ['label' => 'Hodim ID', 'value' => $this->value($user->employee?->employee_id_number)],
                 ['label' => 'Telefon', 'value' => $this->value($user->phone)],

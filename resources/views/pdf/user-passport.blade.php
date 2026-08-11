@@ -309,12 +309,17 @@
         }
 
         /*
-         * Nomzod passportida o'ng ustunda faqat xulosa qoladi. Balandligi chap
-         * ustundagi profil kartasiga (ism, izoh va 4 qator ma'lumot)
-         * moslashtirilgan — aks holda hujjatning o'ng tomoni bo'sh qolib ketadi.
+         * Xodim va nomzod passportida o'ng ustunda faqat xulosa qoladi.
+         * Balandlik chap ustundagi profil kartasiga moslashtirilgan, aks holda
+         * hujjatning o'ng tomoni bo'sh qolib ketadi.
          */
         .conclusion-only {
-            min-height: 286px;
+            min-height: 293px;
+        }
+
+        /* Rasm bloki chizilgan profilda chap ustun ~33pt ga balandroq bo'ladi. */
+        .conclusion-only-tall {
+            min-height: 330px;
         }
 
         .conclusion-only .conclusion-text {
@@ -421,7 +426,19 @@
                         </div>
                     @endif
 
-                    <div class="section-card @unless($profile['show_traits']) conclusion-only @endunless">
+                    @php
+                        // Xulosa yolg'iz qolganda kartani chap ustundagi profil
+                        // kartasi balandligiga moslaymiz.
+                        $conclusionClasses = 'section-card';
+
+                        if (! $profile['show_traits']) {
+                            $conclusionClasses .= $pictureDataUri
+                                ? ' conclusion-only conclusion-only-tall'
+                                : ' conclusion-only';
+                        }
+                    @endphp
+
+                    <div class="{{ $conclusionClasses }}">
                         <div class="card-caption">{{ $profile['show_traits'] ? '3' : '1' }}-bo‘lim</div>
                         <h2 class="card-heading">{{ $profile['conclusion_title'] }}</h2>
                         <p class="conclusion-text">{{ $passportData['conclusion'] }}</p>

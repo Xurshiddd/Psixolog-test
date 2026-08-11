@@ -23,7 +23,7 @@ function passportPayload(): array
     ];
 }
 
-test('admin xodim uchun passport PDF tayyorlaydi va saqlaydi', function () {
+test('admin xodim uchun faqat xulosadan iborat passport PDF tayyorlaydi', function () {
     $admin = makePassportUser('admin');
     $employee = makePassportUser('employee', ['name' => 'Xodim Test', 'picture' => null]);
 
@@ -35,13 +35,43 @@ test('admin xodim uchun passport PDF tayyorlaydi va saqlaydi', function () {
     ]);
 
     $response = $this->actingAs($admin)
-        ->post(route('admin.employees.passport.pdf', $employee), passportPayload());
+        ->post(route('admin.employees.passport.pdf', $employee), [
+            'conclusion' => 'Psixologik holati barqaror.',
+        ]);
 
     $response->assertOk();
     expect($response->headers->get('content-type'))->toContain('application/pdf');
 
     $this->assertDatabaseHas('user_passports', [
         'user_id' => $employee->id,
+        'character_traits' => null,
+        'temperament_type' => null,
+        'conclusion' => 'Psixologik holati barqaror.',
+    ]);
+});
+
+test('xodim passportida faqat xulosa talab qilinadi', function () {
+    $admin = makePassportUser('admin');
+    $employee = makePassportUser('employee');
+
+    $this->actingAs($admin)
+        ->post(route('admin.employees.passport.pdf', $employee), ['conclusion' => ''])
+        ->assertSessionHasErrors('conclusion')
+        ->assertSessionDoesntHaveErrors(['character_traits', 'temperament_type']);
+});
+
+test('admin talaba uchun to‘liq passport PDF tayyorlaydi', function () {
+    $admin = makePassportUser('admin');
+    $student = makePassportUser('student', ['name' => 'Talaba Test']);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.students.passport.pdf', $student), passportPayload());
+
+    $response->assertOk();
+    expect($response->headers->get('content-type'))->toContain('application/pdf');
+
+    $this->assertDatabaseHas('user_passports', [
+        'user_id' => $student->id,
         'temperament_type' => 'Flegmatik',
         'conclusion' => 'Psixologik holati barqaror.',
     ]);
@@ -119,12 +149,12 @@ test('boshqa roldagi foydalanuvchi xodim passport yo\'liga tushmaydi', function 
         ->assertNotFound();
 });
 
-test('passport maydonlari validatsiyadan o\'tadi', function () {
+test('talaba passportining barcha maydonlari validatsiyadan o\'tadi', function () {
     $admin = makePassportUser('admin');
-    $employee = makePassportUser('employee');
+    $student = makePassportUser('student');
 
     $this->actingAs($admin)
-        ->post(route('admin.employees.passport.pdf', $employee), [
+        ->post(route('admin.students.passport.pdf', $student), [
             'character_traits' => ['Faqat', 'Uchta', 'Xislat'],
             'temperament_type' => '',
             'conclusion' => '',

@@ -12,11 +12,13 @@ class StoreUserPassportRequest extends FormRequest
         return auth()->check();
     }
 
+    /** Qobiliyatlar ketma-ketligi va temperament faqat talaba passportida bo'ladi. */
+    private const TRAIT_ROLES = ['student'];
+
     public function rules(): array
     {
-        // Nomzod uchun passportda faqat xulosa bo'ladi — qobiliyatlar
-        // ketma-ketligi va temperament tipi so'ralmaydi.
-        if ($this->subjectRole() === 'guest') {
+        // Xodim va nomzod passportida faqat xulosa bo'ladi.
+        if (! in_array($this->subjectRole(), self::TRAIT_ROLES, true)) {
             return [
                 'conclusion' => ['required', 'string', 'max:5000'],
             ];

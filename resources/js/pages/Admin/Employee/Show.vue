@@ -90,6 +90,7 @@ const syncCategories = () => {
                 :endpoint="`/admin/employees/${employee.id}/passport/pdf`"
                 :passport="savedPassport"
                 subject-label="Xodim"
+                conclusion-only
                 @saved="(passport) => (savedPassport = passport)"
             />
 
