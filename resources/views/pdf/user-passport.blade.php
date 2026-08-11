@@ -176,6 +176,11 @@
             vertical-align: top;
         }
 
+        /* Rasm bloki chizilmaganda ism chap chekkadan boshlanadi. */
+        .identity-cell-full {
+            padding-left: 0;
+        }
+
         .student-photo {
             border: 1px solid #cad3df;
             height: 132px;
@@ -188,19 +193,6 @@
             height: 132px;
             object-fit: cover;
             width: 102px;
-        }
-
-        .student-photo-placeholder {
-            background: #f3f6fa;
-            height: 132px;
-            width: 102px;
-        }
-
-        .student-photo-placeholder img {
-            display: block;
-            height: 72px;
-            margin: 30px auto 0;
-            width: 72px;
         }
 
         .student-name {
@@ -317,13 +309,12 @@
         }
 
         /*
-         * Nomzod passportida o'ng ustunda faqat xulosa qoladi. Chap ustun
-         * balandligi rasm bloki (132px) va ma'lumot qatorlari bilan
-         * belgilanadi — xulosa kartasi shu balandlikka moslanadi, aks holda
-         * hujjatning o'ng tomoni bo'sh qolib ketadi.
+         * Nomzod passportida o'ng ustunda faqat xulosa qoladi. Balandligi chap
+         * ustundagi profil kartasiga (ism, izoh va 4 qator ma'lumot)
+         * moslashtirilgan — aks holda hujjatning o'ng tomoni bo'sh qolib ketadi.
          */
         .conclusion-only {
-            min-height: 392px;
+            min-height: 286px;
         }
 
         .conclusion-only .conclusion-text {
@@ -382,18 +373,15 @@
                     <div class="profile-card">
                         <table class="profile-head-table">
                             <tr>
-                                <td class="photo-cell">
-                                    <div class="student-photo">
-                                        @if($pictureDataUri)
+                                {{-- Rasm bo'lmasa (nomzodlar hamda rasmi yo'q xodim/talaba) unga joy ajratilmaydi. --}}
+                                @if($pictureDataUri)
+                                    <td class="photo-cell">
+                                        <div class="student-photo">
                                             <img src="{{ $pictureDataUri }}" alt="{{ $user->name }}">
-                                        @else
-                                            <div class="student-photo-placeholder">
-                                                <img src="{{ $personIconDataUri }}" alt="{{ $user->name }}">
-                                            </div>
-                                        @endif
-                                    </div>
-                                </td>
-                                <td class="identity-cell">
+                                        </div>
+                                    </td>
+                                @endif
+                                <td class="identity-cell @unless($pictureDataUri) identity-cell-full @endunless">
                                     <div class="student-name">{{ $user->name ?? '-' }}</div>
                                     <div class="student-role">{{ $profile['role_label'] }}</div>
                                     <div class="identity-note">{{ $profile['intro'] }}</div>

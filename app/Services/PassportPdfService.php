@@ -26,24 +26,7 @@ class PassportPdfService
             'pictureDataUri' => $profile['show_photo']
                 ? $this->resolvePictureDataUri($user->picture)
                 : null,
-            'personIconDataUri' => $this->personIconDataUri(),
         ])->setPaper('a4', 'landscape');
-    }
-
-    /**
-     * Bazada rasm bo'lmaganda (yoki nomzodlarda — umuman olinmaganda)
-     * rasm o'rnida ko'rinadigan person icon.
-     */
-    private function personIconDataUri(): string
-    {
-        $svg = <<<'SVG'
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="72" height="72">
-            <circle cx="12" cy="8" r="3.6" fill="#98a4b6"/>
-            <path d="M12 13.4c-4.1 0-7.4 2.1-7.4 4.7V20h14.8v-1.9c0-2.6-3.3-4.7-7.4-4.7z" fill="#98a4b6"/>
-        </svg>
-        SVG;
-
-        return 'data:image/svg+xml;base64,'.base64_encode($svg);
     }
 
     private function resolvePictureDataUri(?string $picture): ?string

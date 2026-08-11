@@ -153,30 +153,19 @@ class UserPassportService
             'intro' => 'Mazkur passport ishga qabul qilinmagan nomzodning umumiy ma’lumotlari hamda '
                 .'psixologik tavsifini rasmiy ko‘rinishda aks ettirish uchun tayyorlandi.',
             'conclusion_title' => 'Nomzod bo‘yicha xulosa',
-            // Nomzodlarda profil rasmi passportga olinmaydi — har doim person icon.
+            // Nomzodlarda profil rasmi passportga umuman olinmaydi — hujjatda
+            // rasm uchun joy ham ajratilmaydi.
             'show_photo' => false,
             // Nomzod passportida faqat xulosa bo'ladi: qobiliyatlar ketma-ketligi
             // va temperament tavsifi hujjatga chiqmaydi.
             'show_traits' => false,
             'rows' => [
-                ['label' => 'Otasining ismi', 'value' => $this->value($user->guest?->father_name)],
                 ['label' => 'Telefon', 'value' => $this->value($user->phone)],
                 ['label' => 'Manzil', 'value' => $this->value($user->guest?->address)],
                 ['label' => 'Lavozim', 'value' => $this->value($user->guest?->desired_position)],
-                ['label' => 'Ariza holati', 'value' => $this->applicationStatus($user)],
                 ['label' => 'Kategoriyalar', 'value' => $this->categories($user)],
             ],
         ];
-    }
-
-    private function applicationStatus(User $user): string
-    {
-        return match ($user->guest?->application_status) {
-            'accepted' => 'Qabul qilingan',
-            'rejected' => 'Rad etilgan',
-            'pending' => 'Kutilmoqda',
-            default => '-',
-        };
     }
 
     private function categories(User $user): string
