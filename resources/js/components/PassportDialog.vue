@@ -185,6 +185,15 @@ const downloadPdf = async () => {
             return;
         }
 
+        // Sessiya tugagan bo'lsa server login sahifasiga yo'naltiradi va fetch
+        // 200 bilan HTML qaytaradi. Uni .pdf qilib saqlasak, fayl ochilmaydi.
+        if (!(response.headers.get('content-type') || '').includes('application/pdf')) {
+            requestError.value =
+                'Server PDF o‘rniga boshqa javob qaytardi. Sahifani yangilab (sessiya tugagan bo‘lishi mumkin), qaytadan urinib ko‘ring.';
+
+            return;
+        }
+
         const pdfBlob = await response.blob();
         const downloadUrl = URL.createObjectURL(pdfBlob);
         const downloadLink = document.createElement('a');
@@ -197,7 +206,11 @@ const downloadPdf = async () => {
         document.body.appendChild(downloadLink);
         downloadLink.click();
         downloadLink.remove();
-        URL.revokeObjectURL(downloadUrl);
+
+        // Blob URL darhol bekor qilinsa, brauzer 1 MB'dan katta faylni yozib
+        // ulgurmasdan yuklab olishni uzib qo'yishi mumkin — natijada fayl
+        // yuklanadi-yu, ochilmaydi. Shuning uchun tozalashni kechiktiramiz.
+        window.setTimeout(() => URL.revokeObjectURL(downloadUrl), 60_000);
 
         const stored = props.conclusionOnly
             ? { conclusion: form.value.conclusion.trim() }
