@@ -66,6 +66,12 @@ const resetFilters = () => {
     router.get('/admin/guests');
 };
 
+const hasPassport = (guest: any) => Boolean(guest.passport);
+
+const downloadPassport = (guestId: number) => {
+    window.location.href = `/admin/guests/${guestId}/passport/pdf`;
+};
+
 const getPaginationLink = (url: string | null) => {
     if (!url) return null;
     const urlObj = new URL(url);
@@ -224,9 +230,19 @@ const getGuestLink = (guestId: number) => {
                                     <span v-else class="text-muted-foreground text-sm">-</span>
                                 </td>
                                 <td class="p-4 align-middle">
-                                    <Link :href="getGuestLink(guest.id)" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
-                                        Ko'rish
-                                    </Link>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <Link :href="getGuestLink(guest.id)" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                                            Ko'rish
+                                        </Link>
+                                        <Button
+                                            v-if="hasPassport(guest)"
+                                            variant="outline"
+                                            size="sm"
+                                            @click="downloadPassport(guest.id)"
+                                        >
+                                            Passport
+                                        </Button>
+                                    </div>
                                 </td>
                             </tr>
                             <tr v-if="guests.data.length === 0">
@@ -256,11 +272,20 @@ const getGuestLink = (guestId: number) => {
                         <div><span class="text-muted-foreground">Lavozim:</span><p class="font-medium">{{ guest.guest?.desired_position || '-' }}</p></div>
                         <div><span class="text-muted-foreground">Ariza holati:</span><p class="font-medium">{{ guest.guest?.application_status || '-' }}</p></div>
                         <div><span class="text-muted-foreground">Sana:</span><p class="font-medium">{{ formatDate(guest.created_at) }}</p></div>
+                        <div><span class="text-muted-foreground">Passport:</span><p class="font-medium">{{ hasPassport(guest) ? 'Mavjud' : 'Mavjud emas' }}</p></div>
                     </div>
                     <div class="flex flex-wrap gap-2 pt-2 mt-2 border-t">
                         <Link :href="getGuestLink(guest.id)" class="inline-flex flex-1 items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3 py-2">
                             Ko'rish
                         </Link>
+                        <Button
+                            v-if="hasPassport(guest)"
+                            variant="outline"
+                            class="flex-1"
+                            @click="downloadPassport(guest.id)"
+                        >
+                            Passport
+                        </Button>
                     </div>
                 </div>
                 <div v-if="guests.data.length === 0" class="rounded-lg border bg-card p-8 text-center text-muted-foreground">Nomzodlar topilmadi.</div>

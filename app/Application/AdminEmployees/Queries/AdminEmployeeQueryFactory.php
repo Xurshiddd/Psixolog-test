@@ -23,6 +23,7 @@ class AdminEmployeeQueryFactory
             ->with([
                 'employee:id,user_id,employee_id_number,department_name,employee_type_name,staff_position',
                 'usersCategory:id,name',
+                'passport:id,user_id',
                 'usersTestsResults' => fn ($query) => $query
                     ->select('modules.id', 'modules.name')
                     ->orderBy('modules.name'),

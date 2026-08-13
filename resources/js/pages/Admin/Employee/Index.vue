@@ -81,6 +81,12 @@ const resetFilters = () => {
     router.get('/admin/employees');
 };
 
+const hasPassport = (employee: any) => Boolean(employee.passport);
+
+const downloadPassport = (employeeId: number) => {
+    window.location.href = `/admin/employees/${employeeId}/passport/pdf`;
+};
+
 const getPaginationLink = (url: string | null) => {
     if (!url) return null;
     const urlObj = new URL(url);
@@ -349,9 +355,19 @@ onBeforeUnmount(stopPolling);
                                     <span v-else class="text-muted-foreground text-sm">-</span>
                                 </td>
                                 <td class="p-4 align-middle">
-                                    <Link :href="getEmployeeLink(employee.id)" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
-                                        Ko'rish
-                                    </Link>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <Link :href="getEmployeeLink(employee.id)" class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-4 py-2">
+                                            Ko'rish
+                                        </Link>
+                                        <Button
+                                            v-if="hasPassport(employee)"
+                                            variant="outline"
+                                            size="sm"
+                                            @click="downloadPassport(employee.id)"
+                                        >
+                                            Passport
+                                        </Button>
+                                    </div>
                                 </td>
                             </tr>
                             <tr v-if="employees.data.length === 0">
@@ -382,11 +398,20 @@ onBeforeUnmount(stopPolling);
                         <div><span class="text-muted-foreground">Lavozim turi:</span><p class="font-medium">{{ employee.employee?.employee_type_name || '-' }}</p></div>
                         <div><span class="text-muted-foreground">Telefon:</span><p class="font-medium">{{ employee.phone || '-' }}</p></div>
                         <div><span class="text-muted-foreground">Sana:</span><p class="font-medium">{{ formatDate(employee.created_at) }}</p></div>
+                        <div><span class="text-muted-foreground">Passport:</span><p class="font-medium">{{ hasPassport(employee) ? 'Mavjud' : 'Mavjud emas' }}</p></div>
                     </div>
                     <div class="flex flex-wrap gap-2 pt-2 mt-2 border-t">
                         <Link :href="getEmployeeLink(employee.id)" class="inline-flex flex-1 items-center justify-center rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3 py-2">
                             Ko'rish
                         </Link>
+                        <Button
+                            v-if="hasPassport(employee)"
+                            variant="outline"
+                            class="flex-1"
+                            @click="downloadPassport(employee.id)"
+                        >
+                            Passport
+                        </Button>
                     </div>
                 </div>
                 <div v-if="employees.data.length === 0" class="rounded-lg border bg-card p-8 text-center text-muted-foreground">Xodimlar topilmadi.</div>

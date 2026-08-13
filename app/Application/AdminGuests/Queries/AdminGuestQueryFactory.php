@@ -23,6 +23,7 @@ class AdminGuestQueryFactory
             ->with([
                 'guest:id,user_id,father_name,address,desired_position,application_status,applied_at',
                 'usersCategory:id,name',
+                'passport:id,user_id',
                 'usersTestsResults' => fn ($query) => $query
                     ->select('modules.id', 'modules.name')
                     ->orderBy('modules.name'),
