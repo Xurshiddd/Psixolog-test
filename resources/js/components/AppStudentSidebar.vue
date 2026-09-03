@@ -14,11 +14,12 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, LayoutGrid, MessageSquare } from 'lucide-vue-next';
+import { BookOpen, Heart, LayoutGrid, MessageSquare } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
 const page = usePage();
+const role = computed(() => (page.props.auth as any)?.user?.role as string);
 const unreadCount = computed(
     () => (page.props.unread_requests_count as number) || 0,
 );
@@ -34,6 +35,16 @@ const mainNavItems = computed<NavItem[]>(() => [
         href: '/student/index',
         icon: BookOpen,
     },
+    // Qiziqishlar faqat talabada bo'ladi — xodim va nomzodda ko'rinmaydi.
+    ...(role.value === 'student'
+        ? [
+              {
+                  title: 'Qiziqishlar',
+                  href: '/student/hobbies',
+                  icon: Heart,
+              },
+          ]
+        : []),
     {
         title: 'Murojaatlar',
         href: '/student/requests',

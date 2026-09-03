@@ -16,7 +16,9 @@ class ResultCategoryController extends Controller
      */
     public function index()
     {
-        $categories = ResultCategory::with('module')->paginate(15);
+        $categories = ResultCategory::with('module')
+            ->whereHas('module', fn ($query) => $query->visible())
+            ->paginate(15);
 
         return Inertia::render('ResultCategories/Index', [
             'categories' => $categories,

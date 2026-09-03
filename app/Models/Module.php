@@ -50,6 +50,15 @@ class Module extends Model
         });
     }
 
+    /**
+     * Statusi o'chirilgan modul platformada yo'qday ko'rinadi: ro'yxatlarda,
+     * hisobotlarda va statistikada chiqmaydi. Ma'lumot bazada saqlanib qoladi.
+     */
+    public function scopeVisible(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
+
     public function isForAudience(?string $role): bool
     {
         if (blank($this->audiences)) {
@@ -63,10 +72,22 @@ class Module extends Model
     {
         return $this->hasMany(Test::class);
     }
+
+    /**
+     * Modul tegishli bo'lgan blok. `block_module.module_id` unique bo'lgani
+     * uchun modul ko'pi bilan bitta blokda bo'ladi.
+     */
+    public function blocks()
+    {
+        return $this->belongsToMany(Block::class, 'block_module')
+            ->withPivot('position')
+            ->withTimestamps();
+    }
+
     public function usersTestsResults()
     {
         return $this->belongsToMany(User::class, 'users_tests_results', 'module_id', 'user_id')
-            ->withPivot('result_fake', 'result_real', 'diagnosis')
+            ->withPivot('result_fake', 'result_real', 'diagnosis', 'flag')
             ->withTimestamps();
     }
 }

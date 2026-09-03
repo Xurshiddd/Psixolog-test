@@ -52,6 +52,11 @@ class ResultCategoryStatsService
                     ->on('users_tests_results.module_id', '=', 'solve_tests.module_id');
             })
             ->join('test_options', 'test_options.id', '=', 'solve_tests.test_option_id')
+            // Statusi o'chirilgan modul statistikada umuman ko'rinmaydi.
+            ->join('modules', function ($join) {
+                $join->on('modules.id', '=', 'solve_tests.module_id')
+                    ->where('modules.is_active', '=', true);
+            })
             ->groupBy('solve_tests.user_id', 'solve_tests.module_id', 'test_options.option_value')
             ->select([
                 'solve_tests.user_id',

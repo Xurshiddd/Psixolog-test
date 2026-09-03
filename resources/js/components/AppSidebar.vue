@@ -14,7 +14,7 @@ import {
 import { dashboard } from '@/routes';
 import { type NavItem } from '@/types';
 import { Link, usePage } from '@inertiajs/vue3';
-import { BookOpen, LayoutGrid, MessageSquare, Users, Activity, Briefcase, UserPlus } from 'lucide-vue-next';
+import { BookOpen, LayoutGrid, Layers, MessageSquare, Users, Activity, AlertTriangle, Briefcase, UserPlus } from 'lucide-vue-next';
 import { computed } from 'vue';
 import AppLogo from './AppLogo.vue';
 
@@ -24,12 +24,27 @@ const route = role.value === 'admin' ? '/admin/requests' : '/psiholog/requests';
 const unreadCount = computed(
     () => (page.props.unread_requests_count as number) || 0,
 );
+// Zudlik bilan ish olib boriladigan talabalar soni — qizil belgi.
+const criticalCount = computed(
+    () => (page.props.critical_alerts_count as number) || 0,
+);
 
 const mainNavItems = computed<NavItem[]>(() => [
     {
         title: 'Dashboard',
         href: dashboard(),
         icon: LayoutGrid,
+    },
+    {
+        title: 'Zudlik bilan',
+        href: '/critical-alerts',
+        icon: AlertTriangle,
+        badge: criticalCount.value > 0 ? criticalCount.value : undefined,
+    },
+    {
+        title: 'Bloklar',
+        href: '/blocks',
+        icon: Layers,
     },
     {
         title: 'Tests',

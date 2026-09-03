@@ -14,6 +14,7 @@ class FindStudentDiagnosisContext
     public function execute(User $user, int $moduleId): ?array
     {
         $module = Module::query()
+            ->visible()
             ->with(['tests.options'])
             ->findOrFail($moduleId);
 

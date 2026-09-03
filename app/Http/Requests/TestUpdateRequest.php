@@ -37,6 +37,8 @@ class TestUpdateRequest extends FormRequest
             'questions.*.options.*.id' => 'nullable|exists:test_options,id',
             'questions.*.options.*.option_text' => 'required|string',
             'questions.*.options.*.option_value' => 'required|numeric',
+            // Xavfli variant: talaba tanlasa zudlik bilan ogohlantirish yoziladi.
+            'questions.*.options.*.is_critical' => 'nullable|boolean',
         ];
     }
 }

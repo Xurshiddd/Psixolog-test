@@ -25,7 +25,7 @@ interface Question {
     text: string;
     required: boolean;
     reverseScoring: boolean;
-  options: Array<{ id?: number; label: string; value: number }>;
+  options: Array<{ id?: number; label: string; value: number; isCritical: boolean }>;
   imageFile?: File | null;
   imagePreview?: string | null;
   existingImage?: string | null;
@@ -72,7 +72,8 @@ onMounted(() => {
             options: t.options ? t.options.map((o: any) => ({
                 id: o.id,
                 label: o.option_text,
-                value: o.option_value
+                value: o.option_value,
+                isCritical: Boolean(o.is_critical),
             })) : [],
             imageFile: null,
             imagePreview: t.image ? '/storage/' + t.image : null,
@@ -89,8 +90,8 @@ const addQuestion = (type: QuestionType) => {
         required: true,
         reverseScoring: false,
         options: type !== 'text' ? [
-            { label: '', value: 1 },
-            { label: '', value: 1 },
+            { label: '', value: 1, isCritical: false },
+            { label: '', value: 1, isCritical: false },
         ] : [],
         imageFile: null,
         imagePreview: null,
@@ -140,7 +141,7 @@ const removeImage = (index: number) => {
 const addOption = (index: number) => {
     const question = questions.value[index];
     if (question) {
-        question.options.push({ label: '', value: 1 });
+        question.options.push({ label: '', value: 1, isCritical: false });
     }
 };
 
@@ -170,6 +171,7 @@ const updateTest = async () => {
             id: o.id, 
             option_text: o.label,
             option_value: o.value,
+            is_critical: o.isCritical,
         })),
     }));
 
@@ -406,6 +408,17 @@ const updateTest = async () => {
 
               <div class="space-y-3">
                 <div v-for="(option, oIndex) in question.options" :key="oIndex" class="flex items-end gap-3">
+                  <!-- Xavfli variant: talaba tanlasa zudlik bilan ogohlantirish chiqadi -->
+                  <label
+                    class="mb-1.5 flex cursor-pointer items-center gap-2"
+                    :title="option.isCritical ? 'Xavfli variant — zudlik bilan ogohlantirish yaratiladi' : 'Xavfli variant sifatida belgilash'"
+                  >
+                    <input type="checkbox" v-model="option.isCritical" class="peer sr-only" />
+                    <span
+                      class="peer relative h-6 w-11 shrink-0 rounded-full transition after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"
+                      :class="option.isCritical ? 'bg-red-600' : 'bg-gray-200 dark:bg-gray-700'"
+                    ></span>
+                  </label>
                   <div class="flex-1">
                     <input
                       v-model="option.label"

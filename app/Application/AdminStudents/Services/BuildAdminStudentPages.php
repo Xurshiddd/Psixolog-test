@@ -7,6 +7,7 @@ use App\Application\AdminStudents\Queries\AdminStudentQueryFactory;
 use App\Application\AdminStudents\Queries\FindStudentDiagnosisContext;
 use App\Models\User;
 use App\Services\LookupCacheService;
+use App\Support\RiskFlag;
 
 class BuildAdminStudentPages
 {
@@ -42,12 +43,22 @@ class BuildAdminStudentPages
      */
     public function showProps(User $user, AdminStudentFilters $filters): array
     {
-        $user->load(['group', 'speciality', 'faculity', 'usersTestsResults', 'passport', 'usersCategory']);
+        $user->load(['group', 'speciality', 'faculity', 'usersTestsResults', 'passport', 'usersCategory', 'hobbies']);
+
+        // Umumiy xavf darajasi — natijalarga biriktirilgan bayroqlar
+        // orasidagi eng og'iri (qizil > sariq > yashil).
+        $flag = RiskFlag::mostSevere($user->usersTestsResults->pluck('pivot.flag'));
 
         return [
             'student' => $user,
             'results' => $user->usersTestsResults,
             'allCategories' => $this->lookupCacheService->categories(),
+            'hobbies' => $user->hobbies->pluck('name')->values(),
+            'riskFlag' => $flag === null ? null : [
+                'value' => $flag,
+                'label' => RiskFlag::label($flag),
+                'color' => RiskFlag::color($flag),
+            ],
             'filters' => $filters->toArray(),
             'page' => $filters->page,
         ];

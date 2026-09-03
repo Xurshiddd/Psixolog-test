@@ -88,6 +88,7 @@ class LookupCacheService
     {
         return $this->rememberCollection(self::MODULES_KEY, function (): array {
             return Module::query()
+                ->visible()
                 ->select(['id', 'name'])
                 ->orderBy('name')
                 ->get()

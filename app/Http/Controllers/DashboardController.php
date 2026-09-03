@@ -56,6 +56,7 @@ class DashboardController extends Controller
             $filters->maxScore,
             $request->filledConclusions(),
             (bool) $validated['overwrite_auto_conclusion'],
+            $request->selectedFlags(),
         );
 
         $summary = collect($updatedByRole)
@@ -65,8 +66,8 @@ class DashboardController extends Controller
         return back()->with(
             'success',
             $summary === ''
-                ? 'Avtomatik xulosa yangilanmadi.'
-                : "Avtomatik xulosa yangilandi: {$summary}."
+                ? 'Avtomatik xulosa va bayroqlar yangilanmadi.'
+                : "Avtomatik xulosa va bayroqlar yangilandi: {$summary}."
         );
     }
 }

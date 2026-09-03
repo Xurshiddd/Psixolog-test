@@ -8,6 +8,7 @@ use App\Http\Resources\Student\StudentModuleDetailResource;
 use App\Http\Resources\Student\StudentModuleResultResource;
 use App\Http\Resources\Student\StudentModuleSummaryResource;
 use App\Models\Module;
+use App\Services\BlockSequenceService;
 use App\Services\StudentTestServices;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,10 +34,15 @@ class ModuleController extends Controller
         ]);
     }
 
-    public function show(Request $request, Module $module): JsonResponse
+    public function show(Request $request, Module $module, BlockSequenceService $blockSequenceService): JsonResponse
     {
         abort_unless($module->is_active, 404);
         abort_unless($module->isForAudience($request->user()->role), 403, 'Bu test siz uchun mo‘ljallanmagan.');
+
+        // Blok ketma-ketligi: oldingi modul yechilmagan bo'lsa test berilmaydi.
+        if ($blocking = $blockSequenceService->blockingModuleName($request->user(), $module)) {
+            abort(403, "Avval \"{$blocking}\" modulini yechishingiz kerak.");
+        }
 
         $module->load([
             'tests.options',
@@ -52,12 +58,17 @@ class ModuleController extends Controller
         SubmitModuleRequest $request,
         Module $module,
         StudentTestServices $studentTestServices,
+        BlockSequenceService $blockSequenceService,
     ): JsonResponse {
         abort_unless($module->is_active, 404);
 
         $user = $request->user();
 
         abort_unless($module->isForAudience($user->role), 403, 'Bu test siz uchun mo‘ljallanmagan.');
+
+        if ($blocking = $blockSequenceService->blockingModuleName($user, $module)) {
+            abort(403, "Avval \"{$blocking}\" modulini yechishingiz kerak.");
+        }
 
         if ($user->usersTestsResults()->whereKey($module->id)->exists()) {
             return response()->json([

@@ -1,5 +1,15 @@
 <?php
 
+use Laravel\Fortify\Features;
+
+// Bu loyihada ro'yxatdan o'tish o'chirilgan (config/fortify.php) — kirish
+// HEMIS orqali bo'ladi. Feature yoqilsa testlar avtomatik ishga tushadi.
+beforeEach(function () {
+    if (! Features::enabled(Features::registration())) {
+        $this->markTestSkipped('Fortify registration feature is disabled.');
+    }
+});
+
 test('registration screen can be rendered', function () {
     $response = $this->get(route('register'));
 

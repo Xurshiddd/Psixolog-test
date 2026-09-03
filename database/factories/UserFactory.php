@@ -2,6 +2,8 @@
 
 namespace Database\Factories;
 
+use App\Models\Group;
+use App\Models\Speciality;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -31,8 +33,12 @@ class UserFactory extends Factory
             'role' => 'student',
             'phone' => fake()->phoneNumber(),
             'picture' => null,
-            'speciality_id' => rand(1, 10),
-            'group_id' => rand(1, 10),
+            // Tasodifiy id o'rniga haqiqiy yozuv: aks holda tashqi kalit
+            // cheklovi bo'lgan bazalarda (MySQL/Postgres) factory ishlamaydi.
+            'speciality_id' => fn (): int => Speciality::query()->inRandomOrder()->value('id')
+                ?? Speciality::factory()->create()->id,
+            'group_id' => fn (): int => Group::query()->inRandomOrder()->value('id')
+                ?? Group::factory()->create()->id,
             'password' => static::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),
             'two_factor_secret' => null,

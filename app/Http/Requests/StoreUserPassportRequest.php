@@ -12,7 +12,7 @@ class StoreUserPassportRequest extends FormRequest
         return auth()->check();
     }
 
-    /** Qobiliyatlar ketma-ketligi va temperament faqat talaba passportida bo'ladi. */
+    /** Temperament tavsifi faqat talaba passportida bo'ladi. */
     private const TRAIT_ROLES = ['student'];
 
     public function rules(): array
@@ -24,9 +24,10 @@ class StoreUserPassportRequest extends FormRequest
             ];
         }
 
+        // Talaba passportida qobiliyatlar ketma-ketligi o'rniga uning
+        // qiziqishlari (hobby) chiqadi — ular alohida jadvaldan olinadi,
+        // shuning uchun formada so'ralmaydi.
         return [
-            'character_traits' => ['required', 'array', 'size:5'],
-            'character_traits.*' => ['required', 'string', 'max:255'],
             'temperament_type' => ['required', 'string', 'max:255'],
             'conclusion' => ['required', 'string', 'max:5000'],
         ];

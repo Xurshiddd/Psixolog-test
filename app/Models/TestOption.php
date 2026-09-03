@@ -14,6 +14,11 @@ class TestOption extends Model
         'test_id',
         'option_text',
         'option_value',
+        'is_critical',
+    ];
+
+    protected $casts = [
+        'is_critical' => 'boolean',
     ];
 
     public function getActivitylogOptions(): LogOptions

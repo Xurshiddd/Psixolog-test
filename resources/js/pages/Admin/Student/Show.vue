@@ -20,6 +20,8 @@ const props = defineProps<{
     student: any;
     results: Array<any>;
     allCategories: Array<any>;
+    hobbies?: string[];
+    riskFlag?: { value: string; label: string; color: string } | null;
     filters?: {
         search?: string | null;
         faculity_id?: string | null;
@@ -187,6 +189,8 @@ const breadcrumbs: BreadcrumbItem[] = [
                     :endpoint="`/admin/students/${student.id}/passport/pdf`"
                     :passport="savedPassport"
                     subject-label="Talaba"
+                    :hobbies="props.hobbies ?? []"
+                    :risk-flag="props.riskFlag ?? null"
                     @saved="(passport) => (savedPassport = passport)"
                 />
 

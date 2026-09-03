@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\User;
 use App\Models\UserPassport;
+use App\Support\RiskFlag;
 use Illuminate\Http\Response;
 use Illuminate\Support\Str;
 
@@ -37,12 +38,9 @@ class UserPassportService
         $passport = UserPassport::updateOrCreate(
             ['user_id' => $user->id],
             [
-                'character_traits' => isset($validated['character_traits'])
-                    ? array_map(
-                        static fn (string $trait): string => trim($trait),
-                        $validated['character_traits']
-                    )
-                    : null,
+                // Qobiliyatlar ketma-ketligi passportdan olib tashlandi —
+                // uning o'rnida talaba qiziqishlari (hobby) chiqadi.
+                'character_traits' => null,
                 'temperament_type' => isset($validated['temperament_type'])
                     ? trim($validated['temperament_type'])
                     : null,
@@ -94,11 +92,15 @@ class UserPassportService
     }
 
     /**
+     * Talaba passportida qobiliyatlar ketma-ketligi o'rniga qiziqishlari
+     * (hobby) chiqadi, xulosa ostida esa xavf darajasi rangli doiracha bilan
+     * ko'rsatiladi (bayroq biriktirilgan bo'lsa).
+     *
      * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, show_traits: bool, rows: list<array{label: string, value: string}>}
      */
     private function studentProfile(User $user): array
     {
-        $user->load(['group', 'speciality', 'usersCategory']);
+        $user->load(['group', 'speciality', 'usersCategory', 'hobbies']);
 
         return [
             'role_label' => 'Talabaning ijtimoiy-psixologik profili',
@@ -107,6 +109,8 @@ class UserPassportService
             'conclusion_title' => 'Talaba bo‘yicha xulosa',
             'show_photo' => true,
             'show_traits' => true,
+            'hobbies' => $user->hobbies->pluck('name')->all(),
+            'risk_flag' => $this->riskFlag($user),
             'rows' => [
                 ['label' => 'Login', 'value' => $this->value($user->login)],
                 ['label' => 'Telefon', 'value' => $this->value($user->phone)],
@@ -130,6 +134,8 @@ class UserPassportService
                 .'rasmiy ko‘rinishda aks ettirish uchun tayyorlandi.',
             'conclusion_title' => 'Xodim bo‘yicha xulosa',
             'show_photo' => true,
+            'hobbies' => [],
+            'risk_flag' => null,
             // Xodim passportida ham faqat xulosa qoladi — qobiliyatlar
             // ketma-ketligi va temperament tavsifi hujjatga chiqmaydi.
             'show_traits' => false,
@@ -155,6 +161,8 @@ class UserPassportService
             'intro' => 'Mazkur passport ishga qabul qilinmagan nomzodning umumiy ma’lumotlari hamda '
                 .'psixologik tavsifini rasmiy ko‘rinishda aks ettirish uchun tayyorlandi.',
             'conclusion_title' => 'Nomzod bo‘yicha xulosa',
+            'hobbies' => [],
+            'risk_flag' => null,
             // Nomzodlarda profil rasmi passportga umuman olinmaydi — hujjatda
             // rasm uchun joy ham ajratilmaydi.
             'show_photo' => false,
@@ -167,6 +175,29 @@ class UserPassportService
                 ['label' => 'Lavozim', 'value' => $this->value($user->guest?->desired_position)],
                 ['label' => 'Kategoriyalar', 'value' => $this->categories($user)],
             ],
+        ];
+    }
+
+    /**
+     * Talabaning umumiy xavf darajasi — natijalariga biriktirilgan
+     * bayroqlar orasidagi eng og'iri (qizil > sariq > yashil).
+     *
+     * @return array{value: string, label: string, color: string}|null
+     */
+    private function riskFlag(User $user): ?array
+    {
+        $flag = RiskFlag::mostSevere(
+            $user->usersTestsResults()->pluck('users_tests_results.flag')
+        );
+
+        if ($flag === null) {
+            return null;
+        }
+
+        return [
+            'value' => $flag,
+            'label' => RiskFlag::label($flag),
+            'color' => RiskFlag::color($flag),
         ];
     }
 

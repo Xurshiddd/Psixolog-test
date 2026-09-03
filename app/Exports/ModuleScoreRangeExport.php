@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Application\Dashboard\Data\ReportAudience;
+use App\Support\RiskFlag;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
@@ -31,6 +32,7 @@ class ModuleScoreRangeExport implements FromCollection, ShouldAutoSize, WithEven
             'Fakultet',
             'Guruh',
             'Kurs',
+            'Bayroq',
             'Ball',
         ];
     }
@@ -44,6 +46,7 @@ class ModuleScoreRangeExport implements FromCollection, ShouldAutoSize, WithEven
             $row->faculity_name,
             $row->group_name,
             $row->level,
+            RiskFlag::label($row->flag ?? null),
             $row->score,
         ];
     }
@@ -52,7 +55,7 @@ class ModuleScoreRangeExport implements FromCollection, ShouldAutoSize, WithEven
     {
         return [
             AfterSheet::class => function (AfterSheet $event): void {
-                $event->sheet->getStyle('A1:G1')->applyFromArray([
+                $event->sheet->getStyle('A1:H1')->applyFromArray([
                     'fill' => [
                         'fillType' => Fill::FILL_SOLID,
                         'startColor' => ['rgb' => '1D4ED8'],

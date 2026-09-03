@@ -117,10 +117,27 @@ class User extends Authenticatable
     {
         return $this->hasMany(SolveTest::class);
     }
+    /**
+     * Foydalanuvchi yechgan modullar. Statusi o'chirilgan modul platformada
+     * ko'rinmasligi kerak, shuning uchun natija bazada qolsa ham bu yerdan
+     * chiqmaydi — barcha ro'yxat, hisobot va statistika shu orqali filtrlanadi.
+     */
     public function usersTestsResults()
     {
         return $this->belongsToMany(Module::class, 'users_tests_results', 'user_id', 'module_id')
-            ->withPivot('result_fake', 'result_real', 'diagnosis')
+            ->where('modules.is_active', true)
+            ->withPivot('result_fake', 'result_real', 'diagnosis', 'flag')
+            ->withTimestamps();
+    }
+
+    /**
+     * Statusidan qat'i nazar barcha natijalar — faqat ma'lumotni o'chirish
+     * yoki tiklash kabi boshqaruv amallari uchun.
+     */
+    public function allTestsResults()
+    {
+        return $this->belongsToMany(Module::class, 'users_tests_results', 'user_id', 'module_id')
+            ->withPivot('result_fake', 'result_real', 'diagnosis', 'flag')
             ->withTimestamps();
     }
     public function usersCategory()
@@ -155,6 +172,22 @@ class User extends Authenticatable
     public function passport()
     {
         return $this->hasOne(UserPassport::class);
+    }
+
+    /**
+     * Talabaning zudlik bilan ish olib boriladigan ogohlantirishlari.
+     */
+    public function criticalAlerts()
+    {
+        return $this->hasMany(CriticalAlert::class);
+    }
+
+    /**
+     * Talaba qiziqishlari (hobby) — passportda va talaba panelida ishlatiladi.
+     */
+    public function hobbies()
+    {
+        return $this->hasMany(Hobby::class)->orderBy('name');
     }
 
     public function employee()

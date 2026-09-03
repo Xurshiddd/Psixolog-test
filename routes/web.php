@@ -4,8 +4,10 @@ use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\AdminEmployeeController;
 use App\Http\Controllers\AdminGuestController;
 use App\Http\Controllers\AdminStudentController;
+use App\Http\Controllers\BlockController;
 use App\Http\Controllers\CaptchaController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\CriticalAlertController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmployeeLoginController;
 use App\Http\Controllers\GuestRegisterController;
@@ -15,6 +17,7 @@ use App\Http\Controllers\ResultCategoryController;
 use App\Http\Controllers\Staff\MessagesController;
 use App\Http\Controllers\Staff\RequestsController;
 use App\Http\Controllers\Student\ConversationController;
+use App\Http\Controllers\Student\HobbyController;
 use App\Http\Controllers\Student\MessageController;
 use App\Http\Controllers\StudentController;
 use App\Http\Controllers\TestController;
@@ -72,6 +75,18 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('notifications.markAllAsRead');
     Route::post('/notifications/{id}/mark-read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    // Zudlik bilan ish olib boriladigan holatlar (xavfli javoblar).
+    Route::get('/critical-alerts', [CriticalAlertController::class, 'index'])->name('critical-alerts.index');
+    Route::post('/critical-alerts/{student}/resolve', [CriticalAlertController::class, 'resolve'])->name('critical-alerts.resolve');
+
+    Route::get('/blocks', [BlockController::class, 'index'])->name('blocks.index');
+    Route::get('/blocks/create', [BlockController::class, 'create'])->name('blocks.create');
+    Route::post('/blocks', [BlockController::class, 'store'])->name('blocks.store');
+    Route::get('/blocks/{block}/edit', [BlockController::class, 'edit'])->name('blocks.edit');
+    Route::put('/blocks/{block}', [BlockController::class, 'update'])->name('blocks.update');
+    Route::delete('/blocks/{block}', [BlockController::class, 'destroy'])->name('blocks.destroy');
+    Route::patch('/blocks/change-status', [BlockController::class, 'changeStatus'])->name('blocks.change-status');
+
     Route::get('/test/index', [TestController::class, 'index'])->name('test_index');
     Route::get('/test/create', [TestController::class, 'create'])->name('test_create');
     Route::post('/test/store', [TestController::class, 'store'])->name('test_store');
@@ -128,6 +143,10 @@ Route::middleware(['auth', 'student'])->group(function () {
     Route::get('/student/index', [StudentController::class, 'index'])->name('student_test_index');
     Route::get('/test/take/{moduleId}', [StudentController::class, 'takeTest'])->name('student_test_take');
     Route::post('/student/test/solve', [StudentController::class, 'submitTest'])->name('student_test_solve');
+
+    // Qiziqishlar (hobby) faqat talaba uchun.
+    Route::get('/student/hobbies', [HobbyController::class, 'index'])->name('student.hobbies.index');
+    Route::post('/student/hobbies', [HobbyController::class, 'store'])->name('student.hobbies.store');
 });
 Route::middleware(['auth'])->prefix('student')->name('student.')->group(function () {
     Route::get('/requests', [ConversationController::class, 'index'])->name('requests.index');

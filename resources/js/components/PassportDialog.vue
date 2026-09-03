@@ -24,35 +24,29 @@ const props = defineProps<{
     /** Xulosa maydoni sarlavhasi uchun: "Talaba", "Xodim", "Nomzod". */
     subjectLabel: string;
     /**
-     * Nomzodlar uchun `true`: passportda faqat xulosa bo'ladi, qobiliyatlar
-     * ketma-ketligi va temperament tipi so'ralmaydi.
+     * Nomzodlar uchun `true`: passportda faqat xulosa bo'ladi, temperament
+     * tipi so'ralmaydi.
      */
     conclusionOnly?: boolean;
+    /**
+     * Talaba qiziqishlari — passportda qobiliyatlar ketma-ketligi o'rniga
+     * shular chiqadi. Talaba o'z panelidan kiritadi, bu yerda faqat ko'rinadi.
+     */
+    hobbies?: string[];
+    /** Xavf darajasi bayrog'i (biriktirilgan bo'lsa). */
+    riskFlag?: { value: string; label: string; color: string } | null;
 }>();
 
 const emit = defineEmits<{
     'update:open': [value: boolean];
-    saved: [passport: { character_traits?: string[]; temperament_type?: string; conclusion: string }];
+    saved: [passport: { temperament_type?: string; conclusion: string }];
 }>();
 
 const isDownloading = ref(false);
 const requestError = ref('');
 const errors = ref<Record<string, string>>({});
 
-const normalizeCharacterTraits = (traits: unknown) => {
-    const values = Array.isArray(traits)
-        ? traits.map((trait) => String(trait ?? '').trim()).slice(0, 5)
-        : [];
-
-    while (values.length < 5) {
-        values.push('');
-    }
-
-    return values;
-};
-
 const buildForm = (passport: any = null) => ({
-    characterTraits: normalizeCharacterTraits(passport?.character_traits),
     temperamentType: passport?.temperament_type || '',
     conclusion: passport?.conclusion || '',
 });
@@ -104,16 +98,8 @@ const slugify = (value: string) =>
 const validate = () => {
     const found: Record<string, string> = {};
 
-    if (!props.conclusionOnly) {
-        form.value.characterTraits.forEach((trait, index) => {
-            if (!trait.trim()) {
-                found[`characterTraits.${index}`] = `${index + 1}-qobiliyatni kiriting.`;
-            }
-        });
-
-        if (!form.value.temperamentType.trim()) {
-            found.temperamentType = 'Temperament tipini kiriting.';
-        }
+    if (!props.conclusionOnly && !form.value.temperamentType.trim()) {
+        found.temperamentType = 'Temperament tipini kiriting.';
     }
 
     if (!form.value.conclusion.trim()) {
@@ -138,10 +124,6 @@ const downloadPdf = async () => {
         const formData = new FormData();
 
         if (!props.conclusionOnly) {
-            form.value.characterTraits.forEach((trait, index) => {
-                formData.append(`character_traits[${index}]`, trait.trim());
-            });
-
             formData.append('temperament_type', form.value.temperamentType.trim());
         }
 
@@ -165,10 +147,7 @@ const downloadPdf = async () => {
 
                 Object.entries(errorPayload.errors).forEach(([key, value]) => {
                     if (Array.isArray(value) && value[0]) {
-                        if (key.startsWith('character_traits.')) {
-                            const index = key.split('.').pop();
-                            validationErrors[`characterTraits.${index}`] = value[0];
-                        } else if (key === 'temperament_type') {
+                        if (key === 'temperament_type') {
                             validationErrors.temperamentType = value[0];
                         } else if (key === 'conclusion') {
                             validationErrors.conclusion = value[0];
@@ -215,7 +194,6 @@ const downloadPdf = async () => {
         const stored = props.conclusionOnly
             ? { conclusion: form.value.conclusion.trim() }
             : {
-                  character_traits: form.value.characterTraits.map((trait) => trait.trim()),
                   temperament_type: form.value.temperamentType.trim(),
                   conclusion: form.value.conclusion.trim(),
               };
@@ -247,21 +225,22 @@ const downloadPdf = async () => {
                     </p>
                 </div>
 
-                <div v-if="!conclusionOnly" class="grid gap-3">
-                    <label class="text-sm font-medium">Xarakterdagi qobiliyatlar ketma-ketligi</label>
-                    <div class="grid gap-3 sm:grid-cols-2">
-                        <div v-for="(_, index) in form.characterTraits" :key="index" class="space-y-1">
-                            <input
-                                v-model="form.characterTraits[index]"
-                                type="text"
-                                :placeholder="`${index + 1}-qobiliyat`"
-                                class="file:text-foreground placeholder:text-muted-foreground selection:bg-primary selection:text-primary-foreground dark:bg-input/30 border-input h-9 w-full min-w-0 rounded-md border bg-transparent px-3 py-1 text-base shadow-xs transition-[color,box-shadow] outline-none md:text-sm focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px]"
-                            />
-                            <p v-if="errors[`characterTraits.${index}`]" class="text-sm text-red-600">
-                                {{ errors[`characterTraits.${index}`] }}
-                            </p>
-                        </div>
+                <div v-if="!conclusionOnly" class="grid gap-2">
+                    <label class="text-sm font-medium">Talaba qiziqishlari</label>
+                    <div v-if="hobbies && hobbies.length > 0" class="flex flex-wrap gap-2">
+                        <span
+                            v-for="(hobby, index) in hobbies"
+                            :key="index"
+                            class="inline-flex items-center gap-1.5 rounded-lg bg-muted px-3 py-1.5 text-sm"
+                        >
+                            <span class="text-xs font-semibold text-muted-foreground">{{ index + 1 }}.</span>
+                            {{ hobby }}
+                        </span>
                     </div>
+                    <p v-else class="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+                        Talaba hali qiziqishlarini kiritmagan. Ular talaba panelidagi "Qiziqishlar" bo'limidan
+                        kiritiladi va passportga avtomatik tushadi.
+                    </p>
                 </div>
 
                 <div v-if="!conclusionOnly" class="space-y-1">
@@ -289,6 +268,22 @@ const downloadPdf = async () => {
                     />
                     <p v-if="errors.conclusion" class="text-sm text-red-600">
                         {{ errors.conclusion }}
+                    </p>
+                </div>
+
+                <div v-if="!conclusionOnly" class="grid gap-2">
+                    <label class="text-sm font-medium">Xavf darajasi</label>
+                    <div v-if="riskFlag" class="flex items-center gap-2 rounded-lg border px-3 py-2.5">
+                        <span
+                            class="inline-block h-3.5 w-3.5 rounded-full"
+                            :style="{ backgroundColor: riskFlag.color }"
+                        />
+                        <span class="text-sm font-semibold" :style="{ color: riskFlag.color }">
+                            {{ riskFlag.label }}
+                        </span>
+                    </div>
+                    <p v-else class="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">
+                        Bayroq biriktirilmagan — passportda xavf darajasi ko'rsatilmaydi.
                     </p>
                 </div>
 

@@ -16,6 +16,7 @@ class StudentTestServices
     public function __construct(
         private SolveTest $solveTest,
         private DashboardAggregateCacheService $dashboardAggregateCacheService,
+        private CriticalAlertService $criticalAlertService,
     ) {}
 
     /**
@@ -110,6 +111,12 @@ class StudentTestServices
                 'result_fake' => $resultFake,
                 'result_real' => $realResult,
             ]);
+            // Xavfli deb belgilangan variant tanlangan bo'lsa, zudlik bilan
+            // ish olib borish uchun ogohlantirish yoziladi.
+            $criticalCount = $student
+                ? $this->criticalAlertService->recordForSubmission($student, $moduleId, $testOptionIds)
+                : 0;
+
             DB::commit();
             $this->dashboardAggregateCacheService->forgetAll();
             app(ResultCategoryStatsService::class)->flush();
@@ -131,6 +138,7 @@ class StudentTestServices
                         'answers_count' => count($answers),
                         'result_fake' => $resultFake,
                         'result_real' => $realResult,
+                        'critical_alerts' => $criticalCount,
                     ])
                     ->log($description);
             }

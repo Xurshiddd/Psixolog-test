@@ -12,6 +12,7 @@ use App\Services\EmployeePopulationStatsService;
 use App\Services\ModuleScoreRangeReportService;
 use App\Services\ResultCategoryStatsService;
 use App\Services\StudentPopulationStatsService;
+use App\Support\RiskFlag;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class BuildDashboardPage
@@ -105,6 +106,8 @@ class BuildDashboardPage
                 'reportAudienceStats' => $this->moduleScoreReportAudienceStats($selectedModule, $filters),
                 'resultCategoryStats' => $this->resultCategoryStatsService->getStats(),
                 'categoryStudentStats' => $this->dashboardAggregateCacheService->categoryStudentStats(),
+                'flagStudentStats' => $this->dashboardAggregateCacheService->flagStudentStats(),
+                'flagOptions' => RiskFlag::options(),
                 'faculityStudentStats' => $this->dashboardAggregateCacheService->faculityStudentStats(),
             ],
         ];
@@ -127,6 +130,7 @@ class BuildDashboardPage
                 'faculity_name' => $row->faculity_name,
                 'group_name' => $row->group_name,
                 'level' => $row->level,
+                'flag' => RiskFlag::isValid($row->flag) ? $row->flag : null,
                 'score' => (int) $row->score,
             ]);
     }

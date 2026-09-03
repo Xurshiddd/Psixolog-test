@@ -326,6 +326,42 @@
             font-size: 13px;
             line-height: 1.6;
         }
+
+        .traits-empty {
+            color: #77859a;
+            font-size: 11px;
+            font-style: italic;
+            margin: 0;
+        }
+
+        /* Xavf darajasi: rangli dumaloq belgi bilan. */
+        .risk-card {
+            border: 1px solid #dde3ec;
+            border-radius: 6px;
+            margin-top: 10px;
+            padding: 8px 12px;
+        }
+
+        .risk-dot {
+            border-radius: 50%;
+            display: inline-block;
+            height: 12px;
+            margin-right: 6px;
+            vertical-align: middle;
+            width: 12px;
+        }
+
+        .risk-title {
+            color: #56637a;
+            font-size: 11px;
+            vertical-align: middle;
+        }
+
+        .risk-label {
+            font-size: 12px;
+            font-weight: 700;
+            vertical-align: middle;
+        }
     </style>
 </head>
 <body>
@@ -411,12 +447,16 @@
                     @if($profile['show_traits'])
                         <div class="section-card">
                             <div class="card-caption">1-bo‘lim</div>
-                            <h2 class="card-heading">Xarakterdagi qobiliyatlar ketma-ketligi</h2>
-                            <ol class="traits-list">
-                                @foreach($passportData['character_traits'] as $trait)
-                                    <li>{{ $trait }}</li>
-                                @endforeach
-                            </ol>
+                            <h2 class="card-heading">Talaba qiziqishlari</h2>
+                            @if(!empty($profile['hobbies']))
+                                <ol class="traits-list">
+                                    @foreach($profile['hobbies'] as $hobby)
+                                        <li>{{ $hobby }}</li>
+                                    @endforeach
+                                </ol>
+                            @else
+                                <p class="traits-empty">Talaba qiziqishlarini hali kiritmagan.</p>
+                            @endif
                         </div>
 
                         <div class="accent-card">
@@ -443,6 +483,17 @@
                         <h2 class="card-heading">{{ $profile['conclusion_title'] }}</h2>
                         <p class="conclusion-text">{{ $passportData['conclusion'] }}</p>
                     </div>
+
+                    {{-- Xavf darajasi faqat bayroq biriktirilgan bo'lsa chiqadi. --}}
+                    @if(!empty($profile['risk_flag']))
+                        <div class="risk-card">
+                            <span class="risk-dot" style="background-color: {{ $profile['risk_flag']['color'] }};"></span>
+                            <span class="risk-title">Xavf darajasi:</span>
+                            <span class="risk-label" style="color: {{ $profile['risk_flag']['color'] }};">
+                                {{ $profile['risk_flag']['label'] }}
+                            </span>
+                        </div>
+                    @endif
                 </td>
             </tr>
         </table>

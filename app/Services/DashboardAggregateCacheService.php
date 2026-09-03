@@ -7,6 +7,7 @@ use App\Models\Faculity;
 use App\Models\Module;
 use App\Models\Test;
 use App\Models\User;
+use App\Support\RiskFlag;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,8 @@ class DashboardAggregateCacheService
 
     private const FACULITY_STUDENT_STATS_KEY = 'dashboard:faculity-student-stats';
 
+    private const FLAG_STUDENT_STATS_KEY = 'dashboard:flag-student-stats';
+
     /**
      * @return array<string, int>
      */
@@ -33,15 +36,19 @@ class DashboardAggregateCacheService
             self::OVERVIEW_KEY,
             now()->addMinutes(self::CACHE_TTL_MINUTES),
             function (): array {
-                $activeModulesCount = Module::query()->where('is_active', true)->count();
+                $activeModulesCount = Module::query()->visible()->count();
 
                 $studentStats = $this->roleSolveStats('student');
                 $employeeStats = $this->roleSolveStats('employee');
                 $guestStats = $this->roleSolveStats('guest');
 
                 return [
-                    'tests_count' => Test::query()->count(),
-                    'modules_count' => Module::query()->count(),
+                    // Statusi o'chirilgan modul platformada yo'qday ko'rinadi,
+                    // shuning uchun uning savollari ham sanalmaydi.
+                    'tests_count' => Test::query()
+                        ->whereHas('module', fn ($query) => $query->visible())
+                        ->count(),
+                    'modules_count' => $activeModulesCount,
                     'active_modules_count' => $activeModulesCount,
                     'student_users_count' => $studentStats['users_count'],
                     'students_solved_at_least_one_module' => $studentStats['solved_at_least_one'],
@@ -67,7 +74,7 @@ class DashboardAggregateCacheService
     {
         // Shu auditoriyaga (rolga) tegishli aktiv modullar soni.
         $roleActiveModulesCount = Module::query()
-            ->where('is_active', true)
+            ->visible()
             ->forAudience($role)
             ->count();
 
@@ -113,6 +120,7 @@ class DashboardAggregateCacheService
                 now()->addMinutes(self::CACHE_TTL_MINUTES),
                 function (): array {
                     return Module::query()
+                        ->visible()
                         ->select(['id', 'name'])
                         ->withCount('usersTestsResults')
                         ->orderBy('name')
@@ -145,6 +153,47 @@ class DashboardAggregateCacheService
                             'studentCount' => (int) $category->users_category_count,
                         ])
                         ->all();
+                }
+            )
+        );
+    }
+
+    /**
+     * Bayroqlar bo'yicha talabalar statistikasi. Talabaning bayrog'i —
+     * uning natijalari orasidagi eng og'ir bayroq (qizil > sariq > yashil).
+     *
+     * @return Collection<int, array{flag: string, name: string, color: string, studentCount: int}>
+     */
+    public function flagStudentStats(): Collection
+    {
+        return collect(
+            Cache::remember(
+                self::FLAG_STUDENT_STATS_KEY,
+                now()->addMinutes(self::CACHE_TTL_MINUTES),
+                function (): array {
+                    // Har bir talabaning eng og'ir bayrog'ini topamiz.
+                    $flagsByUser = DB::table('users_tests_results')
+                        ->join('users', 'users.id', '=', 'users_tests_results.user_id')
+                        ->join('modules', 'modules.id', '=', 'users_tests_results.module_id')
+                        ->where('users.role', 'student')
+                        ->whereNull('users.merged_into_user_id')
+                        ->where('modules.is_active', true)
+                        ->whereNotNull('users_tests_results.flag')
+                        ->select('users_tests_results.user_id', 'users_tests_results.flag')
+                        ->get()
+                        ->groupBy('user_id')
+                        ->map(fn ($rows): ?string => RiskFlag::mostSevere($rows->pluck('flag')));
+
+                    $counts = $flagsByUser->countBy(fn (?string $flag): string => (string) $flag);
+
+                    return array_map(
+                        static fn (array $option): array => [
+                            ...$option,
+                            'name' => $option['label'],
+                            'studentCount' => (int) ($counts[$option['value']] ?? 0),
+                        ],
+                        RiskFlag::options()
+                    );
                 }
             )
         );
@@ -191,6 +240,7 @@ class DashboardAggregateCacheService
             self::MODULE_SUMMARIES_KEY,
             self::CATEGORY_STUDENT_STATS_KEY,
             self::FACULITY_STUDENT_STATS_KEY,
+            self::FLAG_STUDENT_STATS_KEY,
         ];
     }
 }

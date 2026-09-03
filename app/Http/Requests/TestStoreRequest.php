@@ -34,6 +34,8 @@ class TestStoreRequest extends FormRequest
             'questions.*.options' => 'nullable|array',
             'questions.*.options.*.option_text' => 'required|string',
             'questions.*.options.*.option_value' => 'required|numeric',
+            // Xavfli variant: talaba tanlasa zudlik bilan ogohlantirish yoziladi.
+            'questions.*.options.*.is_critical' => 'nullable|boolean',
             'questions.*.image' => 'nullable|image|max:5048',
         ];
     }

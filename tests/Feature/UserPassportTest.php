@@ -2,7 +2,10 @@
 
 use App\Models\Employee;
 use App\Models\Guest;
+use App\Models\Hobby;
+use App\Models\Module;
 use App\Models\User;
+use App\Support\RiskFlag;
 use App\Models\UserPassport;
 
 function makePassportUser(string $role, array $attributes = []): User
@@ -153,11 +156,39 @@ test('talaba passportining barcha maydonlari validatsiyadan o\'tadi', function (
     $admin = makePassportUser('admin');
     $student = makePassportUser('student');
 
+    // Qobiliyatlar ketma-ketligi passportdan olib tashlandi — uning o'rniga
+    // talabaning qiziqishlari (hobby) chiqadi, ular formada so'ralmaydi.
     $this->actingAs($admin)
         ->post(route('admin.students.passport.pdf', $student), [
-            'character_traits' => ['Faqat', 'Uchta', 'Xislat'],
             'temperament_type' => '',
             'conclusion' => '',
         ])
-        ->assertSessionHasErrors(['character_traits', 'temperament_type', 'conclusion']);
+        ->assertSessionHasErrors(['temperament_type', 'conclusion'])
+        ->assertSessionDoesntHaveErrors(['character_traits']);
+});
+
+test('talaba passportida qiziqishlar va xavf darajasi chiqadi', function () {
+    $admin = makePassportUser('admin');
+    $student = makePassportUser('student');
+
+    Hobby::create(['user_id' => $student->id, 'name' => 'Shaxmat']);
+    Hobby::create(['user_id' => $student->id, 'name' => 'Suzish']);
+
+    $module = Module::create(['name' => 'Stress', 'is_active' => true, 'audiences' => ['student']]);
+    $module->usersTestsResults()->attach($student->id, ['flag' => RiskFlag::RED]);
+
+    $response = $this->actingAs($admin)
+        ->post(route('admin.students.passport.pdf', $student), [
+            'temperament_type' => 'Flegmatik',
+            'conclusion' => 'Psixologik holati kuzatuvni talab qiladi.',
+        ]);
+
+    $response->assertOk();
+    expect($response->headers->get('content-type'))->toContain('application/pdf');
+
+    // Qobiliyatlar ketma-ketligi endi saqlanmaydi.
+    $this->assertDatabaseHas('user_passports', [
+        'user_id' => $student->id,
+        'character_traits' => null,
+    ]);
 });

@@ -38,6 +38,7 @@ class TestBuildServices
                         'test_id' => $question->id,
                         'option_text' => $optionData['option_text'],
                         'option_value' => $optionData['option_value'] ?? 0,
+                        'is_critical' => (bool) ($optionData['is_critical'] ?? false),
                     ]);
                 }
             }
@@ -135,6 +136,7 @@ class TestBuildServices
                     $option->update([
                         'option_text' => $optionData['option_text'],
                         'option_value' => $optionData['option_value'] ?? 0,
+                        'is_critical' => (bool) ($optionData['is_critical'] ?? false),
                     ]);
                     $updatedOptionIds[] = $option->id;
                 }
@@ -143,6 +145,7 @@ class TestBuildServices
                     'test_id' => $test->id,
                     'option_text' => $optionData['option_text'],
                     'option_value' => $optionData['option_value'] ?? 0,
+                    'is_critical' => (bool) ($optionData['is_critical'] ?? false),
                 ]);
                 $updatedOptionIds[] = $option->id;
             }

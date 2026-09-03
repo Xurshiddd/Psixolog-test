@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Application\Dashboard\Data\ReportAudience;
+use App\Support\RiskFlag;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Pagination\LengthAwarePaginator as Paginator;
 use Illuminate\Support\Collection;
@@ -98,7 +99,11 @@ class ModuleScoreRangeReportService
      * Har bir toifa (talaba / xodim / ishga qabul qilinmagan) uchun alohida
      * avtomatik xulosa yozadi. Bo'sh qoldirilgan toifa o'tkazib yuboriladi.
      *
+     * Bayroq (qizil/sariq/yashil) tanlangan bo'lsa, u ham shu oraliqdagi
+     * natijalarga biriktiriladi.
+     *
      * @param  array<string, string|null>  $conclusionsByRole
+     * @param  array<string, string|null>  $flagsByRole
      * @return array<string, int>
      */
     public function updateAutomaticConclusions(
@@ -107,13 +112,17 @@ class ModuleScoreRangeReportService
         int $maxScore,
         array $conclusionsByRole,
         bool $overwriteExisting,
+        array $flagsByRole = [],
     ): array {
         $updatedByRole = [];
 
         foreach (ReportAudience::roles() as $role) {
             $automaticConclusion = trim((string) ($conclusionsByRole[$role] ?? ''));
+            $flag = $flagsByRole[$role] ?? null;
+            $flag = RiskFlag::isValid($flag) ? $flag : null;
 
-            if ($automaticConclusion === '') {
+            // Na xulosa, na bayroq berilgan bo'lsa — bu toifa o'zgarmaydi.
+            if ($automaticConclusion === '' && $flag === null) {
                 continue;
             }
 
@@ -125,7 +134,9 @@ class ModuleScoreRangeReportService
                         ->select('id');
                 });
 
-            if (! $overwriteExisting) {
+            // Ustidan yozish o'chiq bo'lsa, faqat xulosasi bo'shlari yangilanadi.
+            // Bayroq yolg'iz yuborilganda bu cheklov qo'llanmaydi.
+            if (! $overwriteExisting && $automaticConclusion !== '') {
                 $query->where(function ($query): void {
                     $query
                         ->whereNull('result_real')
@@ -133,10 +144,17 @@ class ModuleScoreRangeReportService
                 });
             }
 
-            $updatedByRole[$role] = (int) $query->update([
-                'result_real' => $automaticConclusion,
-                'updated_at' => now(),
-            ]);
+            $payload = ['updated_at' => now()];
+
+            if ($automaticConclusion !== '') {
+                $payload['result_real'] = $automaticConclusion;
+            }
+
+            if ($flag !== null) {
+                $payload['flag'] = $flag;
+            }
+
+            $updatedByRole[$role] = (int) $query->update($payload);
         }
 
         return $updatedByRole;
@@ -159,11 +177,9 @@ class ModuleScoreRangeReportService
             ->leftJoin('groups', 'groups.id', '=', 'users.group_id')
             ->whereIn('users.role', ReportAudience::normalize($roles))
             ->whereBetween('module_scores.score', [$minScore, $maxScore])
-            ->whereExists(function ($query) use ($moduleId) {
-                $query->selectRaw('1')
-                    ->from('users_tests_results')
-                    ->whereColumn('users_tests_results.user_id', 'users.id')
-                    ->where('users_tests_results.module_id', $moduleId);
+            ->join('users_tests_results', function ($join) use ($moduleId) {
+                $join->on('users_tests_results.user_id', '=', 'users.id')
+                    ->where('users_tests_results.module_id', '=', $moduleId);
             })
             ->orderByDesc('module_scores.score')
             ->orderBy('users.name')
@@ -175,6 +191,7 @@ class ModuleScoreRangeReportService
                 COALESCE(faculities.name, '-') as faculity_name,
                 COALESCE(groups.name, '-') as group_name,
                 COALESCE(users.level, '-') as level,
+                users_tests_results.flag as flag,
                 module_scores.score
             ");
     }
@@ -183,6 +200,11 @@ class ModuleScoreRangeReportService
     {
         return DB::table('solve_tests')
             ->join('test_options', 'test_options.id', '=', 'solve_tests.test_option_id')
+            // O'chirilgan modul hisobotda ham ko'rinmaydi.
+            ->join('modules', function ($join) {
+                $join->on('modules.id', '=', 'solve_tests.module_id')
+                    ->where('modules.is_active', '=', true);
+            })
             ->select('solve_tests.user_id', 'solve_tests.module_id')
             ->selectRaw('SUM(test_options.option_value) as score')
             ->where('solve_tests.module_id', $moduleId)

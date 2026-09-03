@@ -4,6 +4,7 @@ import { Head, Link, router, useForm } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
 import CategoryStudentChart from '@/components/CategoryStudentChart.vue';
 import FaculityStudentChart from '@/components/FaculityStudentChart.vue';
+import FlagStudentChart from '@/components/FlagStudentChart.vue';
 import ModuleStatsChart from '@/components/ModuleStatsChart.vue';
 import ResultCategoryChart from '@/components/ResultCategoryChart.vue';
 import {
@@ -82,6 +83,7 @@ interface ModuleScoreReportUser {
     faculity_name: string;
     group_name: string;
     level: string;
+    flag: string | null;
     score: number;
 }
 
@@ -104,6 +106,9 @@ interface PaginatedData<T> {
     }>;
 }
 
+type FlagOption = { value: string; label: string; color: string };
+type FlagStudentStatItem = { value: string; name: string; color: string; studentCount: number };
+
 const props = defineProps<{ 
     tests: any; 
     testsCount: number; 
@@ -124,6 +129,8 @@ const props = defineProps<{
     };
     moduleScoreReport?: PaginatedData<ModuleScoreReportUser> | null;
     reportAudienceStats?: ReportAudienceStat[];
+    flagStudentStats?: FlagStudentStatItem[];
+    flagOptions?: FlagOption[];
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -274,24 +281,45 @@ const conclusionForm = useForm<{
     min_score: string;
     max_score: string;
     conclusions: Record<string, string>;
+    flags: Record<string, string>;
     overwrite_auto_conclusion: boolean;
 }>({
     report_module_id: selectedModuleId.value,
     min_score: minScore.value,
     max_score: maxScore.value,
     conclusions: {},
+    flags: {},
     overwrite_auto_conclusion: false,
 });
+
+const flagOptions = computed<FlagOption[]>(() => props.flagOptions ?? []);
+const flagColor = (flag: string | null) => flagOptions.value.find((option) => option.value === flag)?.color ?? null;
+const flagLabel = (flag: string | null) => flagOptions.value.find((option) => option.value === flag)?.label ?? '';
+
+// Bayroq tugmasi qayta bosilsa tanlov bekor qilinadi.
+const toggleFlag = (role: string, flag: string) => {
+    conclusionForm.flags = {
+        ...conclusionForm.flags,
+        [role]: conclusionForm.flags[role] === flag ? '' : flag,
+    };
+};
 
 const conclusionError = (role: string) => conclusionForm.errors[`conclusions.${role}` as keyof typeof conclusionForm.errors];
 
 const hasAnyConclusion = computed(() =>
-    presentAudienceStats.value.some((audience) => (conclusionForm.conclusions[audience.role] ?? '').trim() !== ''),
+    presentAudienceStats.value.some(
+        (audience) =>
+            (conclusionForm.conclusions[audience.role] ?? '').trim() !== '' ||
+            (conclusionForm.flags[audience.role] ?? '') !== '',
+    ),
 );
 
 const openConclusionModal = () => {
     conclusionForm.clearErrors();
     conclusionForm.conclusions = Object.fromEntries(
+        presentAudienceStats.value.map((audience) => [audience.role, '']),
+    );
+    conclusionForm.flags = Object.fromEntries(
         presentAudienceStats.value.map((audience) => [audience.role, '']),
     );
     conclusionForm.overwrite_auto_conclusion = false;
@@ -527,6 +555,38 @@ const submitConclusionUpdate = () => {
                                     <p v-if="conclusionError(audience.role)" class="mt-1 text-sm text-red-600 dark:text-red-400">
                                         {{ conclusionError(audience.role) }}
                                     </p>
+
+                                    <div class="mt-3">
+                                        <p class="mb-2 text-sm font-medium text-slate-700 dark:text-slate-200">Bayroq</p>
+                                        <div class="flex flex-wrap gap-2">
+                                            <button
+                                                v-for="option in flagOptions"
+                                                :key="option.value"
+                                                type="button"
+                                                class="inline-flex items-center gap-2 rounded-lg border px-3 py-2 text-sm font-medium transition"
+                                                :class="conclusionForm.flags[audience.role] === option.value
+                                                    ? 'border-transparent text-white shadow-sm'
+                                                    : 'border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-slate-600 dark:text-slate-200 dark:hover:bg-slate-700/50'"
+                                                :style="conclusionForm.flags[audience.role] === option.value
+                                                    ? { backgroundColor: option.color }
+                                                    : {}"
+                                                @click="toggleFlag(audience.role, option.value)"
+                                            >
+                                                <span
+                                                    class="inline-block h-2.5 w-2.5 rounded-full"
+                                                    :style="{ backgroundColor: conclusionForm.flags[audience.role] === option.value ? '#ffffff' : option.color }"
+                                                />
+                                                {{ option.label }}
+                                            </button>
+                                        </div>
+                                        <p class="mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                                            Tanlansa, bu oraliqdagi barcha natijalarga shu bayroq biriktiriladi. Tanlanmasa
+                                            avvalgi bayroq o'zgarmaydi.
+                                        </p>
+                                        <p v-if="conclusionForm.errors[`flags.${audience.role}` as keyof typeof conclusionForm.errors]" class="mt-1 text-sm text-red-600 dark:text-red-400">
+                                            {{ conclusionForm.errors[`flags.${audience.role}` as keyof typeof conclusionForm.errors] }}
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <p v-if="presentAudienceStats.length === 0" class="text-sm text-amber-600 dark:text-amber-400">
@@ -653,12 +713,13 @@ const submitConclusionUpdate = () => {
                                         <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Fakultet</th>
                                         <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Guruh</th>
                                         <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Kurs</th>
+                                        <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Bayroq</th>
                                         <th class="px-4 py-3 text-left font-semibold text-slate-700 dark:text-slate-200">Ball</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200 bg-white dark:divide-slate-700 dark:bg-slate-800">
                                     <tr v-if="!props.moduleScoreReport || props.moduleScoreReport.data.length === 0">
-                                        <td colspan="7" class="px-4 py-6 text-center text-slate-500 dark:text-slate-400">
+                                        <td colspan="8" class="px-4 py-6 text-center text-slate-500 dark:text-slate-400">
                                             Berilgan parametr bo‘yicha foydalanuvchi topilmadi.
                                         </td>
                                     </tr>
@@ -669,6 +730,19 @@ const submitConclusionUpdate = () => {
                                         <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ reportUser.faculity_name }}</td>
                                         <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ reportUser.group_name }}</td>
                                         <td class="px-4 py-3 text-slate-700 dark:text-slate-200">{{ reportUser.level }}</td>
+                                        <td class="px-4 py-3">
+                                            <span
+                                                v-if="reportUser.flag"
+                                                class="inline-flex items-center gap-1.5 text-sm text-slate-700 dark:text-slate-200"
+                                            >
+                                                <span
+                                                    class="inline-block h-2.5 w-2.5 rounded-full"
+                                                    :style="{ backgroundColor: flagColor(reportUser.flag) ?? undefined }"
+                                                />
+                                                {{ flagLabel(reportUser.flag) }}
+                                            </span>
+                                            <span v-else class="text-slate-400">-</span>
+                                        </td>
                                         <td class="px-4 py-3 font-semibold text-slate-900 dark:text-slate-100">{{ reportUser.score }}</td>
                                     </tr>
                                 </tbody>
@@ -707,6 +781,7 @@ const submitConclusionUpdate = () => {
             <div class="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <ResultCategoryChart v-if="props.resultCategoryStats && props.resultCategoryStats.length > 0" :result-category-stats="props.resultCategoryStats" />
                 <CategoryStudentChart v-if="props.categoryStudentStats && props.categoryStudentStats.length > 0" :category-student-stats="props.categoryStudentStats" />
+                <FlagStudentChart v-if="props.flagStudentStats" :flag-student-stats="props.flagStudentStats" />
             </div>
             <FaculityStudentChart
                 v-if="props.faculityStudentStats && props.faculityStudentStats.length > 0"

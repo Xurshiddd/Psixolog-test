@@ -23,7 +23,7 @@ interface Question {
     text: string;
     required: boolean;
     reverseScoring: boolean;
-  options: Array<{ id: number; label: string; value: number }>;
+  options: Array<{ id: number; label: string; value: number; isCritical: boolean }>;
   imageFile?: File | null;
   imagePreview?: string | null;
 }
@@ -61,8 +61,8 @@ const addQuestion = (type: QuestionType) => {
         required: true,
         reverseScoring: false,
         options: type !== 'text' ? [
-            { id: optionIdCounter++, label: '', value: 1 },
-            { id: optionIdCounter++, label: '', value: 1 },
+            { id: optionIdCounter++, label: '', value: 1, isCritical: false },
+            { id: optionIdCounter++, label: '', value: 1, isCritical: false },
         ] : [],
     imageFile: null,
     imagePreview: null,
@@ -110,7 +110,7 @@ const removeImage = (questionId: number) => {
 const addOption = (questionId: number) => {
     const question = questions.value.find(q => q.id === questionId);
     if (question) {
-        question.options.push({ id: optionIdCounter++, label: '', value: 1 });
+        question.options.push({ id: optionIdCounter++, label: '', value: 1, isCritical: false });
     }
 };
 
@@ -143,6 +143,7 @@ const saveTest = async () => {
             options: q.options.map(o => ({
                 option_text: o.label,
                 option_value: o.value,
+                is_critical: o.isCritical,
             })),
         })),
     };
@@ -364,7 +365,12 @@ const saveTest = async () => {
             <!-- Options (for single and multi) -->
             <div v-if="question.type !== 'text'" class="mt-6">
               <div class="mb-4 flex items-center justify-between">
-                <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Variantlar</label>
+                <div>
+                  <label class="block text-sm font-medium text-slate-700 dark:text-slate-300">Variantlar</label>
+                  <p class="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                    Chapdagi qizil switch — xavfli variant. Talaba uni tanlasa "Zudlik bilan" bo'limida qizil belgi chiqadi.
+                  </p>
+                </div>
                 <button
                   @click="addOption(question.id)"
                   type="button"
@@ -376,6 +382,17 @@ const saveTest = async () => {
 
               <div class="space-y-3">
                 <div v-for="option in question.options" :key="option.id" class="flex items-end gap-3">
+                  <!-- Xavfli variant: talaba tanlasa zudlik bilan ogohlantirish chiqadi -->
+                  <label
+                    class="mb-1.5 flex cursor-pointer items-center gap-2"
+                    :title="option.isCritical ? 'Xavfli variant — zudlik bilan ogohlantirish yaratiladi' : 'Xavfli variant sifatida belgilash'"
+                  >
+                    <input type="checkbox" v-model="option.isCritical" class="peer sr-only" />
+                    <span
+                      class="peer relative h-6 w-11 shrink-0 rounded-full transition after:absolute after:top-[2px] after:left-[2px] after:h-5 after:w-5 after:rounded-full after:border after:border-gray-300 after:bg-white after:transition-all after:content-[''] peer-checked:after:translate-x-full peer-checked:after:border-white"
+                      :class="option.isCritical ? 'bg-red-600' : 'bg-gray-200 dark:bg-gray-700'"
+                    ></span>
+                  </label>
                   <div class="flex-1">
                     <input
                       v-model="option.label"

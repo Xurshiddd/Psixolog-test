@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Services\CriticalAlertService;
 use App\Services\UnreadRequestsCountService;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
@@ -32,12 +33,19 @@ class HandleInertiaRequests extends Middleware
         $user = $request->user();
         $unreadRequestsCount = app(UnreadRequestsCountService::class)->getForUser($user);
 
+        // Sidebardagi qizil belgi — hal qilinmagan xavfli holatlari bor
+        // talabalar soni. Faqat admin va psixolog uchun hisoblanadi.
+        $criticalAlertsCount = in_array($user?->role, ['admin', 'psiholog'], true)
+            ? app(CriticalAlertService::class)->pendingStudentsCount()
+            : 0;
+
         return array_merge(parent::share($request), [
             'name' => config('app.name'),
             'auth' => [
                 'user' => $user,
             ],
             'unread_requests_count' => $unreadRequestsCount,
+            'critical_alerts_count' => $criticalAlertsCount,
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
             'locale' => fn () => app()->getLocale(),
             'flash' => [
