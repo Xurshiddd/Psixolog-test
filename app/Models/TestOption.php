@@ -21,6 +21,17 @@ class TestOption extends Model
         'is_critical' => 'boolean',
     ];
 
+    /**
+     * Xavfli variant belgisi test yechuvchiga ko'rinmasligi kerak: aks holda
+     * talaba sahifa manbaidan qaysi javob ogohlantirish chiqarishini bilib,
+     * uni tanlamay qo'yadi va butun zudlik bilan xabar berish tizimi
+     * ishlamay qoladi. Modulni tahrirlash sahifasida `makeVisible` bilan
+     * ataylab ochiladi.
+     */
+    protected $hidden = [
+        'is_critical',
+    ];
+
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()

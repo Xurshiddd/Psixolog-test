@@ -34,11 +34,14 @@ Route::fallback(function () {
     return Inertia::render('Error404')->toResponse(request())->setStatusCode(404);
 });
 Route::get('dashboard', [DashboardController::class, 'index'])->middleware(['auth', 'verified'])->name('dashboard');
+// Ball oralig'i hisoboti va avtomatik xulosa/bayroq yozish — faqat admin va
+// psixolog uchun. `verified` bu yerda himoya bermaydi: User MustVerifyEmail'ni
+// implement qilmaydi, shuning uchun `double` middleware qo'yiladi.
 Route::get('dashboard/module-score-report/export', [DashboardController::class, 'exportModuleScoreReport'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'double'])
     ->name('dashboard.module-score-report.export');
 Route::post('dashboard/module-score-report/conclusions', [DashboardController::class, 'updateModuleScoreReportConclusions'])
-    ->middleware(['auth', 'verified'])
+    ->middleware(['auth', 'double'])
     ->name('dashboard.module-score-report.conclusions.update');
 
 Route::get('/hemis/redirect', [HemisAuthController::class, 'redirectToHemis'])->name('hemis_redirect');

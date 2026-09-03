@@ -60,6 +60,11 @@ class TestController extends Controller
     public function edit(string $id)
     {
         $module = Module::with(['tests.options'])->findOrFail($id);
+
+        // `is_critical` model darajasida yashirilgan (talabaga chiqmasligi
+        // uchun) — tahrirlash formasida u kerak, shuning uchun ochamiz.
+        $module->tests->each(fn ($test) => $test->options->makeVisible('is_critical'));
+
         return Inertia::render('EditTest', [
             'module' => $module
         ]);

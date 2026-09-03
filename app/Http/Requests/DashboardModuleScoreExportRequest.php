@@ -8,7 +8,9 @@ class DashboardModuleScoreExportRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return auth()->check() && auth()->user()->role !== 'student';
+        // Aniq ruxsat ro'yxati: `!== 'student'` shakli xodim va ishga qabul
+        // qilinmagan nomzodni ham o'tkazib yuborardi.
+        return auth()->check() && in_array(auth()->user()->role, ['admin', 'psiholog'], true);
     }
 
     public function rules(): array
