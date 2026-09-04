@@ -5,17 +5,12 @@ import { createApp, h } from 'vue';
 import '../css/app.css';
 import { initializeTheme } from './composables/useAppearance';
 import { configureEcho } from '@laravel/echo-vue';
-import { configureEcho } from '@laravel/echo-vue';
-
-configureEcho({
-    broadcaster: 'reverb',
-});
-
-configureEcho({
-    broadcaster: 'reverb',
-});
 import { i18nVue } from 'laravel-vue-i18n'
 import './echo'
+
+configureEcho({
+    broadcaster: 'reverb',
+});
 
 const appName = import.meta.env.VITE_APP_NAME || 'psihology-test';
 
