@@ -24,7 +24,6 @@ class BuildAdminStudentPages
     {
         $students = $this->adminStudentQueryFactory
             ->makeListQuery($filters)
-            ->latest()
             ->paginate(10)
             ->withQueryString();
 

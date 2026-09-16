@@ -31,6 +31,8 @@ const props = defineProps<{
         test_status?: string | null;
         category_id?: string | null;
         passport_status?: string | null;
+        tested_from?: string | null;
+        tested_to?: string | null;
     };
     page?: number;
 }>();
@@ -62,6 +64,8 @@ const getBackLink = () => {
         test_status: props.filters?.test_status,
         category_id: props.filters?.category_id,
         passport_status: props.filters?.passport_status,
+        tested_from: props.filters?.tested_from,
+        tested_to: props.filters?.tested_to,
     };
 
     Object.entries(filters).forEach(([key, value]) => {

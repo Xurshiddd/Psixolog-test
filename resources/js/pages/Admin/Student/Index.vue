@@ -43,6 +43,8 @@ const props = defineProps<{
         test_status?: string | null;
         category_id?: string | null;
         passport_status?: string | null;
+        tested_from?: string | null;
+        tested_to?: string | null;
     };
 }>();
 
@@ -62,9 +64,17 @@ const levelFilter = ref<string | null>(props.filters.level || null);
 const testStatusFilter = ref<string | null>(props.filters.test_status || null);
 const categoryFilter = ref<string | null>(props.filters.category_id || null);
 const passportStatusFilter = ref<string | null>(props.filters.passport_status || null);
+const testedFromFilter = ref<string>(props.filters.tested_from || '');
+const testedToFilter = ref<string>(props.filters.tested_to || '');
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
+};
+
+const formatDateTime = (dateString: string | null) => {
+    if (!dateString) return null;
+    const date = new Date(dateString);
+    return `${date.toLocaleDateString()} ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
 };
 
 const openDiagnosisModal = (student: any) => {
@@ -81,6 +91,8 @@ const getFilterParams = () => {
         test_status: testStatusFilter.value,
         category_id: categoryFilter.value,
         passport_status: passportStatusFilter.value,
+        tested_from: testedFromFilter.value,
+        tested_to: testedToFilter.value,
     };
 };
 
@@ -98,6 +110,8 @@ const resetFilters = () => {
     testStatusFilter.value = null;
     categoryFilter.value = null;
     passportStatusFilter.value = null;
+    testedFromFilter.value = '';
+    testedToFilter.value = '';
     router.get('/admin/students');
 };
 
@@ -312,6 +326,34 @@ const getStudentLink = (studentId: number) => {
                         </select>
                     </div>
 
+                    <!-- 9 Test yechgan sana (dan) -->
+                    <div>
+                        <label for="tested-from-filter" class="block text-sm font-medium mb-2">
+                            Test sanasi (dan)
+                        </label>
+                        <input
+                            id="tested-from-filter"
+                            v-model="testedFromFilter"
+                            type="date"
+                            :max="testedToFilter || undefined"
+                            class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                        />
+                    </div>
+
+                    <!-- 10 Test yechgan sana (gacha) -->
+                    <div>
+                        <label for="tested-to-filter" class="block text-sm font-medium mb-2">
+                            Test sanasi (gacha)
+                        </label>
+                        <input
+                            id="tested-to-filter"
+                            v-model="testedToFilter"
+                            type="date"
+                            :min="testedFromFilter || undefined"
+                            class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                        />
+                    </div>
+
                     <div class="flex items-end gap-2 lg:col-span-2">
                         <Button @click="applyFilters" class="flex-1">
                             Filterlash
@@ -364,6 +406,9 @@ const getStudentLink = (studentId: number) => {
                                     Ro'yxatdan o'tgan sana
                                 </th>
                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
+                                    So'nggi test
+                                </th>
+                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
                                     Xulosalar
                                 </th>
                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground [&:has([role=checkbox])]:pr-0">
@@ -400,6 +445,10 @@ const getStudentLink = (studentId: number) => {
                                 </td>
                                 <td class="p-4 align-middle [&:has([role=checkbox])]:pr-0">
                                     {{ formatDate(student.created_at) }}
+                                </td>
+                                <td class="p-4 align-middle [&:has([role=checkbox])]:pr-0 whitespace-nowrap">
+                                    <span v-if="student.last_test_at">{{ formatDateTime(student.last_test_at) }}</span>
+                                    <span v-else class="text-muted-foreground">Yechmagan</span>
                                 </td>
                                 <td class="p-4 align-middle [&:has([role=checkbox])]:pr-0">
                                     <Dialog v-if="student.users_tests_results && student.users_tests_results.length > 0">
@@ -457,7 +506,7 @@ const getStudentLink = (studentId: number) => {
                                 </td>
                             </tr>
                             <tr v-if="students.data.length === 0">
-                                <td colspan="9" class="p-4 align-middle text-center">
+                                <td colspan="10" class="p-4 align-middle text-center">
                                     Talabalar topilmadi.
                                 </td>
                             </tr>
@@ -511,6 +560,10 @@ const getStudentLink = (studentId: number) => {
                             <div>
                                 <span class="text-muted-foreground">Passport:</span>
                                 <p class="font-medium">{{ hasPassport(student) ? 'Mavjud' : 'Mavjud emas' }}</p>
+                            </div>
+                            <div>
+                                <span class="text-muted-foreground">So'nggi test:</span>
+                                <p class="font-medium">{{ student.last_test_at ? formatDateTime(student.last_test_at) : 'Yechmagan' }}</p>
                             </div>
                         </div>
 

@@ -13,6 +13,8 @@ final class AdminStudentFilters
         public readonly ?string $testStatus,
         public readonly ?int $categoryId,
         public readonly ?string $passportStatus,
+        public readonly ?string $testedFrom,
+        public readonly ?string $testedTo,
         public readonly int $page,
     ) {}
 
@@ -30,6 +32,8 @@ final class AdminStudentFilters
             self::parseNullableString($input['test_status'] ?? null),
             self::parsePositiveInt($input['category_id'] ?? null),
             self::parseNullableString($input['passport_status'] ?? null),
+            self::parseDate($input['tested_from'] ?? null),
+            self::parseDate($input['tested_to'] ?? null),
             self::parsePage($input['page'] ?? null),
         );
     }
@@ -48,6 +52,8 @@ final class AdminStudentFilters
             'test_status' => $this->testStatus,
             'category_id' => $this->categoryId,
             'passport_status' => $this->passportStatus,
+            'tested_from' => $this->testedFrom,
+            'tested_to' => $this->testedTo,
         ];
     }
 
@@ -60,6 +66,26 @@ final class AdminStudentFilters
         $trimmed = trim($value);
 
         return $trimmed === '' ? null : $trimmed;
+    }
+
+    /**
+     * Sana filtrlari faqat kun aniqligida ishlaydi (Y-m-d).
+     */
+    private static function parseDate(mixed $value): ?string
+    {
+        $trimmed = self::parseNullableString($value);
+
+        if ($trimmed === null) {
+            return null;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('Y-m-d', $trimmed);
+
+        if ($date === false || $date->format('Y-m-d') !== $trimmed) {
+            return null;
+        }
+
+        return $trimmed;
     }
 
     private static function parsePositiveInt(mixed $value): ?int

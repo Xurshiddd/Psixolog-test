@@ -30,9 +30,16 @@ class AdminStudentQueryFactory
                 'usersTestsResults' => fn ($query) => $query
                     ->select('modules.id', 'modules.name')
                     ->orderBy('modules.name'),
-            ]);
+            ])
+            ->withMax('usersTestsResults as last_test_at', 'users_tests_results.created_at');
 
         $this->applyFilters($query, $filters);
+
+        // Eng oxirgi test yechganlar tepada; hech qachon yechmaganlar
+        // (last_test_at = null) ro'yxat oxirida qoladi.
+        $query->orderByRaw('last_test_at is null')
+            ->orderByDesc('last_test_at')
+            ->orderByDesc('users.created_at');
 
         return $query;
     }
@@ -147,6 +154,18 @@ class AdminStudentQueryFactory
             $query->whereHas('passport');
         } elseif ($filters->passportStatus === 'not_exists') {
             $query->whereDoesntHave('passport');
+        }
+
+        if ($filters->testedFrom !== null || $filters->testedTo !== null) {
+            $query->whereHas('usersTestsResults', function (Builder $builder) use ($filters): void {
+                if ($filters->testedFrom !== null) {
+                    $builder->where('users_tests_results.created_at', '>=', $filters->testedFrom.' 00:00:00');
+                }
+
+                if ($filters->testedTo !== null) {
+                    $builder->where('users_tests_results.created_at', '<=', $filters->testedTo.' 23:59:59');
+                }
+            });
         }
     }
 }

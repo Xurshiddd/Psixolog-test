@@ -129,3 +129,77 @@ test('admin student exports still download successfully', function () {
 
     Carbon::setTestNow();
 });
+
+test('admin student index sorts recent test takers first and leaves non-takers last', function () {
+    $admin = createAdminStudentIndexUser('admin');
+
+    $module = Module::create([
+        'name' => 'Tartib testi',
+        'description' => 'Ordering module',
+        'is_active' => true,
+        'shuffle' => false,
+    ]);
+
+    $stale = createAdminStudentIndexUser('student', ['name' => 'Eski Yechgan']);
+    $recent = createAdminStudentIndexUser('student', ['name' => 'Yangi Yechgan']);
+    $never = createAdminStudentIndexUser('student', ['name' => 'Yechmagan']);
+
+    $stale->usersTestsResults()->attach($module->id, [
+        'created_at' => '2026-03-01 09:00:00',
+        'updated_at' => '2026-03-01 09:00:00',
+    ]);
+    $recent->usersTestsResults()->attach($module->id, [
+        'created_at' => '2026-08-15 09:00:00',
+        'updated_at' => '2026-08-15 09:00:00',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.students.index'))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('students.data', 3)
+            ->where('students.data.0.name', 'Yangi Yechgan')
+            ->where('students.data.1.name', 'Eski Yechgan')
+            ->where('students.data.2.name', 'Yechmagan')
+            ->where('students.data.2.last_test_at', null)
+        );
+});
+
+test('admin student index filters by the test date range', function () {
+    $admin = createAdminStudentIndexUser('admin');
+
+    $module = Module::create([
+        'name' => 'Sana testi',
+        'description' => 'Date range module',
+        'is_active' => true,
+        'shuffle' => false,
+    ]);
+
+    $inRange = createAdminStudentIndexUser('student', ['name' => 'Oraliqda']);
+    $outOfRange = createAdminStudentIndexUser('student', ['name' => 'Oraliqdan tashqarida']);
+
+    $inRange->usersTestsResults()->attach($module->id, [
+        'created_at' => '2026-05-10 23:30:00',
+        'updated_at' => '2026-05-10 23:30:00',
+    ]);
+    $outOfRange->usersTestsResults()->attach($module->id, [
+        'created_at' => '2026-06-01 00:10:00',
+        'updated_at' => '2026-06-01 00:10:00',
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.students.index', ['tested_from' => '2026-05-01', 'tested_to' => '2026-05-31']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->has('students.data', 1)
+            ->where('students.data.0.name', 'Oraliqda')
+            ->where('filters.tested_from', '2026-05-01')
+            ->where('filters.tested_to', '2026-05-31')
+        );
+});
+
+test('admin student index rejects an inverted test date range', function () {
+    $admin = createAdminStudentIndexUser('admin');
+
+    $this->actingAs($admin)
+        ->get(route('admin.students.index', ['tested_from' => '2026-05-31', 'tested_to' => '2026-05-01']))
+        ->assertSessionHasErrors('tested_to');
+});

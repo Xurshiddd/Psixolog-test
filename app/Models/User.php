@@ -68,6 +68,8 @@ class User extends Authenticatable
             'password' => 'hashed',
             'two_factor_confirmed_at' => 'datetime',
             'api_token_last_used_at' => 'datetime',
+            // So'nggi test sanasi — so'rovda withMax orqali qo'shiladi.
+            'last_test_at' => 'datetime',
         ];
     }
 

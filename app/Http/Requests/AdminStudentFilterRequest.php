@@ -23,6 +23,8 @@ class AdminStudentFilterRequest extends FormRequest
             'test_status' => ['nullable', Rule::in(['submitted', 'not_submitted'])],
             'category_id' => ['nullable', 'integer', 'exists:categories,id'],
             'passport_status' => ['nullable', Rule::in(['exists', 'not_exists'])],
+            'tested_from' => ['nullable', 'date_format:Y-m-d'],
+            'tested_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:tested_from'],
             'page' => ['nullable', 'integer', 'min:1'],
         ];
     }
