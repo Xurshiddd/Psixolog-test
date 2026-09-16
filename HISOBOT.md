@@ -4,7 +4,7 @@
 
 Mazkur loyiha Toshkent To'qimachilik va yengil sanoat institutining talabalari uchun mo'ljallangan psixologik diagnostika platformasidir. Tizim orqali talabalar onlayn testlarni topshiradi, administrator va psixolog esa natijalarni ko'rib chiqadi, tahlil qiladi va kerak bo'lsa qo'shimcha diagnostika xulosasini shakllantiradi.
 
-Platforma Laravel, Inertia va Vue texnologiyalari asosida qurilgan. Tizimda veb interfeys bilan bir qatorda mobil foydalanish uchun Android APK ham taqdim etilgan.
+Platforma Laravel, Inertia va Vue texnologiyalari asosida qurilgan.
 
 ## 2. Loyihaning asosiy maqsadi
 
@@ -20,14 +20,13 @@ Platformaning asosiy maqsadi:
 
 ### 3.1. Bosh sahifa
 
-Bosh sahifada platforma haqida umumiy ma'lumot beriladi. Foydalanuvchi tilni tanlashi, tizimga kirishi, video qo'llanmani ochishi va Android ilovani yuklab olishi mumkin.
+Bosh sahifada platforma haqida umumiy ma'lumot beriladi. Foydalanuvchi tilni tanlashi, tizimga kirishi, video qo'llanmani ochishi mumkin.
 
 Bosh sahifaning afzalliklari:
 
 - zamonaviy va vizual jihatdan boy dizayn;
 - foydalanuvchi uchun kirish ma'lumotlari ko'rsatilgan;
 - video qo'llanma mavjud;
-- mobil foydalanuvchilar uchun `app-release.apk` yuklab olish havolasi berilgan.
 
 ### 3.2. Autentifikatsiya va kirish
 
@@ -94,9 +93,7 @@ Bu texnologiyalar platformaga tezkorlik, interaktivlik va yaxshi foydalanuvchi t
 
 ## 5. Mobil versiya bo'yicha hisobot
 
-Mazkur loyihada mobil foydalanish ikki ko'rinishda ko'zda tutilgan:
-
-### 5.1. Responsive veb versiya
+Mazkur loyihada mobil foydalanish responsive veb versiya ko'rinishida ko'zda tutilgan.
 
 Sayt interfeysi kichik ekranlarga moslashtirilgan. Bunda:
 
@@ -106,17 +103,6 @@ Sayt interfeysi kichik ekranlarga moslashtirilgan. Bunda:
 - talaba va administrator bo'limlaridan telefon orqali ham foydalanish mumkin.
 
 Bu yondashuv saytni telefon va planshetlarda qulay ko'rinishda ishlatish imkonini beradi.
-
-### 5.2. Android mobil ilova
-
-Bosh sahifada foydalanuvchi uchun tayyor Android ilova yuklab olish havolasi mavjud. `public/app-release.apk` fayli orqali mobil qurilmaga o'rnatiladigan APK taqdim etilgan. Demak, loyiha faqat responsive sayt bilan cheklanmagan, balki alohida Android distributivni ham o'z ichiga oladi.
-
-Mobil versiyaning afzalliklari:
-
-- telefon orqali tezkor kirish;
-- foydalanuvchi uchun qulay foydalanish muhiti;
-- talabalarga doimiy foydalanish imkoniyati;
-- platformani veb brauzersiz ham tarqatish imkoniyati.
 
 ## 6. Kuchli tomonlari
 
@@ -134,17 +120,17 @@ Platformaning kuchli jihatlari quyidagilar:
 
 Kelgusida quyidagi yo'nalishlarda tizimni yanada rivojlantirish mumkin:
 
-- iOS mobil versiyasini ham yaratish;
+- mobil ilova versiyasini yaratish;
 - push bildirishnomalarni kengaytirish;
 - test natijalari bo'yicha yanada chuqurroq analitik hisobotlar qo'shish;
 - foydalanuvchi faoliyatini audit qilish imkoniyatlarini kuchaytirish;
-- mobil ilova va veb interfeys dizaynini yagona dizayn tizimiga keltirish.
+- veb interfeys dizaynini yagona dizayn tizimiga keltirish.
 
 ## 8. Xulosa
 
 Xulosa qilib aytganda, ushbu platforma talabalar psixologik diagnostikasini raqamlashtirishga xizmat qiluvchi zamonaviy axborot tizimidir. Tizimda test topshirish, natijalarni ko'rish, tahlil qilish, murojaat yuborish va boshqaruv jarayonlarini amalga oshirish uchun yetarli funksiyalar mavjud.
 
-Eng muhim jihatlardan biri shundaki, platforma nafaqat veb ko'rinishda, balki mobil foydalanish uchun ham moslashtirilgan. Responsive interfeys va Android APK mavjudligi foydalanuvchilar uchun qulaylikni yanada oshiradi.
+Eng muhim jihatlardan biri shundaki, platforma nafaqat veb ko'rinishda, balki mobil foydalanish uchun ham moslashtirilgan. Responsive interfeys foydalanuvchilar uchun qulaylikni yanada oshiradi.
 
 ## 9. Hisobot tayyorlashda asos bo'lgan fayllar
 
@@ -157,4 +143,3 @@ Eng muhim jihatlardan biri shundaki, platforma nafaqat veb ko'rinishda, balki mo
 - `resources/js/pages/Student/TakeTest.vue`
 - `resources/js/pages/Student/Requests/Index.vue`
 - `resources/js/components/ui/sidebar/Sidebar.vue`
-- `public/app-release.apk`

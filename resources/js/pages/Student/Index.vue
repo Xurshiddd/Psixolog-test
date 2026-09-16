@@ -140,64 +140,6 @@ const breadcrumbs: BreadcrumbItem[] = [
                     </div>
                 </div>
             </div>
-
-            <div
-                v-if="isStudent"
-                class="relative overflow-hidden rounded-3xl border border-cyan-200 bg-gradient-to-r from-slate-950 via-sky-950 to-cyan-900 p-6 text-white shadow-xl"
-            >
-                <div
-                    class="absolute top-1/2 -left-10 h-32 w-32 -translate-y-1/2 rounded-full bg-cyan-300/20 blur-3xl"
-                ></div>
-                <div
-                    class="absolute top-0 right-0 h-28 w-28 rounded-full bg-white/10 blur-3xl"
-                ></div>
-
-                <div
-                    class="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between"
-                >
-                    <div class="max-w-2xl">
-                        <p
-                            class="mb-2 text-sm font-semibold tracking-[0.28em] text-cyan-200 uppercase"
-                        >
-                            Mobil ilova
-                        </p>
-                        <h2 class="text-2xl font-bold">
-                            Student APK faylini shu yerdan yuklab oling
-                        </h2>
-                        <p class="mt-2 text-sm leading-6 text-slate-200">
-                            Telefon orqali foydalanish uchun tayyor Android
-                            ilova havolasi qo'shildi. Yuklab olib, qurilmangizga
-                            o'rnatishingiz mumkin.
-                        </p>
-                    </div>
-
-                    <a
-                        href="/app-release.apk"
-                        download="app-release.apk"
-                        class="apk-float apk-shimmer inline-flex items-center justify-center gap-3 self-start rounded-full bg-white px-5 py-3 font-semibold text-slate-900 shadow-[0_16px_45px_rgba(255,255,255,0.22)] transition duration-300 hover:-translate-y-1 hover:shadow-[0_22px_60px_rgba(255,255,255,0.3)]"
-                    >
-                        <span
-                            class="flex h-11 w-11 items-center justify-center rounded-full bg-slate-900 text-cyan-300"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                class="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    stroke-width="1.8"
-                                    d="M12 3v11m0 0 4-4m-4 4-4-4m-5 8h18"
-                                />
-                            </svg>
-                        </span>
-                        <span>APK yuklab olish</span>
-                    </a>
-                </div>
-            </div>
         </div>
     </AppStudentLayout>
     <StudentChatLauncher />
