@@ -43,6 +43,16 @@ const selectedCategoryIds = ref<number[]>(props.student.users_category?.map((c: 
 const isPassportModalOpen = ref(false);
 const savedPassport = ref(props.student.passport || null);
 
+const firstResultWord = (result: any): string => {
+    const text = [result.pivot.diagnosis, result.pivot.result_real]
+        .find((value) => typeof value === 'string' && value.trim()) as string | undefined;
+
+    return text?.trim().split(/\s+/u)[0] || 'Yo\'q';
+};
+
+const resultFlag = (value: string | null | undefined) =>
+    props.riskFlagOptions.find((option) => option.value === value);
+
 const syncCategories = () => {
     router.post(`/admin/students/${props.student.id}/sync-categories`, {
         category_ids: selectedCategoryIds.value,
@@ -208,13 +218,25 @@ const breadcrumbs: BreadcrumbItem[] = [
                                 <tr class="border-b">
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Modul</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Natija (Diagnostika)</th>
+                                    <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Bayroq</th>
                                     <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Amallar</th>
                                 </tr>
                             </thead>
                             <tbody class="[&_tr:last-child]:border-0">
                                 <tr v-for="result in results" :key="result.id" class="border-b">
                                     <td class="p-4 align-middle">{{ result.name }}</td>
-                                    <td class="p-4 align-middle">{{ result.pivot.diagnosis || result.pivot.result_real ? 'Ha' : 'Yo\'q' }}</td>
+                                    <td class="p-4 align-middle">{{ firstResultWord(result) }}</td>
+                                    <td class="p-4 align-middle">
+                                        <span v-if="resultFlag(result.pivot.flag)" class="inline-flex items-center gap-2 whitespace-nowrap">
+                                            <span
+                                                class="inline-block h-3.5 w-3.5 shrink-0 rounded-full"
+                                                :style="{ backgroundColor: resultFlag(result.pivot.flag)?.color }"
+                                                aria-hidden="true"
+                                            />
+                                            <span>{{ resultFlag(result.pivot.flag)?.label }}</span>
+                                        </span>
+                                        <span v-else class="text-muted-foreground">-</span>
+                                    </td>
                                     <td class="p-4 align-middle">
                                         <Link
                                             :href="`/admin/students/${student.id}/results/${result.id}`"
@@ -231,7 +253,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                                     </td>
                                 </tr>
                                 <tr v-if="results.length === 0">
-                                    <td colspan="3" class="p-4 text-center text-muted-foreground">Hali testlar yechilmagan.</td>
+                                    <td colspan="4" class="p-4 text-center text-muted-foreground">Hali testlar yechilmagan.</td>
                                 </tr>
                             </tbody>
                         </table>
