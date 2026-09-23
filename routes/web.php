@@ -119,6 +119,7 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::get('/admin/employees/{user}/passport/pdf', [AdminEmployeeController::class, 'downloadSavedPassportPdf'])->name('admin.employees.passport.download');
     Route::post('/admin/employees/{user}/passport/pdf', [AdminEmployeeController::class, 'exportPassportPdf'])->name('admin.employees.passport.pdf');
     Route::get('/admin/employees/{user}/results/{module}', [AdminEmployeeController::class, 'showResult'])->name('admin.employees.results.show');
+    Route::patch('/admin/employees/{user}/results/{module}/flag', [AdminEmployeeController::class, 'updateResultFlag'])->name('admin.employees.results.flag');
     Route::post('/admin/employees/{user}/results/{module}/diagnosis', [AdminEmployeeController::class, 'updateDiagnosis'])->name('admin.employees.results.diagnosis');
     Route::post('/admin/employees/{user}/results/{module}/ai-diagnosis', [AdminEmployeeController::class, 'generateAiDiagnosis'])->name('admin.employees.results.ai-diagnosis');
     Route::post('/admin/employees/{user}/results/{module}/ai-diagnosis-stream', [AdminEmployeeController::class, 'streamAiDiagnosis'])->name('admin.employees.results.ai-diagnosis-stream');

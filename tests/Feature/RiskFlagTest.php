@@ -141,3 +141,65 @@ test('hisobot jadvalida va statistikada bayroq ko\'rinadi', function () {
             ->has('flagOptions', 3)
         );
 });
+
+test('xodim natijasiga bayroq qo‘shish, almashtirish va olib tashlash mumkin', function () {
+    $admin = makeFlagUser('admin');
+    $employee = makeFlagUser('employee');
+    $module = Module::create([
+        'name' => 'Xodim bayroq testi',
+        'is_active' => true,
+        'shuffle' => false,
+        'audiences' => ['employee'],
+    ]);
+    $employee->usersTestsResults()->attach($module->id, ['result_fake' => 'Natija']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.employees.show', $employee))
+        ->assertInertia(fn (Assert $page) => $page
+            ->component('Admin/Employee/Show')
+            ->where('results.0.pivot.flag', null)
+            ->has('flagOptions', 3)
+        );
+
+    foreach ([RiskFlag::GREEN, RiskFlag::YELLOW, RiskFlag::RED, null] as $flag) {
+        $this->actingAs($admin)
+            ->patch(route('admin.employees.results.flag', [$employee, $module]), ['flag' => $flag])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        expect(DB::table('users_tests_results')
+            ->where('user_id', $employee->id)
+            ->where('module_id', $module->id)
+            ->value('flag'))->toBe($flag);
+    }
+});
+
+test('xodim bayrog‘i faqat mavjud natijada va ruxsat etilgan qiymat bilan o‘zgaradi', function () {
+    $admin = makeFlagUser('admin');
+    $employee = makeFlagUser('employee');
+    $student = makeFlagUser('student');
+    $module = Module::create([
+        'name' => 'Mavjud natija',
+        'is_active' => true,
+        'shuffle' => false,
+        'audiences' => ['employee', 'student'],
+    ]);
+    $student->usersTestsResults()->attach($module->id, ['result_fake' => 'Natija']);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.employees.results.flag', [$employee, $module]), ['flag' => RiskFlag::RED])
+        ->assertNotFound();
+
+    $this->actingAs($admin)
+        ->patch(route('admin.employees.results.flag', [$student, $module]), ['flag' => RiskFlag::RED])
+        ->assertNotFound();
+
+    $employee->usersTestsResults()->attach($module->id, ['result_fake' => 'Natija']);
+
+    $this->actingAs($admin)
+        ->patch(route('admin.employees.results.flag', [$employee, $module]), ['flag' => 'purple'])
+        ->assertSessionHasErrors('flag');
+
+    expect(DB::table('users_tests_results')->where('user_id', $employee->id)->value('flag'))
+        ->toBeNull();
+});

@@ -14,10 +14,15 @@ use App\Http\Requests\SyncStudentCategoriesRequest;
 use App\Http\Requests\UpdateStudentDiagnosisRequest;
 use App\Jobs\SyncHemisEmployeesJob;
 use App\Models\User;
+use App\Services\DashboardAggregateCacheService;
+use App\Services\ModuleScoreRangeReportService;
 use App\Services\UserPassportService;
+use App\Support\RiskFlag;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Validation\Rule;
 use Inertia\Inertia;
 
 class AdminEmployeeController extends Controller
@@ -29,6 +34,8 @@ class AdminEmployeeController extends Controller
         private BuildAdminStudentPages $buildAdminStudentPages,
         private AdminStudentDiagnosisService $adminStudentDiagnosisService,
         private UserPassportService $userPassportService,
+        private ModuleScoreRangeReportService $moduleScoreRangeReportService,
+        private DashboardAggregateCacheService $dashboardAggregateCacheService,
     ) {}
 
     /**
@@ -135,6 +142,30 @@ class AdminEmployeeController extends Controller
         $props['backTitle'] = 'Xodimlar';
 
         return Inertia::render('Admin/Student/Result', $props);
+    }
+
+    public function updateResultFlag(Request $request, User $user, int $moduleId)
+    {
+        abort_unless($user->role === 'employee', Response::HTTP_NOT_FOUND);
+
+        $validated = $request->validate([
+            'flag' => ['present', 'nullable', Rule::in(RiskFlag::values())],
+        ]);
+
+        abort_unless(
+            $user->usersTestsResults()->whereKey($moduleId)->exists(),
+            Response::HTTP_NOT_FOUND,
+            'Natija topilmadi.'
+        );
+
+        $user->usersTestsResults()->updateExistingPivot($moduleId, [
+            'flag' => $validated['flag'],
+        ]);
+
+        $this->moduleScoreRangeReportService->flush();
+        $this->dashboardAggregateCacheService->forgetAll();
+
+        return back()->with('success', 'Bayroq muvaffaqiyatli saqlandi.');
     }
 
     public function updateDiagnosis(UpdateStudentDiagnosisRequest $request, User $user, int $moduleId)
