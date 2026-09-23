@@ -153,14 +153,6 @@ test('xodim natijasiga bayroq qo‘shish, almashtirish va olib tashlash mumkin',
     ]);
     $employee->usersTestsResults()->attach($module->id, ['result_fake' => 'Natija']);
 
-    $this->actingAs($admin)
-        ->get(route('admin.employees.show', $employee))
-        ->assertInertia(fn (Assert $page) => $page
-            ->component('Admin/Employee/Show')
-            ->where('results.0.pivot.flag', null)
-            ->has('flagOptions', 3)
-        );
-
     foreach ([RiskFlag::GREEN, RiskFlag::YELLOW, RiskFlag::RED, null] as $flag) {
         $this->actingAs($admin)
             ->patch(route('admin.employees.results.flag', [$employee, $module]), ['flag' => $flag])

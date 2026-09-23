@@ -11,6 +11,7 @@ class UserPassport extends Model
         'character_traits',
         'temperament_type',
         'conclusion',
+        'manual_risk_flag',
     ];
 
     protected function casts(): array

@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use App\Models\User;
+use App\Support\RiskFlag;
+use Illuminate\Validation\Rule;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreUserPassportRequest extends FormRequest
@@ -30,6 +32,7 @@ class StoreUserPassportRequest extends FormRequest
         return [
             'temperament_type' => ['required', 'string', 'max:255'],
             'conclusion' => ['required', 'string', 'max:5000'],
+            'manual_risk_flag' => ['sometimes', 'nullable', Rule::in(RiskFlag::values())],
         ];
     }
 

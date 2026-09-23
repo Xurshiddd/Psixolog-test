@@ -22,6 +22,7 @@ const props = defineProps<{
     allCategories: Array<any>;
     hobbies?: string[];
     riskFlag?: { value: string; label: string; color: string } | null;
+    riskFlagOptions: Array<{ value: string; label: string; color: string }>;
     filters?: {
         search?: string | null;
         faculity_id?: string | null;
@@ -195,6 +196,7 @@ const breadcrumbs: BreadcrumbItem[] = [
                     subject-label="Talaba"
                     :hobbies="props.hobbies ?? []"
                     :risk-flag="props.riskFlag ?? null"
+                    :risk-flag-options="props.riskFlagOptions"
                     @saved="(passport) => (savedPassport = passport)"
                 />
 

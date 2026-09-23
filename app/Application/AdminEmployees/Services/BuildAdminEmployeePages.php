@@ -8,7 +8,6 @@ use App\Jobs\SyncHemisEmployeesJob;
 use App\Models\Employee;
 use App\Models\User;
 use App\Services\LookupCacheService;
-use App\Support\RiskFlag;
 use Illuminate\Support\Facades\Cache;
 
 class BuildAdminEmployeePages
@@ -55,7 +54,6 @@ class BuildAdminEmployeePages
         return [
             'employee' => $user,
             'results' => $user->usersTestsResults,
-            'flagOptions' => RiskFlag::options(),
             'guestResults' => $this->buildGuestResults($user),
             'allCategories' => $this->lookupCacheService->categories(),
             'filters' => $filters->toArray(),

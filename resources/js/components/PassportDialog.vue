@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import Button from '@/components/ui/button/Button.vue';
 import {
     Dialog,
@@ -35,6 +35,8 @@ const props = defineProps<{
     hobbies?: string[];
     /** Xavf darajasi bayrog'i (biriktirilgan bo'lsa). */
     riskFlag?: { value: string; label: string; color: string } | null;
+    /** Talaba passportida qo‘lda tanlanadigan uch bayroq. */
+    riskFlagOptions?: Array<{ value: string; label: string; color: string }>;
 }>();
 
 const emit = defineEmits<{
@@ -49,10 +51,14 @@ const errors = ref<Record<string, string>>({});
 const buildForm = (passport: any = null) => ({
     temperamentType: passport?.temperament_type || '',
     conclusion: passport?.conclusion || '',
+    manualRiskFlag: passport?.manual_risk_flag || '',
 });
 
 const savedPassport = ref(props.passport || null);
 const form = ref(buildForm(savedPassport.value));
+const displayedRiskFlag = computed(() =>
+    props.riskFlagOptions?.find((option) => option.value === form.value.manualRiskFlag) || props.riskFlag,
+);
 
 const resetForm = () => {
     form.value = buildForm(savedPassport.value);
@@ -129,6 +135,10 @@ const downloadPdf = async () => {
 
         formData.append('conclusion', form.value.conclusion.trim());
 
+        if (!props.conclusionOnly) {
+            formData.append('manual_risk_flag', form.value.manualRiskFlag);
+        }
+
         const response = await fetch(props.endpoint, {
             method: 'POST',
             headers: {
@@ -151,6 +161,8 @@ const downloadPdf = async () => {
                             validationErrors.temperamentType = value[0];
                         } else if (key === 'conclusion') {
                             validationErrors.conclusion = value[0];
+                        } else if (key === 'manual_risk_flag') {
+                            validationErrors.manualRiskFlag = value[0];
                         }
                     }
                 });
@@ -196,6 +208,7 @@ const downloadPdf = async () => {
             : {
                   temperament_type: form.value.temperamentType.trim(),
                   conclusion: form.value.conclusion.trim(),
+                  manual_risk_flag: form.value.manualRiskFlag || null,
               };
 
         savedPassport.value = { ...(savedPassport.value || {}), ...stored };
@@ -272,14 +285,22 @@ const downloadPdf = async () => {
                 </div>
 
                 <div v-if="!conclusionOnly" class="grid gap-2">
-                    <label class="text-sm font-medium">Xavf darajasi</label>
-                    <div v-if="riskFlag" class="flex items-center gap-2 rounded-lg border px-3 py-2.5">
-                        <span
-                            class="inline-block h-3.5 w-3.5 rounded-full"
-                            :style="{ backgroundColor: riskFlag.color }"
-                        />
-                        <span class="text-sm font-semibold" :style="{ color: riskFlag.color }">
-                            {{ riskFlag.label }}
+                    <label class="text-sm font-medium" for="passport-risk-flag">Xavf darajasi</label>
+                    <select
+                        id="passport-risk-flag"
+                        v-model="form.manualRiskFlag"
+                        class="h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+                    >
+                        <option value="">Natijalardan avtomatik aniqlash</option>
+                        <option v-for="option in riskFlagOptions" :key="option.value" :value="option.value">
+                            {{ option.label }}
+                        </option>
+                    </select>
+                    <p v-if="errors.manualRiskFlag" class="text-sm text-red-600">{{ errors.manualRiskFlag }}</p>
+                    <div v-if="displayedRiskFlag" class="flex items-center gap-2 rounded-lg border px-3 py-2.5">
+                        <span class="inline-block h-3.5 w-3.5 rounded-full" :style="{ backgroundColor: displayedRiskFlag.color }" />
+                        <span class="text-sm font-semibold" :style="{ color: displayedRiskFlag.color }">
+                            {{ displayedRiskFlag.label }}
                         </span>
                     </div>
                     <p v-else class="rounded-lg border border-dashed px-3 py-4 text-center text-sm text-muted-foreground">

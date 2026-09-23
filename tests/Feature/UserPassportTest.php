@@ -192,3 +192,59 @@ test('talaba passportida qiziqishlar va xavf darajasi chiqadi', function () {
         'character_traits' => null,
     ]);
 });
+
+test('talaba passporti modalida qo‘lda tanlangan bayroq saqlanadi va qayta ochilganda ko‘rinadi', function () {
+    $admin = makePassportUser('admin');
+    $student = makePassportUser('student');
+    $module = Module::create(['name' => 'Stress', 'is_active' => true, 'audiences' => ['student']]);
+    $module->usersTestsResults()->attach($student->id, ['flag' => RiskFlag::RED]);
+
+    $this->actingAs($admin)
+        ->post(route('admin.students.passport.pdf', $student), [
+            ...passportPayload(),
+            'manual_risk_flag' => RiskFlag::GREEN,
+        ])
+        ->assertOk();
+
+    $this->assertDatabaseHas('user_passports', [
+        'user_id' => $student->id,
+        'manual_risk_flag' => RiskFlag::GREEN,
+    ]);
+    $this->assertDatabaseHas('users_tests_results', [
+        'user_id' => $student->id,
+        'module_id' => $module->id,
+        'flag' => RiskFlag::RED,
+    ]);
+
+    $this->actingAs($admin)
+        ->get(route('admin.students.show', $student))
+        ->assertInertia(fn (\Inertia\Testing\AssertableInertia $page) => $page
+            ->component('Admin/Student/Show')
+            ->where('student.passport.manual_risk_flag', RiskFlag::GREEN)
+            ->has('riskFlagOptions', 3)
+        );
+
+    $this->actingAs($admin)
+        ->post(route('admin.students.passport.pdf', $student), [
+            ...passportPayload(),
+            'manual_risk_flag' => null,
+        ])
+        ->assertOk();
+
+    $this->assertDatabaseHas('user_passports', [
+        'user_id' => $student->id,
+        'manual_risk_flag' => null,
+    ]);
+});
+
+test('talaba passportida noto‘g‘ri bayroq rad etiladi', function () {
+    $admin = makePassportUser('admin');
+    $student = makePassportUser('student');
+
+    $this->actingAs($admin)
+        ->post(route('admin.students.passport.pdf', $student), [
+            ...passportPayload(),
+            'manual_risk_flag' => 'purple',
+        ])
+        ->assertSessionHasErrors('manual_risk_flag');
+});

@@ -53,6 +53,7 @@ class BuildAdminStudentPages
             'results' => $user->usersTestsResults,
             'allCategories' => $this->lookupCacheService->categories(),
             'hobbies' => $user->hobbies->pluck('name')->values(),
+            'riskFlagOptions' => RiskFlag::options(),
             'riskFlag' => $flag === null ? null : [
                 'value' => $flag,
                 'label' => RiskFlag::label($flag),

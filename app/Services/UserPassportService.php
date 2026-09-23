@@ -28,7 +28,8 @@ class UserPassportService
      * @param  array{
      *     character_traits?: array<int, string>,
      *     temperament_type?: string,
-     *     conclusion: string
+     *     conclusion: string,
+     *     manual_risk_flag?: string|null
      * }  $validated
      */
     public function downloadGeneratedPassport(User $user, array $validated)
@@ -45,6 +46,11 @@ class UserPassportService
                     ? trim($validated['temperament_type'])
                     : null,
                 'conclusion' => trim($validated['conclusion']),
+                'manual_risk_flag' => $user->role === 'student'
+                    ? (array_key_exists('manual_risk_flag', $validated)
+                        ? $validated['manual_risk_flag']
+                        : $user->passport?->manual_risk_flag)
+                    : null,
             ]
         );
 
@@ -71,7 +77,7 @@ class UserPassportService
                 'temperament_type' => $passport->temperament_type,
                 'conclusion' => $passport->conclusion,
             ],
-            $this->profile($user)
+            $this->profile($user, $passport)
         );
 
         return $pdf->download(
@@ -82,12 +88,12 @@ class UserPassportService
     /**
      * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, show_traits: bool, rows: list<array{label: string, value: string}>}
      */
-    private function profile(User $user): array
+    private function profile(User $user, UserPassport $passport): array
     {
         return match ($user->role) {
             'employee' => $this->employeeProfile($user),
             'guest' => $this->guestProfile($user),
-            default => $this->studentProfile($user),
+            default => $this->studentProfile($user, $passport),
         };
     }
 
@@ -98,7 +104,7 @@ class UserPassportService
      *
      * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, show_traits: bool, rows: list<array{label: string, value: string}>}
      */
-    private function studentProfile(User $user): array
+    private function studentProfile(User $user, UserPassport $passport): array
     {
         $user->load(['group', 'speciality', 'usersCategory', 'hobbies']);
 
@@ -110,7 +116,7 @@ class UserPassportService
             'show_photo' => true,
             'show_traits' => true,
             'hobbies' => $user->hobbies->pluck('name')->all(),
-            'risk_flag' => $this->riskFlag($user),
+            'risk_flag' => $this->riskFlag($user, $passport),
             'rows' => [
                 ['label' => 'Login', 'value' => $this->value($user->login)],
                 ['label' => 'Telefon', 'value' => $this->value($user->phone)],
@@ -179,16 +185,16 @@ class UserPassportService
     }
 
     /**
-     * Talabaning umumiy xavf darajasi — natijalariga biriktirilgan
-     * bayroqlar orasidagi eng og'iri (qizil > sariq > yashil).
+     * Qo'lda tanlangan bayroq ustuvor; u bo'lmasa natijalardagi eng og'ir
+     * bayroq ishlatiladi (qizil > sariq > yashil).
      *
      * @return array{value: string, label: string, color: string}|null
      */
-    private function riskFlag(User $user): ?array
+    private function riskFlag(User $user, UserPassport $passport): ?array
     {
-        $flag = RiskFlag::mostSevere(
-            $user->usersTestsResults()->pluck('users_tests_results.flag')
-        );
+        $flag = RiskFlag::isValid($passport->manual_risk_flag)
+            ? $passport->manual_risk_flag
+            : RiskFlag::mostSevere($user->usersTestsResults()->pluck('users_tests_results.flag'));
 
         if ($flag === null) {
             return null;

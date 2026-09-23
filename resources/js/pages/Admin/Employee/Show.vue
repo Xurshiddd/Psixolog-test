@@ -16,7 +16,6 @@ import PassportDialog from '@/components/PassportDialog.vue';
 const props = defineProps<{
     employee: any;
     results: any[];
-    flagOptions: Array<{ value: string; label: string; color: string }>;
     guestResults?: any[];
     allCategories: any[];
     filters: Record<string, any>;
@@ -29,23 +28,6 @@ const breadcrumbs: BreadcrumbItem[] = [
 ];
 
 const resultDetailLink = (moduleId: number) => `/admin/employees/${props.employee.id}/results/${moduleId}`;
-
-const selectedFlags = ref<Record<number, string>>(
-    Object.fromEntries(props.results.map((result) => [result.id, result.pivot.flag ?? ''])),
-);
-const savingFlagId = ref<number | null>(null);
-
-const saveFlag = (moduleId: number) => {
-    savingFlagId.value = moduleId;
-    router.patch(
-        `/admin/employees/${props.employee.id}/results/${moduleId}/flag`,
-        { flag: selectedFlags.value[moduleId] || null },
-        {
-            preserveScroll: true,
-            onFinish: () => { savingFlagId.value = null; },
-        },
-    );
-};
 
 const isSyncModalOpen = ref(false);
 const selectedCategoryIds = ref<number[]>(props.employee.users_category?.map((c: any) => c.id) || []);
@@ -148,7 +130,6 @@ const syncCategories = () => {
                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Modul</th>
                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Psixolog xulosasi</th>
                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Avtomatik xulosa</th>
-                                <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Bayroq</th>
                                 <th class="h-12 px-4 text-left align-middle font-medium text-muted-foreground">Amallar</th>
                             </tr>
                         </thead>
@@ -158,35 +139,13 @@ const syncCategories = () => {
                                 <td class="p-4 align-middle whitespace-pre-wrap break-words max-w-xs">{{ result.pivot.diagnosis || '-' }}</td>
                                 <td class="p-4 align-middle whitespace-pre-wrap break-words max-w-xs">{{ result.pivot.result_real || '-' }}</td>
                                 <td class="p-4 align-middle">
-                                    <div class="flex items-center gap-2">
-                                        <select
-                                            v-model="selectedFlags[result.id]"
-                                            :aria-label="`${result.name} bayrog‘i`"
-                                            class="h-9 rounded-md border border-input bg-background px-2 text-sm"
-                                        >
-                                            <option value="">Bayroq yo'q</option>
-                                            <option v-for="option in flagOptions" :key="option.value" :value="option.value">
-                                                {{ option.label }}
-                                            </option>
-                                        </select>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            :disabled="savingFlagId !== null || selectedFlags[result.id] === (result.pivot.flag ?? '')"
-                                            @click="saveFlag(result.id)"
-                                        >
-                                            {{ savingFlagId === result.id ? 'Saqlanmoqda...' : 'Saqlash' }}
-                                        </Button>
-                                    </div>
-                                </td>
-                                <td class="p-4 align-middle">
                                     <Link :href="resultDetailLink(result.id)">
                                         <Button variant="outline" size="sm">Batafsil / Xulosa</Button>
                                     </Link>
                                 </td>
                             </tr>
                             <tr v-if="results.length === 0">
-                                <td colspan="5" class="p-4 align-middle text-center text-muted-foreground">Test natijalari yo'q.</td>
+                                <td colspan="4" class="p-4 align-middle text-center text-muted-foreground">Test natijalari yo'q.</td>
                             </tr>
                         </tbody>
                     </table>
