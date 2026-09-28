@@ -175,31 +175,47 @@ class AdminStudentQueryFactory
     }
 
     /**
-     * Talabaning umumiy bayrog'i — natijalaridagi eng og'iri (qizil > sariq > yashil).
-     * Masalan, "sariq" tanlansa: sariq natijasi bor, lekin qizili yo'q talabalar.
+     * Talabaning umumiy bayrog'i: passportda qo'lda qo'yilgan bo'lsa — o'sha,
+     * aks holda natijalaridagi eng og'iri (qizil > sariq > yashil).
+     * Masalan, "sariq" tanlansa: qo'lda sariq qo'yilganlar yoki qo'lda bayroq
+     * qo'yilmagan, sariq natijasi bor, lekin qizili yo'q talabalar.
      */
     private function applyFlagFilter(Builder $query, string $flag): void
     {
         $severity = RiskFlag::values();
 
-        if ($flag === AdminStudentFilters::FLAG_NONE) {
-            $query->whereDoesntHave('usersTestsResults', function (Builder $builder) use ($severity): void {
-                $builder->whereIn('users_tests_results.flag', $severity);
+        $query->where(function (Builder $outer) use ($flag, $severity): void {
+            if ($flag !== AdminStudentFilters::FLAG_NONE) {
+                $outer->whereHas('passport', function (Builder $builder) use ($flag): void {
+                    $builder->where('manual_risk_flag', $flag);
+                });
+            }
+
+            $outer->orWhere(function (Builder $automatic) use ($flag, $severity): void {
+                $automatic->whereDoesntHave('passport', function (Builder $builder) use ($severity): void {
+                    $builder->whereIn('manual_risk_flag', $severity);
+                });
+
+                if ($flag === AdminStudentFilters::FLAG_NONE) {
+                    $automatic->whereDoesntHave('usersTestsResults', function (Builder $builder) use ($severity): void {
+                        $builder->whereIn('users_tests_results.flag', $severity);
+                    });
+
+                    return;
+                }
+
+                $moreSevere = array_slice($severity, 0, (int) array_search($flag, $severity, true));
+
+                $automatic->whereHas('usersTestsResults', function (Builder $builder) use ($flag): void {
+                    $builder->where('users_tests_results.flag', $flag);
+                });
+
+                if ($moreSevere !== []) {
+                    $automatic->whereDoesntHave('usersTestsResults', function (Builder $builder) use ($moreSevere): void {
+                        $builder->whereIn('users_tests_results.flag', $moreSevere);
+                    });
+                }
             });
-
-            return;
-        }
-
-        $moreSevere = array_slice($severity, 0, (int) array_search($flag, $severity, true));
-
-        $query->whereHas('usersTestsResults', function (Builder $builder) use ($flag): void {
-            $builder->where('users_tests_results.flag', $flag);
         });
-
-        if ($moreSevere !== []) {
-            $query->whereDoesntHave('usersTestsResults', function (Builder $builder) use ($moreSevere): void {
-                $builder->whereIn('users_tests_results.flag', $moreSevere);
-            });
-        }
     }
 }

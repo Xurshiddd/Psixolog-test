@@ -219,17 +219,37 @@ test('admin student index filters students by their most severe flag', function 
     $none = createAdminStudentIndexUser('student', ['name' => 'Bayroqsiz talaba']);
     $none->usersTestsResults()->attach($redModule->id, ['result_fake' => 'a', 'flag' => null]);
 
+    // Qo'lda qo'yilgan bayroq natijalardagidan ustun turadi.
+    $manualGreen = createAdminStudentIndexUser('student', ['name' => 'Qo\'lda yashil']);
+    $manualGreen->usersTestsResults()->attach($redModule->id, ['result_fake' => 'a', 'flag' => 'red']);
+    UserPassport::create([
+        'user_id' => $manualGreen->id,
+        'character_traits' => ['A'],
+        'temperament_type' => 'Sangvinik',
+        'conclusion' => 'Xulosa',
+        'manual_risk_flag' => 'green',
+    ]);
+
+    $manualYellow = createAdminStudentIndexUser('student', ['name' => 'Qo\'lda sariq']);
+    UserPassport::create([
+        'user_id' => $manualYellow->id,
+        'character_traits' => ['A'],
+        'temperament_type' => 'Sangvinik',
+        'conclusion' => 'Xulosa',
+        'manual_risk_flag' => 'yellow',
+    ]);
+
     $names = fn (string $flag) => collect(
         $this->actingAs($admin)
             ->get(route('admin.students.index', ['flag' => $flag]))
             ->viewData('page')['props']['students']['data']
-    )->pluck('name')->all();
+    )->pluck('name')->sort()->values()->all();
 
     expect($names('red'))->toBe(['Qizil talaba'])
-        ->and($names('yellow'))->toBe(['Sariq talaba'])
-        ->and($names('green'))->toBe([])
+        ->and($names('yellow'))->toBe(['Qo\'lda sariq', 'Sariq talaba'])
+        ->and($names('green'))->toBe(['Qo\'lda yashil'])
         ->and($names('none'))->toBe(['Bayroqsiz talaba'])
-        ->and($names('nonsense'))->toHaveCount(3);
+        ->and($names('nonsense'))->toHaveCount(5);
 
     $this->actingAs($admin)
         ->get(route('admin.students.index', ['flag' => 'yellow']))
