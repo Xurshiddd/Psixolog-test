@@ -2,6 +2,8 @@
 
 namespace App\Http\Requests;
 
+use App\Application\AdminStudents\Data\AdminStudentFilters;
+use App\Support\RiskFlag;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -25,6 +27,7 @@ class AdminStudentFilterRequest extends FormRequest
             'passport_status' => ['nullable', Rule::in(['exists', 'not_exists'])],
             'tested_from' => ['nullable', 'date_format:Y-m-d'],
             'tested_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:tested_from'],
+            'flag' => ['nullable', Rule::in([...RiskFlag::values(), AdminStudentFilters::FLAG_NONE])],
             'page' => ['nullable', 'integer', 'min:1'],
         ];
     }

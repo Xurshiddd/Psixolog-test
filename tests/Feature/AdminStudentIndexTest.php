@@ -248,8 +248,11 @@ test('admin student index filters students by their most severe flag', function 
     expect($names('red'))->toBe(['Qizil talaba'])
         ->and($names('yellow'))->toBe(['Qo\'lda sariq', 'Sariq talaba'])
         ->and($names('green'))->toBe(['Qo\'lda yashil'])
-        ->and($names('none'))->toBe(['Bayroqsiz talaba'])
-        ->and($names('nonsense'))->toHaveCount(5);
+        ->and($names('none'))->toBe(['Bayroqsiz talaba']);
+
+    $this->actingAs($admin)
+        ->get(route('admin.students.index', ['flag' => 'nonsense']))
+        ->assertSessionHasErrors('flag');
 
     $this->actingAs($admin)
         ->get(route('admin.students.index', ['flag' => 'yellow']))
