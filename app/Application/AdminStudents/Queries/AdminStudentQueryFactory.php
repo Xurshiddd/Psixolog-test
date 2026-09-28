@@ -4,6 +4,7 @@ namespace App\Application\AdminStudents\Queries;
 
 use App\Application\AdminStudents\Data\AdminStudentFilters;
 use App\Models\User;
+use App\Support\RiskFlag;
 use Illuminate\Database\Eloquent\Builder;
 
 class AdminStudentQueryFactory
@@ -165,6 +166,39 @@ class AdminStudentQueryFactory
                 if ($filters->testedTo !== null) {
                     $builder->where('users_tests_results.created_at', '<=', $filters->testedTo.' 23:59:59');
                 }
+            });
+        }
+
+        if ($filters->flag !== null) {
+            $this->applyFlagFilter($query, $filters->flag);
+        }
+    }
+
+    /**
+     * Talabaning umumiy bayrog'i — natijalaridagi eng og'iri (qizil > sariq > yashil).
+     * Masalan, "sariq" tanlansa: sariq natijasi bor, lekin qizili yo'q talabalar.
+     */
+    private function applyFlagFilter(Builder $query, string $flag): void
+    {
+        $severity = RiskFlag::values();
+
+        if ($flag === AdminStudentFilters::FLAG_NONE) {
+            $query->whereDoesntHave('usersTestsResults', function (Builder $builder) use ($severity): void {
+                $builder->whereIn('users_tests_results.flag', $severity);
+            });
+
+            return;
+        }
+
+        $moreSevere = array_slice($severity, 0, (int) array_search($flag, $severity, true));
+
+        $query->whereHas('usersTestsResults', function (Builder $builder) use ($flag): void {
+            $builder->where('users_tests_results.flag', $flag);
+        });
+
+        if ($moreSevere !== []) {
+            $query->whereDoesntHave('usersTestsResults', function (Builder $builder) use ($moreSevere): void {
+                $builder->whereIn('users_tests_results.flag', $moreSevere);
             });
         }
     }

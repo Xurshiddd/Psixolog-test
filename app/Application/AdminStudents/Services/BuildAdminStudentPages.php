@@ -33,6 +33,7 @@ class BuildAdminStudentPages
             'specialities' => $this->lookupCacheService->specialities(),
             'faculities' => $this->lookupCacheService->faculities(),
             'categories' => $this->lookupCacheService->categories(),
+            'riskFlagOptions' => RiskFlag::options(),
             'filters' => $filters->toArray(),
         ];
     }

@@ -203,3 +203,38 @@ test('admin student index rejects an inverted test date range', function () {
         ->get(route('admin.students.index', ['tested_from' => '2026-05-31', 'tested_to' => '2026-05-01']))
         ->assertSessionHasErrors('tested_to');
 });
+
+test('admin student index filters students by their most severe flag', function () {
+    $admin = createAdminStudentIndexUser('admin');
+    $redModule = Module::create(['name' => 'Qizil modul', 'is_active' => true, 'shuffle' => false]);
+    $yellowModule = Module::create(['name' => 'Sariq modul', 'is_active' => true, 'shuffle' => false]);
+
+    $red = createAdminStudentIndexUser('student', ['name' => 'Qizil talaba']);
+    $red->usersTestsResults()->attach($redModule->id, ['result_fake' => 'a', 'flag' => 'red']);
+    $red->usersTestsResults()->attach($yellowModule->id, ['result_fake' => 'a', 'flag' => 'yellow']);
+
+    $yellow = createAdminStudentIndexUser('student', ['name' => 'Sariq talaba']);
+    $yellow->usersTestsResults()->attach($yellowModule->id, ['result_fake' => 'a', 'flag' => 'yellow']);
+
+    $none = createAdminStudentIndexUser('student', ['name' => 'Bayroqsiz talaba']);
+    $none->usersTestsResults()->attach($redModule->id, ['result_fake' => 'a', 'flag' => null]);
+
+    $names = fn (string $flag) => collect(
+        $this->actingAs($admin)
+            ->get(route('admin.students.index', ['flag' => $flag]))
+            ->viewData('page')['props']['students']['data']
+    )->pluck('name')->all();
+
+    expect($names('red'))->toBe(['Qizil talaba'])
+        ->and($names('yellow'))->toBe(['Sariq talaba'])
+        ->and($names('green'))->toBe([])
+        ->and($names('none'))->toBe(['Bayroqsiz talaba'])
+        ->and($names('nonsense'))->toHaveCount(3);
+
+    $this->actingAs($admin)
+        ->get(route('admin.students.index', ['flag' => 'yellow']))
+        ->assertInertia(fn (Assert $page) => $page
+            ->where('filters.flag', 'yellow')
+            ->has('riskFlagOptions', 3)
+        );
+});

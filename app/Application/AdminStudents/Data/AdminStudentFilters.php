@@ -2,8 +2,12 @@
 
 namespace App\Application\AdminStudents\Data;
 
+use App\Support\RiskFlag;
+
 final class AdminStudentFilters
 {
+    public const FLAG_NONE = 'none';
+
     public function __construct(
         public readonly ?string $search,
         public readonly ?int $faculityId,
@@ -15,6 +19,7 @@ final class AdminStudentFilters
         public readonly ?string $passportStatus,
         public readonly ?string $testedFrom,
         public readonly ?string $testedTo,
+        public readonly ?string $flag,
         public readonly int $page,
     ) {}
 
@@ -34,6 +39,7 @@ final class AdminStudentFilters
             self::parseNullableString($input['passport_status'] ?? null),
             self::parseDate($input['tested_from'] ?? null),
             self::parseDate($input['tested_to'] ?? null),
+            self::parseFlag($input['flag'] ?? null),
             self::parsePage($input['page'] ?? null),
         );
     }
@@ -54,6 +60,7 @@ final class AdminStudentFilters
             'passport_status' => $this->passportStatus,
             'tested_from' => $this->testedFrom,
             'tested_to' => $this->testedTo,
+            'flag' => $this->flag,
         ];
     }
 
@@ -86,6 +93,20 @@ final class AdminStudentFilters
         }
 
         return $trimmed;
+    }
+
+    /**
+     * Bayroq filtri: RiskFlag qiymatlaridan biri yoki bayrog'i yo'qlar uchun "none".
+     */
+    private static function parseFlag(mixed $value): ?string
+    {
+        $trimmed = self::parseNullableString($value);
+
+        if ($trimmed === self::FLAG_NONE || RiskFlag::isValid($trimmed)) {
+            return $trimmed;
+        }
+
+        return null;
     }
 
     private static function parsePositiveInt(mixed $value): ?int

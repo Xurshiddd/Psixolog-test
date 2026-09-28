@@ -34,6 +34,7 @@ const props = defineProps<{
     specialities: any[];
     faculities: any[];
     categories: any[];
+    riskFlagOptions: Array<{ value: string; label: string; color: string }>;
     filters: {
         search?: string | null;
         faculity_id?: string | null;
@@ -45,6 +46,7 @@ const props = defineProps<{
         passport_status?: string | null;
         tested_from?: string | null;
         tested_to?: string | null;
+        flag?: string | null;
     };
 }>();
 
@@ -66,6 +68,7 @@ const categoryFilter = ref<string | null>(props.filters.category_id || null);
 const passportStatusFilter = ref<string | null>(props.filters.passport_status || null);
 const testedFromFilter = ref<string>(props.filters.tested_from || '');
 const testedToFilter = ref<string>(props.filters.tested_to || '');
+const flagFilter = ref<string | null>(props.filters.flag || null);
 
 const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString();
@@ -93,6 +96,7 @@ const getFilterParams = () => {
         passport_status: passportStatusFilter.value,
         tested_from: testedFromFilter.value,
         tested_to: testedToFilter.value,
+        flag: flagFilter.value,
     };
 };
 
@@ -112,6 +116,7 @@ const resetFilters = () => {
     passportStatusFilter.value = null;
     testedFromFilter.value = '';
     testedToFilter.value = '';
+    flagFilter.value = null;
     router.get('/admin/students');
 };
 
@@ -354,7 +359,25 @@ const getStudentLink = (studentId: number) => {
                         />
                     </div>
 
-                    <div class="flex items-end gap-2 lg:col-span-2">
+                    <!-- 11 Bayroq -->
+                    <div>
+                        <label for="flag-filter" class="block text-sm font-medium mb-2">
+                            Bayroq
+                        </label>
+                        <select
+                            id="flag-filter"
+                            v-model="flagFilter"
+                            class="w-full px-3 py-2 border border-input rounded-md bg-background text-sm"
+                        >
+                            <option value="" selected>Barchasi</option>
+                            <option v-for="option in riskFlagOptions" :key="option.value" :value="option.value">
+                                {{ option.label }}
+                            </option>
+                            <option value="none">Bayroqsiz</option>
+                        </select>
+                    </div>
+
+                    <div class="flex items-end gap-2 lg:col-span-1">
                         <Button @click="applyFilters" class="flex-1">
                             Filterlash
                         </Button>
