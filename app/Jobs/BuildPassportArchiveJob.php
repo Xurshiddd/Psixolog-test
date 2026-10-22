@@ -3,16 +3,14 @@
 namespace App\Jobs;
 
 use App\Services\PassportArchiveService;
+use App\Services\PassportArchiveTarget;
 use Illuminate\Foundation\Bus\Dispatchable;
 
 class BuildPassportArchiveJob
 {
     use Dispatchable;
 
-    public function __construct(
-        public string $role,
-        public ?int $faculityId = null,
-    ) {}
+    public function __construct(public PassportArchiveTarget $target) {}
 
     /**
      * `dispatchAfterResponse()` bilan javob yuborilgandan keyin ishlaydi —
@@ -25,6 +23,6 @@ class BuildPassportArchiveJob
         ignore_user_abort(true);
         @ini_set('memory_limit', '1024M');
 
-        $service->build($this->role, $this->faculityId);
+        $service->build($this->target);
     }
 }

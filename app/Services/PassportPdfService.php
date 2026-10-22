@@ -26,7 +26,11 @@ class PassportPdfService
             'pictureDataUri' => $profile['show_photo']
                 ? $this->resolvePictureDataUri($user->picture)
                 : null,
-        ])->setPaper('a4', 'landscape');
+        ])
+            ->setPaper('a4', 'landscape')
+            // Shriftning faqat ishlatilgan belgilari joylanadi — aks holda har bir
+            // PDF'ga DejaVu shriftlari to'liq kirib, fayl bir necha MB bo'ladi.
+            ->setOption('isFontSubsettingEnabled', true);
     }
 
     private function resolvePictureDataUri(?string $picture): ?string

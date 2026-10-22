@@ -22,6 +22,12 @@ type ArchiveStatus = {
 
 const role = ref<'student' | 'employee'>(props.defaultRole ?? 'student');
 const faculityId = ref<number | ''>('');
+// Test topshirilgan sana oralig'i: "dan" bo'sh — boshidan, "gacha" bo'sh —
+// shu kungacha, ikkalasi bo'sh — hammasi.
+const dateFrom = ref('');
+const dateTo = ref('');
+const now = new Date();
+const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 const state = ref<ArchiveStatus>({ status: 'idle' });
 const error = ref('');
 let poll: ReturnType<typeof setInterval> | null = null;
@@ -37,6 +43,12 @@ const target = () => {
     const params = new URLSearchParams({ role: role.value });
     if (role.value === 'student' && faculityId.value !== '') {
         params.set('faculity_id', String(faculityId.value));
+    }
+    if (dateFrom.value) {
+        params.set('from', dateFrom.value);
+    }
+    if (dateTo.value) {
+        params.set('to', dateTo.value);
     }
     return params;
 };
@@ -91,6 +103,11 @@ const start = async () => {
     if (running.value) return;
     error.value = '';
 
+    if (dateFrom.value && dateTo.value && dateFrom.value > dateTo.value) {
+        error.value = '“Dan” sanasi “gacha” sanasidan keyin bo‘lishi mumkin emas.';
+        return;
+    }
+
     try {
         const res = await fetch('/admin/passports/archive', {
             method: 'POST',
@@ -101,6 +118,13 @@ const start = async () => {
             },
             body: JSON.stringify(Object.fromEntries(target())),
         });
+
+        if (res.status === 422) {
+            const payload = await res.json().catch(() => null);
+            error.value = Object.values(payload?.errors || {}).flat()[0] as string
+                || 'Tanlangan qiymatlar noto‘g‘ri.';
+            return;
+        }
 
         if (!res.ok) {
             error.value = 'Arxivni boshlab bo‘lmadi. Sahifani yangilab qayta urinib ko‘ring.';
@@ -114,7 +138,7 @@ const start = async () => {
 };
 
 // Sahifa yangilansa ham yasalayotgan arxiv holatini davom ettiramiz.
-watch([role, faculityId], () => {
+watch([role, faculityId, dateFrom, dateTo], () => {
     stopPolling();
     state.value = { status: 'idle' };
     error.value = '';
@@ -126,7 +150,7 @@ onBeforeUnmount(stopPolling);
 
 <template>
     <div class="flex flex-1 flex-col gap-2">
-        <div class="flex gap-2">
+        <div class="flex flex-wrap gap-2">
             <select
                 v-model="role"
                 :disabled="running"
@@ -146,6 +170,27 @@ onBeforeUnmount(stopPolling);
                     {{ faculity.name }}
                 </option>
             </select>
+            <label class="flex items-center gap-1 text-sm text-muted-foreground">
+                dan
+                <input
+                    v-model="dateFrom"
+                    type="date"
+                    :max="dateTo || today"
+                    :disabled="running"
+                    class="rounded-md border border-input bg-background px-2 py-2 text-sm text-foreground"
+                />
+            </label>
+            <label class="flex items-center gap-1 text-sm text-muted-foreground">
+                gacha
+                <input
+                    v-model="dateTo"
+                    type="date"
+                    :min="dateFrom || undefined"
+                    :max="today"
+                    :disabled="running"
+                    class="rounded-md border border-input bg-background px-2 py-2 text-sm text-foreground"
+                />
+            </label>
             <Button variant="outline" class="flex-1" :disabled="running" @click="start">
                 <span v-if="running">⏳ Tayyorlanmoqda... {{ state.processed || 0 }}/{{ state.total || 0 }}</span>
                 <span v-else>🗂️ Passportlarni yuklab olish (ZIP)</span>
@@ -154,6 +199,10 @@ onBeforeUnmount(stopPolling);
         <div v-if="running" class="h-1.5 w-full overflow-hidden rounded bg-muted">
             <div class="h-full bg-primary transition-all" :style="{ width: percent + '%' }" />
         </div>
+        <p class="text-xs text-muted-foreground">
+            Muddat test topshirilgan sana bo‘yicha. “Dan” bo‘sh bo‘lsa — boshidan, “gacha” bo‘sh bo‘lsa — bugungacha,
+            ikkalasi bo‘sh bo‘lsa — hammasi olinadi.
+        </p>
         <p v-if="role === 'student'" class="text-xs text-muted-foreground">
             Zudlik bilan hal qilinmagan holati bor talabalar fayli <b class="text-red-600">QIZIL__</b> bilan boshlanadi.
         </p>
