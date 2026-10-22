@@ -18,45 +18,57 @@ class PassportArchiveController extends Controller
 {
     public function start(Request $request, PassportArchiveService $service): JsonResponse
     {
-        $role = $this->role($request);
+        [$role, $faculityId] = $this->target($request);
 
-        // Bir vaqtda bitta tur uchun faqat bitta arxiv yasaladi.
-        if (! PassportArchiveService::isRunning($role)) {
-            $service->markStarted($role);
-            BuildPassportArchiveJob::dispatchAfterResponse($role);
+        // Bir vaqtda bitta tur (va fakultet) uchun faqat bitta arxiv yasaladi.
+        if (! PassportArchiveService::isRunning($role, $faculityId)) {
+            $service->markStarted($role, $faculityId);
+            BuildPassportArchiveJob::dispatchAfterResponse($role, $faculityId);
         }
 
-        return response()->json(PassportArchiveService::status($role));
+        return response()->json(PassportArchiveService::status($role, $faculityId));
     }
 
     public function status(Request $request): JsonResponse
     {
-        return response()->json(PassportArchiveService::status($this->role($request)));
+        return response()->json(PassportArchiveService::status(...$this->target($request)));
     }
 
     public function download(Request $request): BinaryFileResponse
     {
-        $role = $this->role($request);
-        $path = PassportArchiveService::archivePath($role);
+        [$role, $faculityId] = $this->target($request);
+        $path = PassportArchiveService::archivePath($role, $faculityId);
 
         abort_unless(
-            PassportArchiveService::status($role)['status'] === 'done' && is_file($path),
+            PassportArchiveService::status($role, $faculityId)['status'] === 'done' && is_file($path),
             404,
             'Arxiv topilmadi. Qaytadan shakllantiring.'
         );
 
         // Arxiv faqat bir marta yuklab olinadi — server diskida katta fayl qolmaydi.
-        Cache::forget(PassportArchiveService::cacheKey($role));
+        Cache::forget(PassportArchiveService::cacheKey($role, $faculityId));
 
         return response()
-            ->download($path, PassportArchiveService::downloadName($role), ['Content-Type' => 'application/zip'])
+            ->download($path, PassportArchiveService::downloadName($role, $faculityId), ['Content-Type' => 'application/zip'])
             ->deleteFileAfterSend();
     }
 
-    private function role(Request $request): string
+    /**
+     * Fakultet faqat talabalar uchun ma'noga ega — xodimlarda e'tiborga olinmaydi.
+     *
+     * @return array{0: string, 1: int|null}
+     */
+    private function target(Request $request): array
     {
-        return $request->validate([
+        $validated = $request->validate([
             'role' => ['required', Rule::in(array_keys(PassportArchiveService::ROLES))],
-        ])['role'];
+            'faculity_id' => ['nullable', 'integer', 'exists:faculities,id'],
+        ]);
+
+        $faculityId = $validated['role'] === 'student' && filled($validated['faculity_id'] ?? null)
+            ? (int) $validated['faculity_id']
+            : null;
+
+        return [$validated['role'], $faculityId];
     }
 }

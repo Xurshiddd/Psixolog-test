@@ -399,7 +399,7 @@ const getStudentLink = (studentId: number) => {
                     <Button @click="downloadExcelWithDiagnosis" variant="outline" class="flex-1">
                         📊 Excel'ga yuklash (diagnosis bilan)
                     </Button>
-                    <PassportArchiveDownload default-role="student" />
+                    <PassportArchiveDownload default-role="student" :faculities="faculities" />
                 </div>
             </div>
 

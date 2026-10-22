@@ -2,10 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\Faculity;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 use ZipArchive;
@@ -33,55 +35,82 @@ class PassportArchiveService
         private UserPassportService $userPassportService,
     ) {}
 
-    public static function cacheKey(string $role): string
+    /** Zudlik bilan hal qilinmagan holati bor talaba fayli boshiga qo'yiladi. */
+    public const CRITICAL_PREFIX = 'QIZIL__';
+
+    /**
+     * Har bir tur + fakultet juftligi uchun alohida arxiv va holat yuritiladi.
+     * Fakultet faqat talabalarda bor, xodimlarda e'tiborga olinmaydi.
+     */
+    private static function scope(string $role, ?int $faculityId): string
     {
-        return 'passport-archive:'.$role;
+        return $role === 'student' && $faculityId !== null ? $role.'-f'.$faculityId : $role;
     }
 
-    public static function archivePath(string $role): string
+    public static function cacheKey(string $role, ?int $faculityId = null): string
     {
-        return storage_path('app/private/passport-archives/'.$role.'.zip');
+        return 'passport-archive:'.self::scope($role, $faculityId);
     }
 
-    public static function downloadName(string $role): string
+    public static function archivePath(string $role, ?int $faculityId = null): string
     {
-        return 'passportlar_'.self::ROLES[$role].'_'.now()->format('Y-m-d_H-i').'.zip';
+        return storage_path('app/private/passport-archives/'.self::scope($role, $faculityId).'.zip');
+    }
+
+    public static function downloadName(string $role, ?int $faculityId = null): string
+    {
+        $faculty = $role === 'student' && $faculityId !== null
+            ? '_'.Str::slug(Faculity::find($faculityId)?->name ?? 'fakultet-'.$faculityId)
+            : '';
+
+        return 'passportlar_'.self::ROLES[$role].$faculty.'_'.now()->format('Y-m-d_H-i').'.zip';
     }
 
     /** @return array<string, mixed> */
-    public static function status(string $role): array
+    public static function status(string $role, ?int $faculityId = null): array
     {
-        return Cache::get(self::cacheKey($role)) ?? ['status' => 'idle'];
+        return Cache::get(self::cacheKey($role, $faculityId)) ?? ['status' => 'idle'];
     }
 
     /**
      * Jarayon uzilib qolsa holat "running"da qotib qolmasligi uchun: oxirgi
      * yangilanishdan beri STALE_AFTER soniya o'tgan bo'lsa ishlamayapti deb olinadi.
      */
-    public static function isRunning(string $role): bool
+    public static function isRunning(string $role, ?int $faculityId = null): bool
     {
-        $status = self::status($role);
+        $status = self::status($role, $faculityId);
 
         return $status['status'] === 'running'
             && now()->timestamp - ($status['heartbeat'] ?? 0) < self::STALE_AFTER;
     }
 
-    public function markStarted(string $role): void
+    public function markStarted(string $role, ?int $faculityId = null): void
     {
-        $this->putStatus(self::cacheKey($role), ['status' => 'running', 'total' => 0, 'processed' => 0]);
+        $this->putStatus(self::cacheKey($role, $faculityId), ['status' => 'running', 'total' => 0, 'processed' => 0]);
     }
 
-    public function build(string $role): void
+    public function build(string $role, ?int $faculityId = null): void
     {
-        $key = self::cacheKey($role);
-        $archivePath = self::archivePath($role);
-        $workDir = storage_path('app/private/passport-archives/tmp-'.$role.'-'.uniqid());
+        $key = self::cacheKey($role, $faculityId);
+        $archivePath = self::archivePath($role, $faculityId);
+        $workDir = storage_path('app/private/passport-archives/tmp-'.self::scope($role, $faculityId).'-'.uniqid());
 
         File::ensureDirectoryExists(dirname($archivePath));
         File::ensureDirectoryExists($workDir);
         File::delete($archivePath);
 
-        $query = User::query()->where('role', $role);
+        $query = User::query()
+            ->where('role', $role)
+            ->when(
+                $role === 'student' && $faculityId !== null,
+                fn ($q) => $q->where('faculity_id', $faculityId)
+            )
+            ->when(
+                $role === 'student',
+                fn ($q) => $q->withExists([
+                    'criticalAlerts as has_pending_critical_alert' => fn ($alerts) => $alerts->pending()->visibleModule(),
+                ])
+            );
         $total = (clone $query)->count();
         $processed = 0;
         $failed = 0;
@@ -185,6 +214,10 @@ class PassportArchiveService
     private function uniqueName(User $user, array &$usedNames): string
     {
         $name = $this->userPassportService->fileName($user);
+
+        if ($user->has_pending_critical_alert) {
+            $name = self::CRITICAL_PREFIX.$name;
+        }
 
         if (isset($usedNames[$name])) {
             $name = preg_replace('/\.pdf$/', '_'.$user->id.'.pdf', $name);

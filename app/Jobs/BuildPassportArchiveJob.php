@@ -9,7 +9,10 @@ class BuildPassportArchiveJob
 {
     use Dispatchable;
 
-    public function __construct(public string $role) {}
+    public function __construct(
+        public string $role,
+        public ?int $faculityId = null,
+    ) {}
 
     /**
      * `dispatchAfterResponse()` bilan javob yuborilgandan keyin ishlaydi —
@@ -22,6 +25,6 @@ class BuildPassportArchiveJob
         ignore_user_abort(true);
         @ini_set('memory_limit', '1024M');
 
-        $service->build($this->role);
+        $service->build($this->role, $this->faculityId);
     }
 }

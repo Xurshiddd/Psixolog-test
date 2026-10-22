@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
  */
 const props = defineProps<{
     defaultRole?: 'student' | 'employee';
+    /** Talabalar uchun fakultet tanlash ro'yxati. */
+    faculities?: Array<{ id: number; name: string }>;
 }>();
 
 type ArchiveStatus = {
@@ -19,6 +21,7 @@ type ArchiveStatus = {
 };
 
 const role = ref<'student' | 'employee'>(props.defaultRole ?? 'student');
+const faculityId = ref<number | ''>('');
 const state = ref<ArchiveStatus>({ status: 'idle' });
 const error = ref('');
 let poll: ReturnType<typeof setInterval> | null = null;
@@ -28,6 +31,15 @@ const percent = computed(() => {
     const total = state.value.total || 0;
     return total > 0 ? Math.min(100, Math.round(((state.value.processed || 0) / total) * 100)) : 0;
 });
+
+// Fakultet faqat talabalarda bor.
+const target = () => {
+    const params = new URLSearchParams({ role: role.value });
+    if (role.value === 'student' && faculityId.value !== '') {
+        params.set('faculity_id', String(faculityId.value));
+    }
+    return params;
+};
 
 const csrf = () => (document.querySelector('meta[name="csrf-token"]') as HTMLMetaElement)?.content || '';
 
@@ -39,7 +51,7 @@ const stopPolling = () => {
 };
 
 const startDownload = () => {
-    window.location.href = `/admin/passports/archive/download?role=${role.value}`;
+    window.location.href = `/admin/passports/archive/download?${target()}`;
     state.value = { status: 'idle' };
 };
 
@@ -64,7 +76,7 @@ const handleStatus = (data: ArchiveStatus) => {
 
 const fetchStatus = async () => {
     try {
-        const res = await fetch(`/admin/passports/archive/status?role=${role.value}`, {
+        const res = await fetch(`/admin/passports/archive/status?${target()}`, {
             headers: { Accept: 'application/json' },
         });
         if (res.ok) {
@@ -87,7 +99,7 @@ const start = async () => {
                 'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrf(),
             },
-            body: JSON.stringify({ role: role.value }),
+            body: JSON.stringify(Object.fromEntries(target())),
         });
 
         if (!res.ok) {
@@ -102,7 +114,7 @@ const start = async () => {
 };
 
 // Sahifa yangilansa ham yasalayotgan arxiv holatini davom ettiramiz.
-watch(role, () => {
+watch([role, faculityId], () => {
     stopPolling();
     state.value = { status: 'idle' };
     error.value = '';
@@ -123,6 +135,17 @@ onBeforeUnmount(stopPolling);
                 <option value="student">Talabalar</option>
                 <option value="employee">Xodimlar</option>
             </select>
+            <select
+                v-if="role === 'student' && faculities?.length"
+                v-model="faculityId"
+                :disabled="running"
+                class="min-w-0 max-w-48 rounded-md border border-input bg-background px-3 py-2 text-sm"
+            >
+                <option value="">Barcha fakultetlar</option>
+                <option v-for="faculity in faculities" :key="faculity.id" :value="faculity.id">
+                    {{ faculity.name }}
+                </option>
+            </select>
             <Button variant="outline" class="flex-1" :disabled="running" @click="start">
                 <span v-if="running">⏳ Tayyorlanmoqda... {{ state.processed || 0 }}/{{ state.total || 0 }}</span>
                 <span v-else>🗂️ Passportlarni yuklab olish (ZIP)</span>
@@ -131,6 +154,9 @@ onBeforeUnmount(stopPolling);
         <div v-if="running" class="h-1.5 w-full overflow-hidden rounded bg-muted">
             <div class="h-full bg-primary transition-all" :style="{ width: percent + '%' }" />
         </div>
+        <p v-if="role === 'student'" class="text-xs text-muted-foreground">
+            Zudlik bilan hal qilinmagan holati bor talabalar fayli <b class="text-red-600">QIZIL__</b> bilan boshlanadi.
+        </p>
         <p v-if="error" class="text-sm text-red-600">{{ error }}</p>
     </div>
 </template>
