@@ -64,6 +64,8 @@ class PassportArchiveController extends Controller
             'faculity_id' => ['nullable', 'integer', 'exists:faculities,id'],
             'from' => ['nullable', 'date_format:Y-m-d'],
             'to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:from'],
+            'module_ids' => ['nullable', 'array'],
+            'module_ids.*' => ['integer', 'distinct', 'exists:modules,id'],
         ]);
 
         return new PassportArchiveTarget(
@@ -73,6 +75,7 @@ class PassportArchiveController extends Controller
                 : null,
             from: $validated['from'] ?? null,
             to: $validated['to'] ?? null,
+            moduleIds: array_map('intval', $validated['module_ids'] ?? []),
         );
     }
 }

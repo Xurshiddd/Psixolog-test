@@ -1,6 +1,12 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Button } from '@/components/ui/button';
+import {
+    DropdownMenu,
+    DropdownMenuCheckboxItem,
+    DropdownMenuContent,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 /**
  * Tanlangan turdagi (talaba / xodim) barcha passportlarni ZIP qilib yuklab
@@ -10,6 +16,8 @@ const props = defineProps<{
     defaultRole?: 'student' | 'employee';
     /** Talabalar uchun fakultet tanlash ro'yxati. */
     faculities?: Array<{ id: number; name: string }>;
+    /** Passport xulosasi yo'qlarga avtomatik xulosasi olinadigan modullar ro'yxati. */
+    modules?: Array<{ id: number; name: string }>;
 }>();
 
 type ArchiveStatus = {
@@ -26,6 +34,20 @@ const faculityId = ref<number | ''>('');
 // shu kungacha, ikkalasi bo'sh — hammasi.
 const dateFrom = ref('');
 const dateTo = ref('');
+// Tanlangan tartib saqlanadi — xulosalar shu tartibda vergul bilan qo'shiladi.
+const moduleIds = ref<number[]>([]);
+const moduleLabel = computed(() => {
+    if (moduleIds.value.length === 0) return 'Modullar (xulosa uchun)';
+    if (moduleIds.value.length === 1) {
+        return props.modules?.find((module) => module.id === moduleIds.value[0])?.name ?? '1 ta modul';
+    }
+    return `${moduleIds.value.length} ta modul tanlandi`;
+});
+const toggleModule = (id: number, checked: boolean) => {
+    moduleIds.value = checked
+        ? [...moduleIds.value.filter((value) => value !== id), id]
+        : moduleIds.value.filter((value) => value !== id);
+};
 const now = new Date();
 const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 const state = ref<ArchiveStatus>({ status: 'idle' });
@@ -50,6 +72,7 @@ const target = () => {
     if (dateTo.value) {
         params.set('to', dateTo.value);
     }
+    moduleIds.value.forEach((id) => params.append('module_ids[]', String(id)));
     return params;
 };
 
@@ -113,10 +136,9 @@ const start = async () => {
             method: 'POST',
             headers: {
                 Accept: 'application/json',
-                'Content-Type': 'application/json',
                 'X-CSRF-TOKEN': csrf(),
             },
-            body: JSON.stringify(Object.fromEntries(target())),
+            body: target(),
         });
 
         if (res.status === 422) {
@@ -138,7 +160,7 @@ const start = async () => {
 };
 
 // Sahifa yangilansa ham yasalayotgan arxiv holatini davom ettiramiz.
-watch([role, faculityId, dateFrom, dateTo], () => {
+watch([role, faculityId, dateFrom, dateTo, moduleIds], () => {
     stopPolling();
     state.value = { status: 'idle' };
     error.value = '';
@@ -191,6 +213,28 @@ onBeforeUnmount(stopPolling);
                     class="rounded-md border border-input bg-background px-2 py-2 text-sm text-foreground"
                 />
             </label>
+            <DropdownMenu v-if="modules?.length">
+                <DropdownMenuTrigger as-child>
+                    <Button variant="outline" :disabled="running" class="max-w-64 justify-between gap-2">
+                        <span class="truncate">{{ moduleLabel }}</span>
+                        <span class="text-muted-foreground">▾</span>
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent class="max-h-80 w-72 overflow-y-auto">
+                    <DropdownMenuCheckboxItem
+                        v-for="module in modules"
+                        :key="module.id"
+                        :model-value="moduleIds.includes(module.id)"
+                        @update:model-value="(checked: boolean) => toggleModule(module.id, checked)"
+                        @select.prevent
+                    >
+                        <span class="flex-1">{{ module.name }}</span>
+                        <span v-if="moduleIds.includes(module.id)" class="text-xs text-muted-foreground">
+                            {{ moduleIds.indexOf(module.id) + 1 }}
+                        </span>
+                    </DropdownMenuCheckboxItem>
+                </DropdownMenuContent>
+            </DropdownMenu>
             <Button variant="outline" class="flex-1" :disabled="running" @click="start">
                 <span v-if="running">⏳ Tayyorlanmoqda... {{ state.processed || 0 }}/{{ state.total || 0 }}</span>
                 <span v-else>🗂️ Passportlarni yuklab olish (ZIP)</span>
@@ -202,6 +246,10 @@ onBeforeUnmount(stopPolling);
         <p class="text-xs text-muted-foreground">
             Muddat test topshirilgan sana bo‘yicha. “Dan” bo‘sh bo‘lsa — boshidan, “gacha” bo‘sh bo‘lsa — bugungacha,
             ikkalasi bo‘sh bo‘lsa — hammasi olinadi.
+        </p>
+        <p v-if="modules?.length" class="text-xs text-muted-foreground">
+            Passport xulosasi yo‘q foydalanuvchilarga tanlangan modullarning avtomatik xulosalari tanlangan tartibda
+            vergul bilan yoziladi. Modul tanlanmasa — test diagnozlari olinadi.
         </p>
         <p v-if="role === 'student'" class="text-xs text-muted-foreground">
             Zudlik bilan hal qilinmagan holati bor talabalar fayli <b class="text-red-600">QIZIL__</b> bilan boshlanadi.

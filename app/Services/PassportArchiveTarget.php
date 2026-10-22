@@ -5,6 +5,9 @@ namespace App\Services;
 /**
  * Qaysi passportlar arxivga kirishi: tur, fakultet (faqat talabalarda) va
  * test topshirilgan sana oralig'i. Sanalar `Y-m-d` ko'rinishida.
+ *
+ * `$moduleIds` — passport xulosasi yo'q foydalanuvchilarga shu modullarning
+ * avtomatik xulosalari (tanlangan tartibda) vergul bilan qo'shib yoziladi.
  */
 final readonly class PassportArchiveTarget
 {
@@ -13,6 +16,8 @@ final readonly class PassportArchiveTarget
         public ?int $faculityId = null,
         public ?string $from = null,
         public ?string $to = null,
+        /** @var list<int> */
+        public array $moduleIds = [],
     ) {}
 
     /**
@@ -23,7 +28,8 @@ final readonly class PassportArchiveTarget
     {
         return $this->role
             .($this->faculityId !== null ? '-f'.$this->faculityId : '')
-            .($this->hasPeriod() ? '-d'.($this->from ?? '0').'_'.($this->to ?? 'now') : '');
+            .($this->hasPeriod() ? '-d'.($this->from ?? '0').'_'.($this->to ?? 'now') : '')
+            .($this->moduleIds !== [] ? '-m'.implode('.', $this->moduleIds) : '');
     }
 
     public function hasPeriod(): bool

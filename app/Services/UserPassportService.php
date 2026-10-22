@@ -77,17 +77,25 @@ class UserPassportService
      * Ommaviy yuklab olish uchun: saqlangan passport bo'lsa o'shani, bo'lmasa
      * test xulosalaridan vaqtincha passport yasab PDF mazmunini qaytaradi.
      * Vaqtincha passport bazaga yozilmaydi.
+     *
+     * @param  list<int>  $moduleIds  Xulosa olinadigan modullar (tanlangan tartibda).
      */
-    public function renderPdfContent(User $user): string
+    public function renderPdfContent(User $user, array $moduleIds = []): string
     {
         $this->ensureSupportedRole($user);
 
         $passport = $user->passport ?? new UserPassport([
             'user_id' => $user->id,
             'temperament_type' => null,
-            'conclusion' => $this->fallbackConclusion($user),
             'manual_risk_flag' => null,
         ]);
+
+        // Xulosa faqat xotirada to'ldiriladi — saqlangan passport ham o'zgarmaydi.
+        if (blank($passport->conclusion)) {
+            $passport->conclusion = $moduleIds !== []
+                ? $this->automaticConclusion($user, $moduleIds)
+                : $this->fallbackConclusion($user);
+        }
 
         return $this->makePdf($user, $passport)->output();
     }
@@ -110,7 +118,26 @@ class UserPassportService
         );
     }
 
-    /** Passport yo'q bo'lsa xulosa sifatida modul diagnozlari olinadi. */
+    /**
+     * Tanlangan modullarning avtomatik xulosalari (`result_real`) tanlangan
+     * tartibda vergul bilan birlashtiriladi; xulosasi bo'sh modullar tashlab ketiladi.
+     *
+     * @param  list<int>  $moduleIds
+     */
+    private function automaticConclusion(User $user, array $moduleIds): string
+    {
+        $byModule = $user->usersTestsResults()
+            ->whereIn('modules.id', $moduleIds)
+            ->get(['modules.id'])
+            ->mapWithKeys(fn ($module) => [$module->id => trim((string) $module->pivot->result_real)]);
+
+        return collect($moduleIds)
+            ->map(fn (int $id) => rtrim($byModule[$id] ?? '', " \t\n\r\0\x0B,"))
+            ->filter()
+            ->implode(', ') ?: '-';
+    }
+
+    /** Modul tanlanmagan bo'lsa xulosa sifatida modul diagnozlari olinadi. */
     private function fallbackConclusion(User $user): string
     {
         return $user->usersTestsResults()

@@ -144,7 +144,7 @@ class PassportArchiveService
             );
 
             $query->with('passport')->chunkById(self::CHUNK, function ($users) use (
-                $zip, &$processed, &$added, &$failed, &$usedNames, $archivePath, $key, $total
+                $target, $zip, &$processed, &$added, &$failed, &$usedNames, $archivePath, $key, $total
             ) {
                 $this->ensureFreeSpace(dirname($archivePath));
 
@@ -152,7 +152,7 @@ class PassportArchiveService
                     try {
                         $zip->addFile(
                             fileName: $this->uniqueName($user, $usedNames),
-                            data: $this->userPassportService->renderPdfContent($user),
+                            data: $this->userPassportService->renderPdfContent($user, $target->moduleIds),
                         );
                         $added++;
                     } catch (Throwable $e) {

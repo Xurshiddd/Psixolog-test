@@ -795,7 +795,7 @@ const submitConclusionUpdate = () => {
                 <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
                     Tanlangan turdagi barcha foydalanuvchilar passportlari bitta ZIP faylga yig‘ilib yuklab olinadi.
                 </p>
-                <PassportArchiveDownload :faculities="props.faculities" />
+                <PassportArchiveDownload :faculities="props.faculities" :modules="props.modules" />
             </div>
         </div>
     </AppLayout>
