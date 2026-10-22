@@ -13,6 +13,7 @@ use App\Http\Controllers\EmployeeLoginController;
 use App\Http\Controllers\GuestRegisterController;
 use App\Http\Controllers\HemisAuthController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\PassportArchiveController;
 use App\Http\Controllers\ResultCategoryController;
 use App\Http\Controllers\Staff\MessagesController;
 use App\Http\Controllers\Staff\RequestsController;
@@ -110,6 +111,10 @@ Route::middleware(['auth', 'double'])->group(function () {
     Route::post('/admin/students/{user}/results/{module}/ai-diagnosis', [AdminStudentController::class, 'generateAiDiagnosis'])->name('admin.students.results.ai-diagnosis');
     Route::post('/admin/students/{user}/results/{module}/ai-diagnosis-stream', [AdminStudentController::class, 'streamAiDiagnosis'])->name('admin.students.results.ai-diagnosis-stream');
     Route::delete('/admin/students/{student}/results/{result}', [AdminStudentController::class, 'destroyResult'])->name('admin.students.results.destroy');
+    // Tanlangan turdagi barcha passportlarni ZIP qilib yuklab olish.
+    Route::post('/admin/passports/archive', [PassportArchiveController::class, 'start'])->name('admin.passports.archive.start');
+    Route::get('/admin/passports/archive/status', [PassportArchiveController::class, 'status'])->name('admin.passports.archive.status');
+    Route::get('/admin/passports/archive/download', [PassportArchiveController::class, 'download'])->name('admin.passports.archive.download');
     Route::get('/admin/employees', [AdminEmployeeController::class, 'index'])->name('admin.employees.index');
     Route::post('/admin/employees/sync', [AdminEmployeeController::class, 'sync'])->middleware('admin')->name('admin.employees.sync');
     Route::get('/admin/employees/sync/status', [AdminEmployeeController::class, 'syncStatus'])->middleware('admin')->name('admin.employees.sync-status');

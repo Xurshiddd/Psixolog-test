@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Head, Link, router, usePage } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
+import PassportArchiveDownload from '@/components/PassportArchiveDownload.vue';
 import { type BreadcrumbItem } from '@/types';
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import {
@@ -288,6 +289,7 @@ onBeforeUnmount(stopPolling);
 
                 <div class="flex flex-col md:flex-row gap-2 mt-4 pt-4 border-t">
                     <Button @click="downloadExcel" variant="outline" class="flex-1">📊 Excel'ga yuklash</Button>
+                    <PassportArchiveDownload default-role="employee" />
                 </div>
             </div>
 

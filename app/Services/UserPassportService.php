@@ -70,19 +70,54 @@ class UserPassportService
 
     private function download(User $user, UserPassport $passport)
     {
-        $pdf = $this->passportPdfService->generatePassportPdf(
+        return $this->makePdf($user, $passport)->download($this->fileName($user));
+    }
+
+    /**
+     * Ommaviy yuklab olish uchun: saqlangan passport bo'lsa o'shani, bo'lmasa
+     * test xulosalaridan vaqtincha passport yasab PDF mazmunini qaytaradi.
+     * Vaqtincha passport bazaga yozilmaydi.
+     */
+    public function renderPdfContent(User $user): string
+    {
+        $this->ensureSupportedRole($user);
+
+        $passport = $user->passport ?? new UserPassport([
+            'user_id' => $user->id,
+            'temperament_type' => null,
+            'conclusion' => $this->fallbackConclusion($user),
+            'manual_risk_flag' => null,
+        ]);
+
+        return $this->makePdf($user, $passport)->output();
+    }
+
+    public function fileName(User $user): string
+    {
+        return 'ijtimoiy-psixologik-passport_'.Str::slug($user->name ?: 'foydalanuvchi').'.pdf';
+    }
+
+    private function makePdf(User $user, UserPassport $passport)
+    {
+        return $this->passportPdfService->generatePassportPdf(
             $user,
             [
                 'character_traits' => $passport->character_traits ?? [],
-                'temperament_type' => $passport->temperament_type,
-                'conclusion' => $passport->conclusion,
+                'temperament_type' => $passport->temperament_type ?: '-',
+                'conclusion' => $passport->conclusion ?: '-',
             ],
             $this->profile($user, $passport)
         );
+    }
 
-        return $pdf->download(
-            'ijtimoiy-psixologik-passport_'.Str::slug($user->name ?: 'foydalanuvchi').'.pdf'
-        );
+    /** Passport yo'q bo'lsa xulosa sifatida modul diagnozlari olinadi. */
+    private function fallbackConclusion(User $user): string
+    {
+        return $user->usersTestsResults()
+            ->get(['modules.id', 'modules.name'])
+            ->filter(fn ($module) => filled($module->pivot->diagnosis))
+            ->map(fn ($module) => $module->name.': '.trim($module->pivot->diagnosis))
+            ->implode(' ') ?: '-';
     }
 
     /**
