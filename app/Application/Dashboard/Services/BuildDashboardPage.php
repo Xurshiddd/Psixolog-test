@@ -9,6 +9,7 @@ use App\Models\Module;
 use App\Models\User;
 use App\Services\DashboardAggregateCacheService;
 use App\Services\EmployeePopulationStatsService;
+use App\Services\LookupCacheService;
 use App\Services\ModuleScoreRangeReportService;
 use App\Services\ResultCategoryStatsService;
 use App\Services\StudentPopulationStatsService;
@@ -24,6 +25,7 @@ class BuildDashboardPage
         private DashboardAggregateCacheService $dashboardAggregateCacheService,
         private CountStudentLoginsQuery $countStudentLoginsQuery,
         private EmployeePopulationStatsService $employeePopulationStatsService,
+        private LookupCacheService $lookupCacheService,
     ) {}
 
     /**
@@ -108,6 +110,8 @@ class BuildDashboardPage
                 'categoryStudentStats' => $this->dashboardAggregateCacheService->categoryStudentStats(),
                 'flagStudentStats' => $this->dashboardAggregateCacheService->flagStudentStats(),
                 'flagOptions' => RiskFlag::options(),
+                // Passportlarni ZIP qilib yuklab olishda fakultet tanlash uchun.
+                'faculities' => $this->lookupCacheService->faculities(),
                 'faculityStudentStats' => $this->dashboardAggregateCacheService->faculityStudentStats(),
             ],
         ];

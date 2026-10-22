@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { Head, Link, router } from '@inertiajs/vue3';
 import AppLayout from '@/layouts/AppLayout.vue';
-import PassportArchiveDownload from '@/components/PassportArchiveDownload.vue';
 import { type BreadcrumbItem } from '@/types';
 import { ref } from 'vue';
 import {
@@ -399,7 +398,6 @@ const getStudentLink = (studentId: number) => {
                     <Button @click="downloadExcelWithDiagnosis" variant="outline" class="flex-1">
                         📊 Excel'ga yuklash (diagnosis bilan)
                     </Button>
-                    <PassportArchiveDownload default-role="student" :faculities="faculities" />
                 </div>
             </div>
 

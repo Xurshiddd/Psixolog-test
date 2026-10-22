@@ -33,8 +33,6 @@ class BuildAdminEmployeePages
             'departments' => $this->distinctValues('department_name'),
             'employeeTypes' => $this->distinctValues('employee_type_name'),
             'categories' => $this->lookupCacheService->categories(),
-            // Passport arxivida talabalarni fakultet bo'yicha tanlash uchun.
-            'faculities' => $this->lookupCacheService->faculities(),
             'filters' => $filters->toArray(),
             'employeeSync' => Cache::get(SyncHemisEmployeesJob::CACHE_KEY) ?? ['status' => 'idle'],
         ];

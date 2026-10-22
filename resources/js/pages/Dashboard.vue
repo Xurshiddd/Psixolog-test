@@ -6,6 +6,7 @@ import CategoryStudentChart from '@/components/CategoryStudentChart.vue';
 import FaculityStudentChart from '@/components/FaculityStudentChart.vue';
 import FlagStudentChart from '@/components/FlagStudentChart.vue';
 import ModuleStatsChart from '@/components/ModuleStatsChart.vue';
+import PassportArchiveDownload from '@/components/PassportArchiveDownload.vue';
 import ResultCategoryChart from '@/components/ResultCategoryChart.vue';
 import {
     Dialog,
@@ -131,6 +132,7 @@ const props = defineProps<{
     reportAudienceStats?: ReportAudienceStat[];
     flagStudentStats?: FlagStudentStatItem[];
     flagOptions?: FlagOption[];
+    faculities?: Array<{ id: number; name: string }>;
 }>();
 
 const breadcrumbs: BreadcrumbItem[] = [
@@ -787,6 +789,14 @@ const submitConclusionUpdate = () => {
                 v-if="props.faculityStudentStats && props.faculityStudentStats.length > 0"
                 :faculity-student-stats="props.faculityStudentStats"
             />
+
+            <div class="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+                <h2 class="mb-1 text-lg font-semibold text-slate-900 dark:text-white">Ijtimoiy-psixologik passportlar</h2>
+                <p class="mb-4 text-sm text-slate-500 dark:text-slate-400">
+                    Tanlangan turdagi barcha foydalanuvchilar passportlari bitta ZIP faylga yig‘ilib yuklab olinadi.
+                </p>
+                <PassportArchiveDownload :faculities="props.faculities" />
+            </div>
         </div>
     </AppLayout>
 </template>
