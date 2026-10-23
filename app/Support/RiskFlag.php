@@ -85,6 +85,32 @@ final class RiskFlag
     }
 
     /**
+     * Eng ko'p uchragan bayroqni tanlaydi (barcha modullar natijasi bo'yicha).
+     * Eng ko'p soni bir nechta bayroqda teng bo'lsa — sariq bayroq.
+     * Ommaviy passport yuklash va dashboard statistikasida ishlatiladi.
+     *
+     * @param  iterable<string|null>  $flags
+     */
+    public static function dominant(iterable $flags): ?string
+    {
+        $counts = [];
+
+        foreach ($flags as $flag) {
+            if (self::isValid($flag)) {
+                $counts[$flag] = ($counts[$flag] ?? 0) + 1;
+            }
+        }
+
+        if ($counts === []) {
+            return null;
+        }
+
+        $leaders = array_keys($counts, max($counts), true);
+
+        return count($leaders) === 1 ? $leaders[0] : self::YELLOW;
+    }
+
+    /**
      * Frontendga beriladigan ro'yxat: qiymat, nom va rang.
      *
      * @return list<array{value: string, label: string, color: string}>

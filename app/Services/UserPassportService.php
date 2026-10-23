@@ -78,6 +78,9 @@ class UserPassportService
      * test xulosalaridan vaqtincha passport yasab PDF mazmunini qaytaradi.
      * Vaqtincha passport bazaga yozilmaydi.
      *
+     * Bayroq qo'lda biriktirilmagan bo'lsa, natijalar orasidagi eng ko'p
+     * uchragan bayroq qo'yiladi (teng bo'lsa — sariq).
+     *
      * @param  list<int>  $moduleIds  Xulosa olinadigan modullar (tanlangan tartibda).
      */
     public function renderPdfContent(User $user, array $moduleIds = []): string
@@ -97,7 +100,7 @@ class UserPassportService
                 : $this->fallbackConclusion($user);
         }
 
-        return $this->makePdf($user, $passport)->output();
+        return $this->makePdf($user, $passport, dominantFlag: true)->output();
     }
 
     public function fileName(User $user): string
@@ -105,7 +108,7 @@ class UserPassportService
         return 'ijtimoiy-psixologik-passport_'.Str::slug($user->name ?: 'foydalanuvchi').'.pdf';
     }
 
-    private function makePdf(User $user, UserPassport $passport)
+    private function makePdf(User $user, UserPassport $passport, bool $dominantFlag = false)
     {
         return $this->passportPdfService->generatePassportPdf(
             $user,
@@ -114,7 +117,7 @@ class UserPassportService
                 'temperament_type' => $passport->temperament_type ?: '-',
                 'conclusion' => $passport->conclusion ?: '-',
             ],
-            $this->profile($user, $passport)
+            $this->profile($user, $passport, $dominantFlag)
         );
     }
 
@@ -150,12 +153,12 @@ class UserPassportService
     /**
      * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, show_traits: bool, rows: list<array{label: string, value: string}>}
      */
-    private function profile(User $user, UserPassport $passport): array
+    private function profile(User $user, UserPassport $passport, bool $dominantFlag = false): array
     {
         return match ($user->role) {
             'employee' => $this->employeeProfile($user),
             'guest' => $this->guestProfile($user),
-            default => $this->studentProfile($user, $passport),
+            default => $this->studentProfile($user, $passport, $dominantFlag),
         };
     }
 
@@ -166,7 +169,7 @@ class UserPassportService
      *
      * @return array{role_label: string, intro: string, conclusion_title: string, show_photo: bool, show_traits: bool, rows: list<array{label: string, value: string}>}
      */
-    private function studentProfile(User $user, UserPassport $passport): array
+    private function studentProfile(User $user, UserPassport $passport, bool $dominantFlag = false): array
     {
         $user->load(['group', 'speciality', 'usersCategory', 'hobbies']);
 
@@ -178,7 +181,7 @@ class UserPassportService
             'show_photo' => true,
             'show_traits' => true,
             'hobbies' => $user->hobbies->pluck('name')->all(),
-            'risk_flag' => $this->riskFlag($user, $passport),
+            'risk_flag' => $this->riskFlag($user, $passport, $dominantFlag),
             'rows' => [
                 ['label' => 'Login', 'value' => $this->value($user->login)],
                 ['label' => 'Telefon', 'value' => $this->value($user->phone)],
@@ -248,15 +251,19 @@ class UserPassportService
 
     /**
      * Qo'lda tanlangan bayroq ustuvor; u bo'lmasa natijalardagi eng og'ir
-     * bayroq ishlatiladi (qizil > sariq > yashil).
+     * bayroq (qizil > sariq > yashil), ommaviy yuklashda esa eng ko'p
+     * uchragan bayroq ishlatiladi.
      *
      * @return array{value: string, label: string, color: string}|null
      */
-    private function riskFlag(User $user, UserPassport $passport): ?array
+    private function riskFlag(User $user, UserPassport $passport, bool $dominantFlag = false): ?array
     {
-        $flag = RiskFlag::isValid($passport->manual_risk_flag)
-            ? $passport->manual_risk_flag
-            : RiskFlag::mostSevere($user->usersTestsResults()->pluck('users_tests_results.flag'));
+        if (RiskFlag::isValid($passport->manual_risk_flag)) {
+            $flag = $passport->manual_risk_flag;
+        } else {
+            $flags = $user->usersTestsResults()->pluck('users_tests_results.flag');
+            $flag = $dominantFlag ? RiskFlag::dominant($flags) : RiskFlag::mostSevere($flags);
+        }
 
         if ($flag === null) {
             return null;

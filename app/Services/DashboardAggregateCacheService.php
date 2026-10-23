@@ -159,8 +159,9 @@ class DashboardAggregateCacheService
     }
 
     /**
-     * Bayroqlar bo'yicha talabalar statistikasi. Talabaning bayrog'i —
-     * uning natijalari orasidagi eng og'ir bayroq (qizil > sariq > yashil).
+     * Bayroqlar bo'yicha talabalar statistikasi. Talabaning bayrog'i — qo'lda
+     * biriktirilgan bayroq, u bo'lmasa natijalari orasida eng ko'p uchragan
+     * bayroq (teng bo'lsa — sariq). Ommaviy passport yuklash bilan bir xil qoida.
      *
      * @return Collection<int, array{flag: string, name: string, color: string, studentCount: int}>
      */
@@ -171,18 +172,26 @@ class DashboardAggregateCacheService
                 self::FLAG_STUDENT_STATS_KEY,
                 now()->addMinutes(self::CACHE_TTL_MINUTES),
                 function (): array {
-                    // Har bir talabaning eng og'ir bayrog'ini topamiz.
-                    $flagsByUser = DB::table('users_tests_results')
-                        ->join('users', 'users.id', '=', 'users_tests_results.user_id')
-                        ->join('modules', 'modules.id', '=', 'users_tests_results.module_id')
+                    $students = fn () => DB::table('users')
                         ->where('users.role', 'student')
-                        ->whereNull('users.merged_into_user_id')
+                        ->whereNull('users.merged_into_user_id');
+
+                    $manualByUser = $students()
+                        ->join('user_passports', 'user_passports.user_id', '=', 'users.id')
+                        ->whereIn('user_passports.manual_risk_flag', RiskFlag::values())
+                        ->pluck('user_passports.manual_risk_flag', 'users.id');
+
+                    $flagsByUser = $students()
+                        ->join('users_tests_results', 'users_tests_results.user_id', '=', 'users.id')
+                        ->join('modules', 'modules.id', '=', 'users_tests_results.module_id')
                         ->where('modules.is_active', true)
                         ->whereNotNull('users_tests_results.flag')
+                        ->whereNotIn('users.id', $manualByUser->keys())
                         ->select('users_tests_results.user_id', 'users_tests_results.flag')
                         ->get()
                         ->groupBy('user_id')
-                        ->map(fn ($rows): ?string => RiskFlag::mostSevere($rows->pluck('flag')));
+                        ->map(fn ($rows): ?string => RiskFlag::dominant($rows->pluck('flag')))
+                        ->union($manualByUser);
 
                     $counts = $flagsByUser->countBy(fn (?string $flag): string => (string) $flag);
 

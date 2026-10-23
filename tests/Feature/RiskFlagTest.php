@@ -56,6 +56,42 @@ test('eng og\'ir bayroq tanlanadi', function () {
         ->and(RiskFlag::mostSevere([null, 'nonsense']))->toBeNull();
 });
 
+test('eng ko\'p uchragan bayroq tanlanadi, teng bo\'lsa sariq', function () {
+    expect(RiskFlag::dominant(['green', 'green', 'red']))->toBe('green')
+        ->and(RiskFlag::dominant(['red', 'red', 'yellow', 'green']))->toBe('red')
+        ->and(RiskFlag::dominant(['red', 'yellow', 'green']))->toBe('yellow')
+        ->and(RiskFlag::dominant(['red', 'green']))->toBe('yellow')
+        ->and(RiskFlag::dominant(['green', null]))->toBe('green')
+        ->and(RiskFlag::dominant([null, 'nonsense']))->toBeNull();
+});
+
+test('dashboard statistikasida ko\'pchilik bayroq, qo\'lda biriktirilgani ustuvor', function () {
+    $admin = makeFlagUser('admin');
+    $majority = makeFlagUser('student');
+    $manual = makeFlagUser('student');
+
+    foreach ([$majority, $manual] as $student) {
+        foreach ([RiskFlag::GREEN, RiskFlag::GREEN, RiskFlag::RED] as $flag) {
+            makeScoredModule($student);
+            DB::table('users_tests_results')
+                ->where('user_id', $student->id)
+                ->whereNull('flag')
+                ->update(['flag' => $flag]);
+        }
+    }
+
+    $manual->passport()->create(['conclusion' => 'x', 'manual_risk_flag' => RiskFlag::RED]);
+
+    app(DashboardAggregateCacheService::class)->forgetAll();
+
+    $stats = app(DashboardAggregateCacheService::class)->flagStudentStats()
+        ->pluck('studentCount', 'value');
+
+    expect($stats[RiskFlag::RED])->toBe(1)
+        ->and($stats[RiskFlag::GREEN])->toBe(1)
+        ->and($stats[RiskFlag::YELLOW])->toBe(0);
+});
+
 test('avtomatik xulosa bilan birga bayroq biriktiriladi', function () {
     $admin = makeFlagUser('admin');
     $student = makeFlagUser('student');

@@ -13,6 +13,7 @@ use App\Models\Speciality;
 use App\Models\Test;
 use App\Models\TestOption;
 use App\Models\User;
+use App\Models\UserPassport;
 use App\Services\DashboardAggregateCacheService;
 use App\Services\LookupCacheService;
 use App\Services\ModuleScoreRangeReportService;
@@ -119,7 +120,7 @@ class AppServiceProvider extends ServiceProvider
             $lookupModelClass::deleted(fn ($model) => $this->forgetLookupCacheFor($lookupModelClass));
         }
 
-        foreach ([Category::class, Faculity::class, Group::class, Module::class, ResultCategory::class, Test::class, TestOption::class, User::class] as $dashboardModelClass) {
+        foreach ([Category::class, Faculity::class, Group::class, Module::class, ResultCategory::class, Test::class, TestOption::class, User::class, UserPassport::class] as $dashboardModelClass) {
             $dashboardModelClass::saved(fn ($model) => $this->forgetDashboardCaches());
             $dashboardModelClass::deleted(fn ($model) => $this->forgetDashboardCaches());
         }
